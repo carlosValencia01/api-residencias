@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 
 let studentSchema = new mongoose.Schema({
-    controlNumber: { type: String, required: true, unique: true },
-    fullName: { type: String, required: true },
-    career: { type: String, required: true },
+    filename: { type: String},
+    originalName: { type: String},
+    controlNumber: { type: String},
+    fullName: { type: String},
+    career: { type: String},
     nss: { type: String },
-    photo: { type: String },
     nip: { type: String }
 });
 
