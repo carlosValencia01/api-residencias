@@ -12,6 +12,7 @@ const URL = `/escolares`;
 require('./models/models')(wagner);
 
 const user = require('./routers/user.router')(wagner);
+const student = require('./routers/student.router')(wagner);
 
 let app = express();
 
@@ -39,6 +40,7 @@ const jwtOptions = {
 app.use(expressJWT({ secret: config.secret}).unless(jwtOptions));
 
 app.use(uri+'user', user);
+app.use(uri+'student', student);
 
 
 module.exports = app;
