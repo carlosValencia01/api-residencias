@@ -27,9 +27,13 @@ module.exports = (wagner) => {
     })
 
 
-    router.post('/', upload.single('image'), function (req, res, next){
+    router.post('/', upload.single('image'), function (req, res){
         console.log('Creando Student con image!');
         studentCtrl.create(req, res)
+    })
+
+    router.put('/', upload.single('image'), function (req, res) {
+        studentCtrl.updateOne(req, res)
     })
 
 

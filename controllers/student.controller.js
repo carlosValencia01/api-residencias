@@ -31,6 +31,16 @@ const create = (req, res, next) => {
     })
 }
 
+const updateOne = (req, res, imgId) => {
+    const query = { _id: res.post_id }
+
+    _student.findOneAndUpdate(query).exec((err, query) => {
+        if (query) {
+            handler.handleOne.bind(null, 'students', res)
+        }
+    })
+}
+
 
 const getOne = (req, res, imgId) => {
     _student.findById(imgId, (err, image) => {
@@ -58,6 +68,7 @@ module.exports = (Student) => {
     return ({
         create,
         getOne,
+        updateOne,
         getAll
     });
 };
