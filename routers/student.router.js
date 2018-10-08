@@ -20,6 +20,12 @@ module.exports = (wagner) => {
 
     router.get('/', (req, res) => studentCtrl.getAll(req, res));
 
+    router.get('/:id', function (req, res) {
+        let imgId = req.params.id
+        console.log('Obteniendo imagen con id: ' + imgId)
+        studentCtrl.getOne(req, res, imgId)
+    })
+
 
     router.post('/', upload.single('image'), function (req, res, next){
         console.log('Creando Student con image!');
