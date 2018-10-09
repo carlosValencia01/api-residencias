@@ -11,6 +11,26 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
+const search = (req, res) => {
+    const { start = 0, limit = 10 } = req.query;
+    const { search } = req.params;
+
+    if (!search) {
+        return getAll(req, res);
+    }
+
+    const query = {
+        $text: {
+            $search: search,
+            $language: 'es'
+        }
+    };
+    _student.find(query, null, {
+        skip: +start,
+        limit: +limit
+    }).exec(handler.handleMany.bind(null, 'students', res));
+};
+
 
 const create = (req, res, next) => {
 
@@ -69,6 +89,7 @@ module.exports = (Student) => {
         create,
         getOne,
         updateOne,
-        getAll
+        getAll,
+        search
     });
 };

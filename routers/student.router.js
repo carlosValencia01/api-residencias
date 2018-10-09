@@ -24,8 +24,10 @@ module.exports = (wagner) => {
         let imgId = req.params.id
         console.log('Obteniendo imagen con id: ' + imgId)
         studentCtrl.getOne(req, res, imgId)
-    })
+    });
 
+    router.get('/search/:search', (req, res) => 
+        studentCtrl.search(req, res));
 
     router.post('/', upload.single('image'), function (req, res){
         console.log('Creando Student con image!');
