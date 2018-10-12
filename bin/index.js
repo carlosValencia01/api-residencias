@@ -2,6 +2,16 @@ const app = require('../server');
 const config = require('../_config');
 const server = require('http').Server(app);
 
+const fs = require('fs');
+
+try {
+    fs.mkdirSync('images');
+    console.log('Folder images created');
+} catch(err) {
+    if (err.code == 'EEXIST') { console.log('Folder images exits'); }
+    else {console.log('ERROR: ', err);}
+}
+
 const port = normalizePort(process.env.PORT | config.port);
 
 server.listen(port);

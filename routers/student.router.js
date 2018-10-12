@@ -8,10 +8,12 @@ var storage = multer.diskStorage({
         cb(null, UPLOAD_PATH)
     },
     filename: function (req, file, cb) {
-        cb(null, file.fieldname + '-' + Date.now())
+        console.log(req.params);
+        cb(null, file.fieldname + '-' +req.params._id)
     }
 })
 let upload = multer({ storage: storage })
+
 
 
 module.exports = (wagner) => {
@@ -34,8 +36,8 @@ module.exports = (wagner) => {
         studentCtrl.create(req, res)
     })
 
-    router.put('/', upload.single('image'), function (req, res) {
-        studentCtrl.updateOne(req, res)
+    router.put('/:_id', upload.single('image'), function (req, res) {
+        studentCtrl.uploadImage(req, res)
     })
 
 

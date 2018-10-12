@@ -33,22 +33,29 @@ const search = (req, res) => {
 
 
 const create = (req, res, next) => {
+    const student = req.body;
+    _student.create(student).then(created => {
+        res.json({
+            presentation: created
+        });
+    }).catch(err =>
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        }));
 
-    let newStudent = new _student();
-    newStudent.filename = req.file.filename;
-    newStudent.originalName = req.file.originalname;
-    newStudent.fullName = req.body.fullName;
-    newStudent.controlNumber = req.body.controlNumber;
-    newStudent.career = req.body.career;
-    newStudent.nss = req.body.nss;
-    newStudent.nip = req.body.nip;
-    newStudent.save(err => {
-        if (err) {
-            res.sendStatus(400);
-            console.log("el error", err)
-        }
-        res.status(201).send({ newStudent });
-    })
+}
+
+const uploadImage = (req, res) => {
+    const { _id } = req.params;
+    const image = req.file;
+
+    console.log(image);
+
+    const query = { _id: _id };
+    const updated = { filename: image.filename, originalName: image.originalname };
+
+    _student.findOneAndUpdate(query, updated, { new: true })
+        .exec(handler.handleOne.bind(null, 'student', res));
 }
 
 const updateOne = (req, res, imgId) => {
@@ -90,6 +97,7 @@ module.exports = (Student) => {
         getOne,
         updateOne,
         getAll,
-        search
+        search,
+        uploadImage
     });
 };
