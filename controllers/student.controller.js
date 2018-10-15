@@ -45,6 +45,15 @@ const create = (req, res, next) => {
 
 }
 
+const updateStudent = (req, res) => {
+    const { _id } = req.params;
+    const student = req.body;
+
+    const query = { _id: _id };
+    _student.findOneAndUpdate(query, student, { new: true })
+        .exec(handler.handleOne.bind(null, 'student', res));
+}
+
 const uploadImage = (req, res) => {
     const { _id } = req.params;
     const image = req.file;
@@ -69,13 +78,26 @@ const updateOne = (req, res, imgId) => {
 }
 
 
-const getOne = (req, res, imgId) => {
-    _student.findById(imgId, (err, image) => {
+const getOne = (req, res) => {
+    const { _id } = req.params;
+    const query = { _id: _id };
+
+    _student.findById(query, (err, student) => {
         if (err) {
-            res.sendStatus(400);
+            res.status(status.INTERNAL_SERVER_ERROR).json({
+                error: err.toString()
+            });
         }
-        res.set('Content-Type', 'image/jpeg');
-        fs.createReadStream(path.join('images', image.filename)).pipe(res);
+        if (student.filename) {
+            console.log('Entro AQUI');
+            res.set('Content-Type', 'image/jpeg');
+            fs.createReadStream(path.join('images', student.filename)).pipe(res);
+        } else {
+            res.status(status.NOT_FOUND).json({
+                error: 'No se encontro la imagen para este registro'
+            });
+        }
+
     })
 }
 /*
@@ -98,6 +120,7 @@ module.exports = (Student) => {
         updateOne,
         getAll,
         search,
-        uploadImage
+        uploadImage,
+        updateStudent
     });
 };

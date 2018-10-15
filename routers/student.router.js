@@ -22,11 +22,8 @@ module.exports = (wagner) => {
 
     router.get('/', (req, res) => studentCtrl.getAll(req, res));
 
-    router.get('/:id', function (req, res) {
-        let imgId = req.params.id
-        console.log('Obteniendo imagen con id: ' + imgId)
-        studentCtrl.getOne(req, res, imgId)
-    });
+    router.get('/image/:_id',  (req, res) => 
+        studentCtrl.getOne(req, res));
 
     router.get('/search/:search', (req, res) => 
         studentCtrl.search(req, res));
@@ -36,7 +33,11 @@ module.exports = (wagner) => {
         studentCtrl.create(req, res)
     })
 
-    router.put('/:_id', upload.single('image'), function (req, res) {
+    router.put('/:_id', (req, res) => 
+        studentCtrl.updateStudent(req, res));
+
+
+    router.put('/image/:_id', upload.single('image'), function (req, res) {
         studentCtrl.uploadImage(req, res)
     })
 
