@@ -58,10 +58,10 @@ const uploadImage = (req, res) => {
     const { _id } = req.params;
     const image = req.file;
 
-    console.log(image);
+    // console.log('MIRA AQUIIIII',image);
 
     const query = { _id: _id };
-    const updated = { filename: image.filename, originalName: image.originalname };
+    const updated = { filename: image.filename };
 
     _student.findOneAndUpdate(query, updated, { new: true })
         .exec(handler.handleOne.bind(null, 'student', res));
@@ -89,7 +89,7 @@ const getOne = (req, res) => {
             });
         }
         if (student.filename) {
-            console.log('Entro AQUI');
+            // console.log('Entro AQUI');
             res.set('Content-Type', 'image/jpeg');
             fs.createReadStream(path.join('images', student.filename)).pipe(res);
         } else {
