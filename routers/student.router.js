@@ -21,17 +21,21 @@ module.exports = (wagner) => {
       require('../controllers/student.controller')(Student));
 
     router.get('/', (req, res) => studentCtrl.getAll(req, res));
-
+    router.get('/:_id', (req, res) => studentCtrl.getById(req, res));
+    
+    
     router.get('/image/:_id',  (req, res) => 
-        studentCtrl.getOne(req, res));
-
+    studentCtrl.getOne(req, res));
+    
     router.get('/search/:search', (req, res) => 
-        studentCtrl.search(req, res));
-
+    studentCtrl.search(req, res));
+    
     router.post('/', upload.single('image'), function (req, res){
         console.log('Creando Student con image!');
         studentCtrl.create(req, res)
-    })
+    });
+    
+    router.post('/login', (req, res) => studentCtrl.getByControlNumber(req, res));
 
     router.put('/:_id', (req, res) => 
         studentCtrl.updateStudent(req, res));

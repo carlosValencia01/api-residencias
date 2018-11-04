@@ -34,7 +34,7 @@ const v = 'credenciales';
 const uri = `${URL}/${v}/`;
 
 const jwtOptions = {
-  path: [`${uri}user/login`, `${uri}user/register`, `${uri}user/send/code`, /^\/escolares\/credenciales\/student\/image\/.*/ ]
+  path: [`${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `${uri}user/send/code`, /^\/escolares\/credenciales\/student\/image\/.*/ ]
 };
 
 app.use(expressJWT({ secret: config.secret}).unless(jwtOptions));

@@ -3,12 +3,64 @@ const status = require('http-status');
 const fs = require('fs')
 const path = require('path');
 const del = require('del');
+const jwt = require('jsonwebtoken');
+const config = require('../_config');
 
 let _student;
 
 const getAll = (req, res) => {
     _student.find({})
         .exec(handler.handleMany.bind(null, 'students', res));
+};
+
+const getById = (req, res) => {
+    const { _id } = req.params;
+    _student.find({_id:_id})
+        .exec(handler.handleOne.bind(null, 'student', res));
+};
+
+const getByControlNumber = (req, res) => {
+    const { controlNumber } = req.body;
+    console.log("ControlNumer"+controlNumber);
+    //Hacer la petición hacia API de NIP y número de control
+    _student.find({controlNumber:controlNumber})
+        //.exec(handler.handleOne.bind(null, 'student', res));
+        .exec(
+            (err,students) => {
+                if(err) {
+                    return res.status(status.INTERNAL_SERVER_ERROR).json({
+                        error: err.toString()
+                    });
+                }
+                if(!students.length) {
+                    return res.status(status.NOT_FOUND).json({
+                        error: 'student not found'
+                    });
+                }
+
+                let oneStudent = students[0];
+
+                const token = jwt.sign({ email: controlNumber }, config.secret);
+
+                let formatStudent = {
+                    _id: oneStudent._id,
+                    name: {
+                        firstName: oneStudent.fullName,
+                        lastName: oneStudent.fullName,
+                        fullName: oneStudent.fullName
+                    },
+                    email: oneStudent.controlNumber,
+                    role: 2
+                }
+
+                res.json({
+                    user: formatStudent,
+                    token: token,
+                    action: 'signin'
+                });
+
+            }
+        )
 };
 
 const search = (req, res) => {
@@ -121,6 +173,8 @@ module.exports = (Student) => {
         getAll,
         search,
         uploadImage,
-        updateStudent
+        updateStudent,
+        getByControlNumber,
+        getById
     });
 };
