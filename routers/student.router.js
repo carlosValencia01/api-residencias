@@ -34,6 +34,10 @@ module.exports = (wagner) => {
         console.log('Creando Student con image!');
         studentCtrl.create(req, res)
     });
+
+    router.post('/create', function (req, res){
+        studentCtrl.createWithoutImage(req, res)
+    });
     
     router.post('/login', (req, res) => studentCtrl.getByControlNumber(req, res));
 

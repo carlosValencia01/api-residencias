@@ -15,24 +15,24 @@ const getAll = (req, res) => {
 
 const getById = (req, res) => {
     const { _id } = req.params;
-    _student.find({_id:_id})
+    _student.find({ _id: _id })
         .exec(handler.handleOne.bind(null, 'student', res));
 };
 
 const getByControlNumber = (req, res) => {
     const { controlNumber } = req.body;
-    console.log("ControlNumer"+controlNumber);
+    console.log("ControlNumer" + controlNumber);
     //Hacer la petición hacia API de NIP y número de control
-    _student.find({controlNumber:controlNumber})
+    _student.find({ controlNumber: controlNumber })
         //.exec(handler.handleOne.bind(null, 'student', res));
         .exec(
-            (err,students) => {
-                if(err) {
+            (err, students) => {
+                if (err) {
                     return res.status(status.INTERNAL_SERVER_ERROR).json({
                         error: err.toString()
                     });
                 }
-                if(!students.length) {
+                if (!students.length) {
                     return res.status(status.NOT_FOUND).json({
                         error: 'student not found'
                     });
@@ -94,7 +94,18 @@ const create = (req, res, next) => {
         res.status(status.INTERNAL_SERVER_ERROR).json({
             error: err.toString()
         }));
+}
 
+const createWithoutImage = (req, res) => {
+    const student = req.body;
+    _student.create(student).then(created => {
+        res.json({
+            presentation: created
+        });
+    }).catch(err =>
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        }));
 }
 
 const updateStudent = (req, res) => {
@@ -175,6 +186,7 @@ module.exports = (Student) => {
         uploadImage,
         updateStudent,
         getByControlNumber,
-        getById
+        getById,
+        createWithoutImage
     });
 };
