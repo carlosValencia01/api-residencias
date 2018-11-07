@@ -13,6 +13,7 @@ require('./models/models')(wagner);
 
 const user = require('./routers/user.router')(wagner);
 const student = require('./routers/student.router')(wagner);
+const mail = require('./routers/mail.router')(wagner);
 
 let app = express();
 
@@ -35,15 +36,19 @@ const uri = `${URL}/${v}/`;
 
 const jwtOptions = {
   path: [
-        `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `${uri}student/create`, 
+        `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, 
+        `${uri}student/create`, `${URL}/sendmail`,
         `${uri}user/send/code`, /^\/escolares\/credenciales\/student\/image\/.*/ 
       ]
 };
+
+console.log(jwtOptions);
 
 app.use(expressJWT({ secret: config.secret}).unless(jwtOptions));
 
 app.use(uri+'user', user);
 app.use(uri+'student', student);
+app.use(URL+'/sendmail', mail);
 
 
 module.exports = app;

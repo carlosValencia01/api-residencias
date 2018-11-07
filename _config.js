@@ -8,7 +8,7 @@ module.exports = {
     dbname:"credentials-db",
     password:"123456",
 
-    // SENDGRID_APIKEY: "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",
-    // sender_email:"cideti@ittepic.edu.mx",
+    SENDGRID_APIKEY: "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",
+    sender_email:"cideti@ittepic.edu.mx",
 
   };
