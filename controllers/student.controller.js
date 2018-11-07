@@ -98,10 +98,9 @@ const create = (req, res, next) => {
 
 const createWithoutImage = (req, res) => {
     const student = req.body;
+    console.log(student);
     _student.create(student).then(created => {
-        res.json({
-            presentation: created
-        });
+        res.json(created);
     }).catch(err =>
         res.status(status.INTERNAL_SERVER_ERROR).json({
             error: err.toString()
@@ -145,11 +144,16 @@ const getOne = (req, res) => {
     const { _id } = req.params;
     const query = { _id: _id };
 
+    if(_id!='1') {
+
     _student.findById(query, (err, student) => {
         if (err) {
-            res.status(status.INTERNAL_SERVER_ERROR).json({
-                error: err.toString()
+            res.status(status.NOT_FOUND).json({
+                error: 'No se encontro la imagen para este registro'
             });
+            /*res.status(status.INTERNAL_SERVER_ERROR).json({
+                error: err.toString()
+            });*/
         }
         if (student.filename) {
             // console.log('Entro AQUI');
@@ -161,7 +165,12 @@ const getOne = (req, res) => {
             });
         }
 
-    })
+    });
+    }else {
+        res.status(status.NOT_FOUND).json({
+            error: 'No se encontro la imagen para este registro'
+        });
+    }
 }
 /*
 const create = (req,res) => {
