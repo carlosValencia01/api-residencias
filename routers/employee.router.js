@@ -14,44 +14,45 @@ var storage = multer.diskStorage({
 })
 let upload = multer({ storage: storage })
 
-module.exports = (wagner) => {
-    const studentCtrl = wagner.invoke((Student) =>
-      require('../controllers/student.controller')(Student));
 
-    router.get('/', (req, res) => studentCtrl.getAll(req, res));
-    router.get('/:_id', (req, res) => studentCtrl.getById(req, res));
-    
+module.exports = (wagner) => {
+    const employeeCtrl = wagner.invoke((Employee) =>
+      require('../controllers/employee.controller')(Employee));
+
+    router.get('/', (req, res) => employeeCtrl.getAll(req, res));
+
+    router.get('/:_id', (req, res) => employeeCtrl.getById(req, res));
     
     router.get('/image/:_id',  (req, res) => 
-    studentCtrl.getOne(req, res));
+    employeeCtrl.getOne(req, res));
     
     router.get('/search/:search', (req, res) => 
-    studentCtrl.search(req, res));
+    employeeCtrl.search(req, res));
     
     router.post('/', upload.single('image'), function (req, res){
-        console.log('Creando Student con image!');
-        studentCtrl.create(req, res)
+        console.log('Creando Employee con image!');
+        employeeCtrl.create(req, res)
     });
 
     router.post('/create', function (req, res){
-        studentCtrl.createWithoutImage(req, res)
+        employeeCtrl.createWithoutImage(req, res)
     });
     
-    router.post('/login', (req, res) => studentCtrl.getByControlNumber(req, res));
+    router.post('/login', (req, res) => employeeCtrl.getByControlNumber(req, res));
 
     router.put('/:_id', (req, res) => 
-        studentCtrl.updateStudent(req, res));
+        employeeCtrl.updateEmployee(req, res));
 
 
     router.put('/image/:_id', upload.single('image'), function (req, res) {
-        studentCtrl.uploadImage(req, res)
+        employeeCtrl.uploadImage(req, res)
     })
 
 
     /*
     router.post('/', function (req, res) {
         console.log('creating pots');
-        studentCtrl.create(req,res);
+        employeeCtrl.create(req,res);
     });
     */
   

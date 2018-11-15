@@ -12,11 +12,13 @@ module.exports = (wagner) => {
     wagner.factory('db', () => mongoose);
     const User = require('./user.model');
     const Student = require('./student.model');
+    const Employee = require('./employee.model');
 
 
     const models = {
         User,
         Student,
+        Employee
     };
 
     _.each(models, (v, k) => {
