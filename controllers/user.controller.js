@@ -39,6 +39,8 @@ const login = (req, res) => {
 
     let query = { email: email };
 
+    console.log("Si está intentando");
+
     _user.find(query).exec((err, users) => {
         if (err) {
             return res.status(status.INTERNAL_SERVER_ERROR).json({
@@ -46,6 +48,7 @@ const login = (req, res) => {
             });
         }
         if (!users.length) {
+            console.log("No es usuario comun");
             const req2 = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/validarAlumno/${email}/${password}`);
 
             req2.end();
@@ -53,13 +56,14 @@ const login = (req, res) => {
             req2.on('response', (res1) => {
 
                 respApi = res1.body;
+                console.log(respApi);
 
                 if (respApi.data.existe === '1') {
                     let queryNc = { controlNumber: email };
                     _student.findOne(queryNc, (error, oneUser) => {
                         if (error) {
                             return res.status(status.NOT_FOUND).json({
-                                error: 'No se encuentra registrado en la base de datos de credenciales'
+                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                             });
                         } else {
                             if(oneUser) {
@@ -82,12 +86,13 @@ const login = (req, res) => {
                                     });
                             } else {
                                 return res.status(status.NOT_FOUND).json({
-                                    error: 'No se encuentra registrado en la base de datos de credenciales'
+                                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                 });
                             }
                         }
                     });
                 } else {
+                    console.log("No existe en API");
                     return res.status(status.NOT_FOUND).json({
                         error: 'Número de control o NIP incorrectos'
                     });
