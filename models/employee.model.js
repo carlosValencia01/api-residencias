@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 let employeeSchema = new mongoose.Schema({
-    rfc: { type: String },
+    rfc: { type: String, unique:true },
     name: {
         firstName: { type: String },
         lastName: { type: String },
