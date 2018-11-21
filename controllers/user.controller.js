@@ -53,8 +53,6 @@ const login = (req, res) => {
             req2.end();
 
             req2.on('response', (res1) => {
-
-
                 respApi = res1.body;
                 console.log(respApi);
 

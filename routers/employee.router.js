@@ -28,6 +28,9 @@ module.exports = (wagner) => {
     
     router.get('/search/:search', (req, res) => 
     employeeCtrl.search(req, res));
+
+    router.get('/searchrfc/:rfc', (req, res) => 
+    employeeCtrl.searchRfc(req, res));
     
     router.post('/', upload.single('image'), function (req, res){
         console.log('Creando Employee con image!');

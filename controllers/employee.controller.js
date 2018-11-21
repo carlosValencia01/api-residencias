@@ -63,6 +63,8 @@ const getByControlNumber = (req, res) => {
         )
 };
 
+
+
 const search = (req, res) => {
     const { start = 0, limit = 10 } = req.query;
     const { search } = req.params;
@@ -82,6 +84,21 @@ const search = (req, res) => {
     }).exec(handler.handleMany.bind(null, 'employees', res));
 };
 
+const searchRfc = (req, res) => {
+    const { start = 0, limit = 10 } = req.query;
+    const { rfc } = req.params;
+
+    if (!rfc) {
+        return getAll(req, res);
+    }
+    const query = {
+        rfc:rfc
+    };
+    _employee.find(query, null, {
+        skip: +start,
+        limit: +limit
+    }).exec(handler.handleMany.bind(null, 'employees', res));
+};
 
 const create = (req, res, next) => {
     const employee = req.body;
@@ -177,6 +194,7 @@ module.exports = (Employee) => {
         updateOne,
         getAll,
         search,
+        searchRfc,
         uploadImage,
         updateEmployee,
         getByControlNumber,
