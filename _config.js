@@ -7,8 +7,8 @@ module.exports = {
   dbport: "27017",
   dbname: "credentials-db",
   password: "123456",
-  urlAPI: "172.28.1.20",
-  //urlAPI: "148.208.195.120",
+  //urlAPI: "172.28.1.20",
+  urlAPI: "148.208.195.120",
   SENDGRID_APIKEY: "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",
   sender_email: "cideti@ittepic.edu.mx",
 };
