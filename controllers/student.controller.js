@@ -5,6 +5,7 @@ const path = require('path');
 const del = require('del');
 const jwt = require('jsonwebtoken');
 const config = require('../_config');
+const superagent = require('superagent');
 
 let _student;
 
@@ -17,6 +18,34 @@ const getById = (req, res) => {
     const { _id } = req.params;
     _student.find({ _id: _id })
         .exec(handler.handleOne.bind(null, 'student', res));
+};
+
+const verifyStatus = (req, res) => {
+    const { nc } = req.params;
+
+    const req3 = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/alumnoSeleccionMaterias/${nc}/${config.period}`);
+
+    req3.end();
+
+    //Verificamos que tenga carga activa
+    req3.on('response', (res2) => {
+        respApi2 = res2.body;
+        console.log(respApi2);
+
+        //Tiene carga activa
+        if (respApi2 && respApi2.error === "FALSE") {
+            console.log("Si tiene materias cargadas");
+            return res.status(status.OK).json({
+                status: 1,
+                msg:'Si tiene materias cargadas'
+            });
+        } else {
+            return res.status(status.UNAUTHORIZED).json({
+                status: 0,
+                error: 'No puede ingresar debido a que no es alumno del periodo actual (No tiene materias cargadas)'
+            });
+        }
+    });
 };
 
 const getByControlNumber = (req, res) => {
@@ -93,7 +122,8 @@ const create = (req, res, next) => {
     }).catch(err =>
         res.status(status.INTERNAL_SERVER_ERROR).json({
             error: err.toString()
-        }));
+        })
+    );
 }
 
 const createWithoutImage = (req, res) => {
@@ -144,29 +174,29 @@ const getOne = (req, res) => {
     const { _id } = req.params;
     const query = { _id: _id };
 
-    if(_id!='1') {
+    if (_id != '1') {
 
-    _student.findById(query, (err, student) => {
-        if (err) {
-            res.status(status.NOT_FOUND).json({
-                error: 'No se encontro la imagen para este registro'
-            });
-            /*res.status(status.INTERNAL_SERVER_ERROR).json({
-                error: err.toString()
-            });*/
-        }
-        if (student.filename) {
-            // console.log('Entro AQUI');
-            res.set('Content-Type', 'image/jpeg');
-            fs.createReadStream(path.join('images', student.filename)).pipe(res);
-        } else {
-            res.status(status.NOT_FOUND).json({
-                error: 'No se encontro la imagen para este registro'
-            });
-        }
+        _student.findById(query, (err, student) => {
+            if (err) {
+                res.status(status.NOT_FOUND).json({
+                    error: 'No se encontro la imagen para este registro'
+                });
+                /*res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                });*/
+            }
+            if (student.filename) {
+                // console.log('Entro AQUI');
+                res.set('Content-Type', 'image/jpeg');
+                fs.createReadStream(path.join('images', student.filename)).pipe(res);
+            } else {
+                res.status(status.NOT_FOUND).json({
+                    error: 'No se encontro la imagen para este registro'
+                });
+            }
 
-    });
-    }else {
+        });
+    } else {
         res.status(status.NOT_FOUND).json({
             error: 'No se encontro la imagen para este registro'
         });
@@ -196,6 +226,7 @@ module.exports = (Student) => {
         updateStudent,
         getByControlNumber,
         getById,
+        verifyStatus,
         createWithoutImage
     });
 };
