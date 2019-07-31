@@ -7,8 +7,8 @@ const sg = require('sendgrid')(config.SENDGRID_APIKEY);
 module.exports.send = (params, done) => {
     let { to_email, to_name, subject, message, type, sender } = params;
 
-    //from = config.sender_email;
-    from = sender;
+    from = config.sender_email;
+    //from = sender;
 
     mail = new helper.Mail();
 
@@ -24,8 +24,6 @@ module.exports.send = (params, done) => {
     mail.addPersonalization(personalization);
     content = new helper.Content(type, message);
     mail.addContent(content);
-
-    // console.log("Mensaje:"+message);
 
     var request = sg.emptyRequest({
         method: 'POST',
