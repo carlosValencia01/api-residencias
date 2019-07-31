@@ -9,7 +9,7 @@ module.exports = {
   password: "123456",
   // urlAPI: "172.28.1.20",
   urlAPI: "148.208.195.120",
-  SENDGRID_APIKEY: "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",
+  SENDGRID_APIKEY: "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",
   sender_email: "cideti@ittepic.edu.mx",
   period:"20191"
 };
