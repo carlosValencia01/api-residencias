@@ -3,33 +3,17 @@ const send = require('../utils/sendmail');
 const fs = require('fs');
 const path = require('path');
 
-const filePath = path.resolve('./templates/', 'inscription.html');
+let _inscription;
 
-const sendmail = (req, res) => {
+const sendInscriptionMail = (req, res) => {
     console.log("Sending mail...");
-    let { to_email, to_name, subject, sender, name } = req.body;
+    const filePath = path.resolve('./templates/', 'inscription.html');
 
     fs.readFile(filePath, {encoding: 'utf-8'}, function(err, data) {
         if (!err) {
-            const env = {
-                to_email: to_email,
-                to_name: to_name,
-                subject: subject,
-                message: data,
-                type: "text/html",
-                sender: sender
-            }
-            send.send(env, function (data) {
-                if (data.code !== 202) {
-                    res.status(status.BAD_REQUEST);
-                    return res.json({ status: status.BAD_REQUEST, errorCode: data.code });
-                }
-        
-                console.log(data);
-        
-                res.status(status.OK);
-                res.json({ code: 200, message: 'Email enviado correctamente', detail: 'OK' });
-            });
+            req.body.message= data;
+            saveEmail(req, res);
+            return sendMail(req, res);
         } else {
             console.log(err);
             res.status(status.BAD_REQUEST);
@@ -38,8 +22,49 @@ const sendmail = (req, res) => {
     });
 };
 
-module.exports = () => {
+const sendOtherMail= (req, res) => {
+    req.body.message= "hola";
+    return sendMail(req, res);
+}
+
+const sendMail= (req, res) => {
+    let { to_email, to_name, subject, sender, name, message} = req.body;
+
+    const env = {
+        to_email: to_email,
+        to_name: to_name,
+        subject: subject,
+        message: message,
+        type: "text/html",
+        sender: sender
+    }
+    send.send(env, function (data) {
+        if (data.code !== 202) {
+            res.status(status.BAD_REQUEST);
+            return res.json({ status: status.BAD_REQUEST, errorCode: data.code });
+        }
+
+        console.log(data);
+
+        res.status(status.OK);
+        res.json({ code: 200, message: 'Email enviado correctamente', detail: 'OK' });
+    });
+}
+
+const saveEmail= (req, res)=>{
+    _inscription.create({email:req.body.to_email}).then(saved=>{
+        res.json(saved);
+    }).catch(err=>{
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        });
+    });
+}
+
+module.exports = (Inscription) => {
+    _inscription= Inscription;
     return ({
-        sendmail
+        sendInscriptionMail,
+        sendOtherMail
     });
 };

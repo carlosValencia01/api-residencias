@@ -1,10 +1,14 @@
 const router = require('express').Router();
 
-module.exports = () => {
-    const mailCtrl = require('../controllers/mail.controller')();
+module.exports = (wagner) => {
+    const mailCtrl = wagner.invoke((Inscription) =>
+        require('../controllers/mail.controller')(Inscription));
 
     router.post('/', (req, res) =>
-        mailCtrl.sendmail(req, res));
+        mailCtrl.sendInscriptionMail(req, res));
+
+    router.post('/other', (req, res) =>
+        mailCtrl.sendOtherMail(req, res));
 
     return router;
 }
