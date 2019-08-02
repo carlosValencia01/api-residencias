@@ -4,7 +4,6 @@ const config = require('../_config');
 const status = require('http-status');
 const superagent = require('superagent');
 
-
 let _user;
 let _student;
 let _employee;
