@@ -7,8 +7,5 @@ module.exports = (wagner) => {
     router.post('/', (req, res) =>
         mailCtrl.sendInscriptionMail(req, res));
 
-    router.post('/other', (req, res) =>
-        mailCtrl.sendOtherMail(req, res));
-
     return router;
 }

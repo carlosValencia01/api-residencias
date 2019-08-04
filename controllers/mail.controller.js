@@ -1,33 +1,14 @@
 const status = require('http-status');
-const send = require('../utils/sendmail');
 const fs = require('fs');
 const path = require('path');
+const util= require('util');
+const send = require('../utils/sendmail');
+
+const readFile = util.promisify(fs.readFile);
 
 let _inscription;
 
-const sendInscriptionMail = (req, res) => {
-    console.log("Sending mail...");
-    const filePath = path.resolve('./templates/', 'inscription.html');
-
-    fs.readFile(filePath, {encoding: 'utf-8'}, function(err, data) {
-        if (!err) {
-            req.body.message= data;
-            saveEmail(req, res);
-            return sendMail(req, res);
-        } else {
-            console.log(err);
-            res.status(status.BAD_REQUEST);
-            res.json({ code: 400, message: 'Ocurrió un error', detail: err});
-        }
-    });
-};
-
-const sendOtherMail= (req, res) => {
-    req.body.message= "hola";
-    return sendMail(req, res);
-}
-
-const sendMail= (req, res) => {
+const sendMail= (req, res, callback)=>{
     let { to_email, to_name, subject, sender, name, message} = req.body;
 
     const env = {
@@ -38,26 +19,48 @@ const sendMail= (req, res) => {
         type: "text/html",
         sender: sender
     }
+
     send.send(env, function (data) {
         if (data.code !== 202) {
             res.status(status.BAD_REQUEST);
-            return res.json({ status: status.BAD_REQUEST, errorCode: data.code });
+            return res.json({ status: status.BAD_REQUEST, errorCode: data.code, code: data.code});
         }
-
         console.log(data);
 
         res.status(status.OK);
         res.json({ code: 200, message: 'Email enviado correctamente', detail: 'OK' });
     });
-}
+    callback();
+};
 
-const saveEmail= (req, res)=>{
-    _inscription.create({email:req.body.to_email}).then(saved=>{
-        res.json(saved);
-    }).catch(err=>{
-        res.status(status.INTERNAL_SERVER_ERROR).json({
-            error: err.toString()
+const sendmail= util.promisify(sendMail);
+
+const sendInscriptionMail = (req, res) => {
+    console.log("Sending mail...");
+    const filePath = path.resolve('./templates/', 'inscription.html');
+
+    readFile(filePath, {encoding: 'utf-8'}).then(data=>{
+        req.body.message= data;
+        req.body.subject= "Proceso de inscripción";
+
+        sendmail(req, res).then(()=>{
+            saveEmail(req.body.to_email)
+        }).catch(err=>{
+            res.status(status.BAD_REQUEST);
+            res.json({ code: 400, message: 'Ocurrió un error al enviar el email', detail: err});
         });
+    }).catch(err=>{
+        console.log(err);
+        res.status(status.BAD_REQUEST);
+        res.json({ code: 400, message: 'Ocurrió un error al buscar la plantilla', detail: err});
+    });
+};
+
+const saveEmail= (email)=>{
+    _inscription.create({email:email}).then(()=>{
+        return true;
+    }).catch(()=>{
+        return false;
     });
 }
 
@@ -65,6 +68,5 @@ module.exports = (Inscription) => {
     _inscription= Inscription;
     return ({
         sendInscriptionMail,
-        sendOtherMail
     });
 };

@@ -37,7 +37,7 @@ const jwtOptions = {
   path: [
         `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, 
         `${uri}student/create`, `${uri}sendmail`, `${uri}employee/create`,
-        `${uri}user/send/code`, `${uri}sendmail/other`,
+        `${uri}user/send/code`,
         /^\/escolares\/credenciales\/student\/image\/.*/,
         /^\/escolares\/credenciales\/employee\/image\/.*/ 
       ]
