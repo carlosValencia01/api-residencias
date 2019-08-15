@@ -6,7 +6,7 @@ const send = require('../utils/sendmail');
 let _inscription;
 
 const sendMail= (req, res, callback)=>{
-    let { to_email, to_name, subject, sender, name, message} = req.body;
+    let { to_email, to_name, subject, sender, message} = req.body;
 
     const env = {
         to_email: to_email,
@@ -34,12 +34,14 @@ const sendmail= util.promisify(sendMail);
 
 const sendGraduationMail = (req, res) => {
     const {id} = req.body;
-    console.log(req.body);
+    let nombre = req.body.name;
     
-    let message = require('../templates/egraduation')(id)
-    console.log(message);  
+    let message = require('../templates/egraduation')(id,nombre)
     req.body.message= message;
     req.body.subject= "Ceremonia de graduación";
+    req.body.sender= "prueba@gmail.com"
+
+    console.log('Correo enviado a: '+nombre);
 
     sendmail(req, res).catch(err=>{
         res.status(status.BAD_REQUEST);
