@@ -5,7 +5,7 @@ module.exports = (wagner) => {
         require('../controllers/mail.controller')(Inscription));
 
     router.post('/', (req, res) =>
-        mailCtrl.sendInscriptionMail(req, res));
+        mailCtrl.sendTemplateMail(req, res));
 
     return router;
 }
