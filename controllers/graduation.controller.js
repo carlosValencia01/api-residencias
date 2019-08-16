@@ -39,7 +39,7 @@ const sendGraduationMail = (req, res) => {
     let message = require('../templates/egraduation')(id,nombre)
     req.body.message= message;
     req.body.subject= "Ceremonia de graduación";
-    req.body.sender= "prueba@gmail.com"
+    req.body.sender= "Comunicación y Difusión <comunicacion@ittepic.edu.mx>"
 
     console.log('Correo enviado a: '+nombre);
 
