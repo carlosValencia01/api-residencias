@@ -111,21 +111,21 @@ const getAllMailsFromDb= ()=>{
 
 const chooseTemplate= (index)=>{
     switch(index){
-        case 0:
+        case 1:
             return {
                 file:"inscription.html",
                 sender:"escolares_05@ittepic.edu.mx",
                 subject:"Proceso de inscripción"
             };
             break;
-        case 1:
+        case 2:
             return {
                 file:"english.html",
                 sender:"coordinacion.le@ittepic.edu.mx",
                 subject:"Promoción de cursos de inglés"
             };
             break;
-        case 2:
+        case 3:
             return {
                 file:"credentials.html",
                 sender:"escolares_05@ittepic.edu.mx",
