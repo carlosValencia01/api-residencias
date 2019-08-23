@@ -14,12 +14,14 @@ module.exports = (wagner) => {
     const Student = require('./student.model');
     const Employee = require('./employee.model');
     const Inscription = require('./inscription.model');
+    const Period= require('./period.model');
 
     const models = {
         User,
         Student,
         Employee,
-        Inscription
+        Inscription,
+        Period
     };
 
     _.each(models, (v, k) => {

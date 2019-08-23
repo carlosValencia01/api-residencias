@@ -1,8 +1,6 @@
 const helper = require('sendgrid').mail;
-const fs = require("fs");
 const config = require('../_config');
 const sg = require('sendgrid')(config.SENDGRID_APIKEY);
-
 
 module.exports.send = (params, done) => {
     let { to_email, to_name, subject, message, type, sender } = params;
@@ -10,30 +8,35 @@ module.exports.send = (params, done) => {
     //from = config.sender_email;
     from = sender;
 
-    mail = new helper.Mail();
+    content = new helper.Content(type, message);
 
     from_email = new helper.Email(from);
-    mail.setFrom(from_email);
 
-    mail.setSubject(subject);
+    mail = new helper.Mail();
+
     personalization = new helper.Personalization();
+
+    mail.addContent(content);
 
     for(const email of to_email){
         personalization.addTo(new helper.Email(email, to_name));
-    };
+    }
 
     mail.addPersonalization(personalization);
-    content = new helper.Content(type, message);
-    mail.addContent(content);
+
+    mail.setFrom(from_email);
+
+    mail.setSubject(subject);
 
     var request = sg.emptyRequest({
         method: 'POST',
         path: '/v3/mail/send',
-        body: mail.toJSON(),
+        body: mail.toJSON()
     });
 
     sg.API(request, function (error, response) {
         var res2 = {};
+
         res2.code = response.statusCode;
         //res.status(status.BAD_REQUEST);
         switch (res2.code) {
