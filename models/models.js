@@ -14,13 +14,15 @@ module.exports = (wagner) => {
     const Student = require('./student.model');
     const Employee = require('./employee.model');
     const Inscription = require('./inscription.model');
-    const Request =  require('./request.model');
+    const Period = require('./period.model');
+    const Request = require('./request.model');
 
     const models = {
         User,
         Student,
         Employee,
         Inscription,
+        Period,
         Request,
     };
 
