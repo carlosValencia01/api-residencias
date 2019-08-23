@@ -7,16 +7,13 @@ const sendMail = require('./mail.controller');
 const readFile = util.promisify(fs.readFile);
 
 let _inscription;
-let _period;
 
 const sendTemplateMail = async (req, res) => {
     const template = chooseTemplate(req.body.index);
 
     const filePath = path.resolve('./templates/', template.file);
 
-    readFile(filePath, {
-        encoding: 'utf-8'
-    }).then(data => {
+    readFile(filePath, {encoding: 'utf-8'}).then(data => {
         req.body.sender = template.sender;
         req.body.subject = template.subject;
         req.body.message = data;
@@ -25,12 +22,7 @@ const sendTemplateMail = async (req, res) => {
             getAllMailsFromDb().then(allEmails => {
                 asyncFor(req, res, allEmails);
             }).catch(err => {
-                res.json({
-                    code: 400,
-                    message: 'Ocurrió un error al buscar los emails en la db',
-                    status: status.BAD_REQUEST,
-                    detail: err
-                });
+                res.json({code: 400, message: 'Ocurrió un error al buscar los emails en la db', status: status.BAD_REQUEST, detail: err});
             });
         } else if (req.body.to_email.length > 1) {
             let flag = false;
@@ -52,12 +44,7 @@ const sendTemplateMail = async (req, res) => {
             });
         }
     }).catch(err => {
-        res.json({
-            code: 400,
-            message: 'Error al buscar el template',
-            status: status.BAD_REQUEST,
-            detail: err
-        });
+        res.json({code: 400, message: 'Error al buscar el template', status: status.BAD_REQUEST, detail: err});
     });
 };
 
@@ -74,8 +61,6 @@ const asyncFor = async (req, res, allEmails, save = false) => {
                     await saveEmails(allEmails[i]);
                 }
             }
-            //await changeSentStatus(allEmails[i]);
-
             messages.push(data);
 
             if (data.code !== 202) {
@@ -85,18 +70,10 @@ const asyncFor = async (req, res, allEmails, save = false) => {
             if (i === (allEmails.length - 1)) {
                 for (const message of messages) {
                     if (message.code !== 202) {
-                        return res.json({
-                            code: message.code,
-                            emails: allFailedEmails
-                        });
+                        return res.json({code: message.code, emails: allFailedEmails});
                     }
                 }
-                return res.json({
-                    code: 200,
-                    message: "Emails enviados correctamente",
-                    status: status.OK,
-                    detail: 'OK'
-                });
+                return res.json({code: 200, message: "Emails enviados correctamente", status: status.OK, detail: 'OK'});
             }
         }).catch(err => {
             console.log(err);
@@ -104,37 +81,14 @@ const asyncFor = async (req, res, allEmails, save = false) => {
     }
 };
 
-/*const changeSentStatus= emails=>{
-    return new Promise((resolve, reject)=>{
-        _inscription.updateMany({email: {$in: emails}}, {$set: {sent: true}}).then(_=> {
-            resolve(true);
-        }).catch(() => {
-            reject(false);
-        });
-    });
-};*/
-
 const saveEmails = async emails => {
     let newAllEmails = [];
-
-    await _period.find({
-        active: true
-    }, {
-        _id: 0,
-        id: 1,
-        year: 1
-    }).then(doc => {
-        for (const email of emails) {
-            const newEmails = {
-                email: email,
-                period: doc[0]._doc.year + "" + doc[0]._doc.id,
-                //sent:true
-            };
-            newAllEmails.push(newEmails);
-        }
-    }).catch(err => {
-        console.log(err);
-    });
+    for (const email of emails) {
+        const newEmails = {
+            email: email,
+        };
+        newAllEmails.push(newEmails);
+    }
 
     return new Promise((resolve, reject) => {
         _inscription.create(newAllEmails).then(_ => {
@@ -149,6 +103,7 @@ const getAllMailsFromDb = _ => {
     return new Promise((resolve, reject) => {
         _inscription.distinct("email").then(data => {
             const allEmails = separateEmails(data);
+
             resolve(allEmails);
         }).catch(err => {
             reject(err);
@@ -182,27 +137,26 @@ const chooseTemplate = index => {
         case 1:
             return {
                 file: "inscription.html",
-                    sender: "Servicios escolares <escolares_05@ittepic.edu.mx>",
-                    subject: "Proceso de inscripción"
+                sender: "Servicios escolares <escolares_05@ittepic.edu.mx>",
+                subject: "Proceso de inscripción"
             };
         case 2:
             return {
                 file: "english.html",
-                    sender: "Centro de idiomas <coordinacion.le@ittepic.edu.mx>",
-                    subject: "Promoción de cursos de inglés"
+                sender: "Centro de idiomas <coordinacion.le@ittepic.edu.mx>",
+                subject: "Promoción de cursos de inglés"
             };
         case 3:
             return {
                 file: "credentials.html",
-                    sender: "Servicios escolares <escolares_05@ittepic.edu.mx>",
-                    subject: "Tómate la foto para tu credencial"
+                sender: "Servicios escolares <escolares_05@ittepic.edu.mx>",
+                subject: "Tómate la foto para tu credencial"
             };
     }
 };
 
-module.exports = (Inscription, Period) => {
+module.exports = Inscription => {
     _inscription = Inscription;
-    _period = Period;
     return ({
         sendTemplateMail
     });
