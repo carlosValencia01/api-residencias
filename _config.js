@@ -11,5 +11,5 @@ module.exports = {
   urlAPI: "148.208.195.120",
   SENDGRID_APIKEY: "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",
   sender_email: "cideti@ittepic.edu.mx",
-  period:"20191"
+  period:"20193"
 };
