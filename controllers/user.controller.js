@@ -169,8 +169,8 @@ const login = (req, res) => {
                                             let formatUser = {
                                                 _id: created._id,
                                                 name: {
-                                                    firstName: created.fullName,
-                                                    lastName: created.fullName,
+                                                    firstName: respApi2.data.nombre_alumno,
+                                                    lastName: `${respApi2.data.apellido_paterno} ${respApi2.data.apellido_materno}`,
                                                     fullName: created.fullName
                                                 },
                                                 email: email,
