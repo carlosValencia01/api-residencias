@@ -5,76 +5,77 @@ let _student;
 let _employee;
 
 const getRequestByControlNumber = (req, res) => {
-    const {
-        controlNumber
-    } = req.params;
-    const query = {
-        "graduate.controlNumber": controlNumber
-    };
+    const {controlNumber} = req.params;
+    const query = {"graduate.controlNumber": controlNumber};
 
     _request.findOne(query, (err, request) => {
         if (request) {
             return res.json(request);
         }
-        res.status(status.INTERNAL_SERVER_ERROR)
-            .json({
-                status: status.INTERNAL_SERVER_ERROR,
-                error: 'No existe solicitud para el egresado'
-            });
+        res.json({
+            status: status.INTERNAL_SERVER_ERROR,
+            error: 'No existe solicitud para el egresado'
+        });
     });
 };
 
 const newRequest = async (req, res) => {
     const request = req.body;
-    const {
-        controlNumber
-    } = request.graduate;
-    await _student.findOne({
-        controlNumber: controlNumber
-    }, (err, student) => {
+    const {controlNumber} = request.graduate;
+    await _student.findOne({controlNumber: controlNumber}, (err, student) => {
         if (!err) {
             request.graduate.career = student.career;
         }
     });
-    await _employee.findOne({
-        position: 'JEFE DE DIVISIÓN DE ESTUDIOS PROFESIONALES'
-    }, (err, employee) => {
+    await _employee.findOne({position: 'JEFE DE DIVISIÓN DE ESTUDIOS PROFESIONALES'}, (err, employee) => {
         if (!err) {
             request.headProfessionalStudiesDivision = employee.name.fullName;
         }
     });
-    await _employee.findOne({
-        position: 'COORDINADOR DE TITULACIÓN'
-    }, (err, employee) => {
+    await _employee.findOne({position: 'COORDINADOR DE TITULACIÓN'}, (err, employee) => {
         if (!err) {
             request.degreeCoordinator = employee.name.fullName;
         }
     });
 
-    _request.create(request).then(created =>
+    _request.create(request)
+        .then(created =>
             res.json(created))
         .catch(err =>
             res.json({
-                error: err.toString()
-            })
-            .status(status.INTERNAL_SERVER_ERROR));
+                error: err.toString(),
+                status: status.INTERNAL_SERVER_ERROR
+            }));
 };
 
 const editRequest = (req, res) => {
-    const {
-        _id
-    } = req.params;
-    const request = req.body;
+    const {_id} = req.params;
+    const requestData = req.body;
 
-    _request.findByIdAndUpdate(_id, request, (err, request) => {
+    _request.findOneAndUpdate({_id: _id}, requestData, (err, _) => {
         if (!err) {
-            return res.json(request);
+            return res.json(req.body);
         }
-        res.status(status.INTERNAL_SERVER_ERROR)
-            .json({
-                error: err.toString()
-            });
+        res.json({
+            error: err.toString(),
+            status: status.INTERNAL_SERVER_ERROR
+        });
     });
+};
+
+const updateStatusRequest = (req, res) => {
+    const {_id} = req.params;
+    const {newStatus} = req.body;
+
+    _request.findOneAndUpdate({_id: _id}, {$set: {status: newStatus}}, (err, _) => {
+        if (!err) {
+            return res.json({code: 200});
+        }
+        res.json({
+            error: err.toString(),
+            status: status.INTERNAL_SERVER_ERROR
+        });
+    })
 };
 
 module.exports = (Request, Student, Employee) => {
@@ -85,5 +86,6 @@ module.exports = (Request, Student, Employee) => {
         getRequestByControlNumber,
         newRequest,
         editRequest,
+        updateStatusRequest,
     });
 };

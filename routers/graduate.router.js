@@ -13,5 +13,8 @@ module.exports = (wagner) => {
     router.put('/request/:_id', (req, res) =>
         graduateCtrl.editRequest(req, res));
 
+    router.put('/request/status/:_id', (req, res) =>
+        graduateCtrl.updateStatusRequest(req, res));
+
     return router;
 }
