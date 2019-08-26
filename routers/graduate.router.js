@@ -7,6 +7,9 @@ module.exports = (wagner) => {
     router.get('/request/:controlNumber', (req, res) =>
         graduateCtrl.getRequestByControlNumber(req, res));
 
+    router.get('/request/generate/:_id', (req, res) =>
+        graduateCtrl.generateRequest(req, res));
+
     router.post('/request', (req, res) =>
         graduateCtrl.newRequest(req, res));
 

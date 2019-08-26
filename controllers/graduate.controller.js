@@ -1,4 +1,7 @@
 const status = require('http-status');
+const jsreport = require('jsreport');
+
+const requestTemplate = require('../reports/requestTemplate');
 
 let _request;
 let _student;
@@ -78,6 +81,42 @@ const updateStatusRequest = (req, res) => {
     })
 };
 
+const generateRequest = (req, res) => {
+    const {_id} = req.params;
+    const filename = 'request.pdf';
+
+    _request.findOne({_id: _id}, (err, request) => {
+        if (!err) {
+            return jsreport.render({
+                template: {
+                    content: requestTemplate(request._doc),
+                    engine: 'handlebars',
+                    recipe: 'chrome-pdf',
+                    phantom: {
+                        customPhantomJS: true,
+                        format: "letter",
+                        orientation: "portrait",
+                        margin: {"top": "5px", "left": "10px", "right": "10px", "bottom": "5px"},
+                    }
+                }
+            }).then((out) => {
+                res.writeHead(200, {
+                    'Content-type': 'application/pdf',
+                    'Content-disposition': 'inline; filename=' + filename,
+                    'Access-Control-Allow-Origin': '*'
+                });
+                out.stream.pipe(res);
+            }).catch((e) => {
+                res.end(e.message);
+            });
+        }
+        res.json({
+            status: status.BAD_REQUEST,
+            error: err.toString()
+        });
+    });
+};
+
 module.exports = (Request, Student, Employee) => {
     _request = Request;
     _student = Student;
@@ -87,5 +126,6 @@ module.exports = (Request, Student, Employee) => {
         newRequest,
         editRequest,
         updateStatusRequest,
+        generateRequest,
     });
 };
