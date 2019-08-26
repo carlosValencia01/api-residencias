@@ -57,6 +57,7 @@ const editRequest = (req, res) => {
 
     _request.findOneAndUpdate({_id: _id}, requestData, (err, _) => {
         if (!err) {
+            req.body._id = _._id;
             return res.json(req.body);
         }
         res.json({
