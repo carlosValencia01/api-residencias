@@ -1,5 +1,18 @@
 const status = require('http-status');
-const jsreport = require('jsreport');
+const jsreport = require('jsreport-core')({});
+jsreport.use(require('jsreport-assets')({
+    extensions: {
+        assets: {
+            allowedFiles: "**/*.*",
+            searchOnDiskIfNotFoundInStore: true,
+            rootUrlForLinks: "http://localhost:3003",
+            publicAccessEnabled: true,
+        }
+    }
+}));
+jsreport.use(require('jsreport-phantom-pdf')());
+jsreport.use(require('jsreport-jsrender')());
+jsreport.init();
 
 const requestTemplate = require('../reports/requestTemplate');
 
@@ -84,31 +97,69 @@ const updateStatusRequest = (req, res) => {
 
 const generateRequest = (req, res) => {
     const {_id} = req.params;
-    const filename = 'request.pdf';
+    const filename = 'solicitud de acto protocolario.pdf';
 
     _request.findOne({_id: _id}, (err, request) => {
         if (!err) {
             return jsreport.render({
                 template: {
                     content: requestTemplate(request._doc),
-                    engine: 'handlebars',
-                    recipe: 'chrome-pdf',
+                    engine: 'jsrender',
+                    recipe: 'phantom-pdf',
                     phantom: {
                         customPhantomJS: true,
                         format: "letter",
                         orientation: "portrait",
-                        margin: {"top": "5px", "left": "10px", "right": "10px", "bottom": "5px"},
+                        margin: {"top": "1mm", "left": "25mm", "right": "20mm", "bottom": "10mm"},
+                        headerHeight: "2cm",
+                        header: `
+                            <table style="width:100%;display:inline-flex;justify-content:center;font-size:8px;color:darkgray;">
+                                <tr>
+                                    <td align="left" height="70">
+                                        <div align="left">
+                                            <img alt="Secretaría de Educación Pública" width="150" src="/assets/images/logosep.png">
+                                        </div>
+                                    </td>
+                                    <td align="right" height="70">
+                                        <div align="right">
+                                            <img alt="Tecnológico Nacional de México" width="150"  src="/assets/images/logotecnm.png"><br>
+                                            <span style="font-weight:bold;font-size:10px;">Instituto Tecnológico de Tepic</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>`,
+                        footerHeight: "2cm",
+                        footer: `
+                            <table style="width:100%;display:inline-flex;justify-content:center;font-size:8px;color:gray;">
+                                <tr>
+                                    <td>
+                                        <div align="left">
+                                            <img alt="ITT" height="30" src="/assets/images/logotec.png">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="margin:0px 10px;" align="center">
+                                            <span>Av. Tecnológico # 2595, Col. Lagos del Country. C.P. 63175</span><br>
+                                            <span>Tepic, Nayarit, México. Tel: (311) 211 94 00 y 2 11 94 01. info@ittepic.edu.mx</span><br>
+                                            <b>https://www.tecnm.mx/</b> | <b>http://www.tepic.tecnm.mx/</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div align="right">
+                                            <img alt="ITT" height="30" src="/assets/images/logotec.png">
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>`
                     }
                 }
-            }).then((out) => {
+            }).then(out => {
                 res.writeHead(200, {
                     'Content-type': 'application/pdf',
                     'Content-disposition': 'inline; filename=' + filename,
                     'Access-Control-Allow-Origin': '*'
                 });
                 out.stream.pipe(res);
-            }).catch((e) => {
-                res.end(e.message);
             });
         }
         res.json({
