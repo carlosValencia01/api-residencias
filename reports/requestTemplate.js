@@ -1,15 +1,49 @@
 const moment = require('moment');
 moment.locale('es');
 
-module.exports = function(request) {
+const header = () => {
+    const template = `
+        <html lang="es">
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+                <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+            </head>
+            <body>
+            <table style="width:100%;font-family:'Montserrat';display:inline-flex;justify-content:center;font-size:8px;color:darkgray;">
+                <tr>
+                    <td align="left">
+                        <div align="left">
+                            <span width="150"></span>
+                            <img alt="Secretaría de Educación Pública" width="100" src="http://www.tepic.tecnm.mx/images/sepfooter.png">
+                        </div>
+                    </td>
+                    <td align="right">
+                        <div align="right">
+                            <img alt="Tecnológico Nacional de México" width="100"  src="http://www.tepic.tecnm.mx/images/Logo%20TecNM.png"><br>
+                            <span style="font-weight:bold;font-size:8px;">Instituto Tecnológico de Tepic</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>`;
+    return template;
+};
+
+const body = (request) => {
     let template = `
         <html lang="es">
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+                <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
             </head>
             <body>
-            <div style="margin:0px 0px;font-family: 'Helvetica Neue';color:black;font-size:11px;">
+            <img width="150" src="http://www.tepic.tecnm.mx/images/sepfooter.png" style="display:none;">
+            <img width="150" src="http://www.tepic.tecnm.mx/images/Logo%20TecNM.png" style="display:none;">
+            <img width="150" src="http://www.ittepic.edu.mx/images/escudo_itt_200x200.png" style="display:none;">
+            <div style="margin:0px 0px;font-family:'Montserrat';color:black;font-size:11px;">
                 <div>
                     <div style="width:100%;">
                         <div>
@@ -94,4 +128,47 @@ module.exports = function(request) {
         </html>
     `;
     return template;
+};
+
+const footer = () => {
+    const template = `
+        <html lang="es">
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+                <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+            </head>
+            <body>
+                <table style="width:100%;font-family:'Montserrat';display:inline-flex;justify-content:center;font-size:8px;color:gray;">
+                    <tr>
+                        <td>
+                            <div align="left">
+                                <img alt="ITT" height="35" src="http://www.ittepic.edu.mx/images/escudo_itt_200x200.png">
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-family:'Montserrat';margin:0px 10px;" align="center">
+                                <span>Av. Tecnológico # 2595, Col. Lagos del Country. C.P. 63175</span><br>
+                                <span>Tepic, Nayarit, México. Tel: (311) 211 94 00 y 2 11 94 01. info@ittepic.edu.mx</span><br>
+                                <b>https://www.tecnm.mx/</b> | <b>http://www.tepic.tecnm.mx/</b>
+                            </div>
+                        </td>
+                        <td>
+                            <div align="right">
+                                <img alt="ITT" height="35" src="http://www.ittepic.edu.mx/images/escudo_itt_200x200.png">
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+        </body>
+        </html>`;
+    return template;
+};
+
+module.exports = () => {
+    return ({
+        header,
+        body,
+        footer,
+    });
 };
