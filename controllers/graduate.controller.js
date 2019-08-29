@@ -14,7 +14,7 @@ jsreport.use(require('jsreport-phantom-pdf')());
 jsreport.use(require('jsreport-jsrender')());
 jsreport.init();
 
-const requestTemplate = require('../reports/requestTemplate');
+const requestTemplate = require('../reports/requestTemplate')();
 
 let _request;
 let _student;
@@ -103,54 +103,18 @@ const generateRequest = (req, res) => {
         if (!err) {
             return jsreport.render({
                 template: {
-                    content: requestTemplate(request._doc),
+                    content: requestTemplate.body(request._doc),
                     engine: 'jsrender',
                     recipe: 'phantom-pdf',
                     phantom: {
                         customPhantomJS: true,
                         format: "letter",
                         orientation: "portrait",
-                        margin: {"top": "1mm", "left": "25mm", "right": "20mm", "bottom": "10mm"},
-                        headerHeight: "2cm",
-                        header: `
-                            <table style="width:100%;display:inline-flex;justify-content:center;font-size:8px;color:darkgray;">
-                                <tr>
-                                    <td align="left" height="70">
-                                        <div align="left">
-                                            <img alt="Secretaría de Educación Pública" width="150" src="/assets/images/logosep.png">
-                                        </div>
-                                    </td>
-                                    <td align="right" height="70">
-                                        <div align="right">
-                                            <img alt="Tecnológico Nacional de México" width="150"  src="/assets/images/logotecnm.png"><br>
-                                            <span style="font-weight:bold;font-size:10px;">Instituto Tecnológico de Tepic</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>`,
+                        margin: {"top": "0mm", "left": "25mm", "right": "20mm", "bottom": "10mm"},
+                        headerHeight: "3cm",
+                        header: requestTemplate.header(),
                         footerHeight: "2cm",
-                        footer: `
-                            <table style="width:100%;display:inline-flex;justify-content:center;font-size:8px;color:gray;">
-                                <tr>
-                                    <td>
-                                        <div align="left">
-                                            <img alt="ITT" height="30" src="/assets/images/logotec.png">
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style="margin:0px 10px;" align="center">
-                                            <span>Av. Tecnológico # 2595, Col. Lagos del Country. C.P. 63175</span><br>
-                                            <span>Tepic, Nayarit, México. Tel: (311) 211 94 00 y 2 11 94 01. info@ittepic.edu.mx</span><br>
-                                            <b>https://www.tecnm.mx/</b> | <b>http://www.tepic.tecnm.mx/</b>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div align="right">
-                                            <img alt="ITT" height="30" src="/assets/images/logotec.png">
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>`
+                        footer: requestTemplate.footer()
                     }
                 }
             }).then(out => {
