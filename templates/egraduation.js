@@ -31,7 +31,7 @@ module.exports = (ID,NOMBRE) => {
         <td align="center" style="box-sizing: border-box; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; word-break: break-word;"> 
           <div style="padding:20px;border-radius:20px ;margin-right:50px; margin-left:50px;background: linear-gradient(to bottom right,#212F8C,#2A359A);">
             <div style="text-align:center;">
-            <img src="https://marketing-image-production.s3.amazonaws.com/uploads/104a15fea86f980dcc9475be128472463e9367502d518eb33938bb21e06f0994d1faa0b8e21ec122a328af6f785b7b3e0c734417e23e6fea9b0b02109f919d53.png" width="50%">
+            <img src="https://i.ibb.co/pRt37K8/TecNM2.png" width="85%" height="50%">
             </div>
             <div style="margin: 20px; padding:10px; background: #F7F7F7; border-radius:20px;">
                 <div style="font-size:30px; text-align:center">
