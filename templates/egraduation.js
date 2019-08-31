@@ -44,7 +44,7 @@ module.exports = (ID,NOMBRE) => {
                     <p>Recibe un cordial saludo<br><b>${NOMBRE}</b></p>
                 </div>
                 <div style="font-size:15px;">
-                    <p>Se le hace entrega de la invitación para asistir a la <b>Ceremonia de Graduación ITTepic</b> que se llevará a cabo el día <b>4 de Octubre</b> del presente año.</p>
+                    <p>Se le hace entrega de la invitación para asistir a la <b>Ceremonia de Graduación ITTepic</b> que se llevará a cabo el día <b>4 de Octubre</b> del presente año a las <b>5:00 p.m</b>,<br> en el <b>Teatro del pueblo Alí Chumacero</b>.</p>
                 </div>
                 <hr style="height:2px; background:black">
                 <div style="font-size:20px;">
