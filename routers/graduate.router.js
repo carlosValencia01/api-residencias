@@ -4,6 +4,9 @@ module.exports = (wagner) => {
     const graduateCtrl = wagner.invoke((Request, Student, Employee) =>
         require('../controllers/graduate.controller')(Request, Student, Employee));
 
+    router.get('/request/all', (req, res) =>
+        graduateCtrl.getAllRequests(req, res));
+
     router.get('/request/:controlNumber', (req, res) =>
         graduateCtrl.getRequestByControlNumber(req, res));
 
@@ -23,4 +26,4 @@ module.exports = (wagner) => {
         graduateCtrl.updateStatusRequest(req, res));
 
     return router;
-}
+};
