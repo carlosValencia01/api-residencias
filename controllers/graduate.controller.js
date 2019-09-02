@@ -133,6 +133,18 @@ const generateRequest = (req, res) => {
     });
 };
 
+const getAllRequests= (req, res)=>{
+    _request.find({}, {_id:0, "graduate.name.fullName":1, "graduate.controlNumber":1, editionDate:1, status:1}, (err, data)=>{
+        if(data){
+            return res.json(data);
+        }
+        res.json({
+            status: status.INTERNAL_SERVER_ERROR,
+            error: 'No hay solicitudes'
+        });
+    })
+};
+
 module.exports = (Request, Student, Employee) => {
     _request = Request;
     _student = Student;
@@ -143,5 +155,6 @@ module.exports = (Request, Student, Employee) => {
         editRequest,
         updateStatusRequest,
         generateRequest,
+        getAllRequests
     });
 };
