@@ -10,6 +10,9 @@ module.exports = (wagner) => {
     router.get('/request/generate/:_id', (req, res) =>
         graduateCtrl.generateRequest(req, res));
 
+    router.get('/register/generate/:_id', (req, res) =>
+        graduateCtrl.generateRegister(req, res));
+
     router.post('/request', (req, res) =>
         graduateCtrl.newRequest(req, res));
 

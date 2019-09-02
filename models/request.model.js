@@ -112,6 +112,10 @@ let requestSchema = new mongoose.Schema({
         required: true,
         uppercase: true,
         trim: true
+    },
+    observations: {
+        type: String,
+        trim: true
     }
 });
 
