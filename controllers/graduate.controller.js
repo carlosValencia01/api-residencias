@@ -172,14 +172,16 @@ const generateRegister = (req, res) => {
 };
 
 const getAllRequests= (req, res)=>{
-    _request.find({}, {_id:0, "graduate.name.fullName":1, "graduate.career":1, editionDate:1, status:1}, (err, data)=>{
-        if(data){
-            return res.json(data);
-        }
-        res.json({
-            status: status.INTERNAL_SERVER_ERROR,
-            error: 'No hay solicitudes'
-        });
+    _request.find({},
+        {_id:0, "graduate.name.fullName":1, "graduate.controlNumber": 1, "graduate.career":1, editionDate:1, status:1},
+        (err, data)=>{
+            if(data){
+                return res.json(data);
+            }
+            res.json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: 'No hay solicitudes'
+            });
     })
 };
 
