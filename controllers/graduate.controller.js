@@ -1,19 +1,7 @@
 const status = require('http-status');
-const jsreport = require('jsreport-core')({});
-jsreport.use(require('jsreport-assets')({
-    extensions: {
-        assets: {
-            allowedFiles: "**/*.*",
-            searchOnDiskIfNotFoundInStore: true,
-            rootUrlForLinks: "http://localhost:3003",
-            publicAccessEnabled: true,
-        }
-    }
-}));
-jsreport.use(require('jsreport-phantom-pdf')());
-jsreport.use(require('jsreport-jsrender')());
-jsreport.init();
 
+const generatePDFReport = require('../utils/generateReport');
+const registerTemplate = require('../reports/registerTemplate')();
 const requestTemplate = require('../reports/requestTemplate')();
 
 let _request;
@@ -80,42 +68,59 @@ const editRequest = (req, res) => {
     });
 };
 
-const updateStatusRequest = (req, res) => {
+const updateStatusRequest = async (req, res) => {
     const {_id} = req.params;
-    const {newStatus} = req.body;
+    const {newStatus, observation} = req.body;
 
-    _request.findOneAndUpdate({_id: _id}, {$set: {status: newStatus}}, (err, _) => {
+   await  _request.findOneAndUpdate({_id: _id}, {$set: {status: newStatus}}, async (err, _) => {
         if (!err) {
-            return res.json({code: 200});
+            let errors = false;
+            if (newStatus === 'ENVIADO') {
+                await _request.findOneAndUpdate({_id: _id}, {$set: {editionDate: new Date()}},  (err, _) => {
+                    if (err) {
+                        errors = true;
+                    }
+                });
+            }
+            if (observation) {
+                await _request.findOneAndUpdate({_id: _id}, {observations: observation}, (err, _) => {
+                    if (err) {
+                        errors = true;
+                    }
+                });
+            }
+            if (!errors) {
+                return await res.json({code: 200});
+            } else {
+                await res.json({
+                    error: err.toString(),
+                    status: status.INTERNAL_SERVER_ERROR
+                });
+            }
         }
-        res.json({
+        await res.json({
             error: err.toString(),
             status: status.INTERNAL_SERVER_ERROR
         });
-    })
+    });
 };
 
 const generateRequest = (req, res) => {
     const {_id} = req.params;
-    const filename = 'solicitud de acto protocolario.pdf';
+    const filename = 'Solicitud de acto protocolario.pdf';
 
     _request.findOne({_id: _id}, (err, request) => {
         if (!err) {
-            return jsreport.render({
-                template: {
-                    content: requestTemplate.body(request._doc),
-                    engine: 'jsrender',
-                    recipe: 'phantom-pdf',
-                    phantom: {
-                        customPhantomJS: true,
-                        format: "letter",
-                        orientation: "portrait",
-                        margin: {"top": "0mm", "left": "25mm", "right": "20mm", "bottom": "10mm"},
-                        headerHeight: "3cm",
-                        header: requestTemplate.header(),
-                        footerHeight: "2cm",
-                        footer: requestTemplate.footer()
-                    }
+            return generatePDFReport({
+                content: requestTemplate.body(request._doc),
+                header: requestTemplate.header(),
+                footer: requestTemplate.footer(),
+                config: {
+                    format: 'letter',
+                    orientation: 'portrait',
+                    margin: {'top': '0mm', 'left': '25mm', 'right': '20mm', 'bottom': '10mm'},
+                    headerHeight: '3cm',
+                    footerHeight: '2cm'
                 }
             }).then(out => {
                 res.writeHead(200, {
@@ -133,6 +138,53 @@ const generateRequest = (req, res) => {
     });
 };
 
+const generateRegister = (req, res) => {
+    const {_id} = req.params;
+    const filename = 'Registro de proyecto.pdf';
+
+    _request.findOne({_id: _id}, (err, request) => {
+        if (!err) {
+            return generatePDFReport({
+                content: registerTemplate.body(request._doc),
+                header: registerTemplate.header(),
+                footer: registerTemplate.footer(),
+                config: {
+                    format: 'letter',
+                    orientation: 'portrait',
+                    margin: {'top': '0mm', 'left': '25mm', 'right': '20mm', 'bottom': '10mm'},
+                    headerHeight: '3cm',
+                    footerHeight: '2cm'
+                }
+            }).then(out => {
+                res.writeHead(200, {
+                    'Content-type': 'application/pdf',
+                    'Content-disposition': 'inline; filename=' + filename,
+                    'Access-Control-Allow-Origin': '*'
+                });
+                out.stream.pipe(res);
+            });
+        }
+        res.json({
+            status: status.BAD_REQUEST,
+            error: err.toString()
+        });
+    });
+};
+
+const getAllRequests= (req, res)=>{
+    _request.find({},
+        {_id:0, "graduate.name.fullName":1, "graduate.controlNumber": 1, "graduate.career":1, editionDate:1, status:1},
+        (err, data)=>{
+            if(data){
+                return res.json(data);
+            }
+            res.json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: 'No hay solicitudes'
+            });
+    })
+};
+
 module.exports = (Request, Student, Employee) => {
     _request = Request;
     _student = Student;
@@ -143,5 +195,7 @@ module.exports = (Request, Student, Employee) => {
         editRequest,
         updateStatusRequest,
         generateRequest,
+        getAllRequests,
+        generateRegister,
     });
 };

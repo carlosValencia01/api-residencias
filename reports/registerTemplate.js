@@ -2,7 +2,7 @@ const moment = require('moment');
 moment.locale('es');
 
 const header = () => {
-    const template = `
+    return `
         <html lang="es">
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,12 +27,12 @@ const header = () => {
                 </tr>
             </table>
         </body>
-        </html>`;
-    return template;
+        </html>
+    `;
 };
 
 const body = (request) => {
-    let template = `
+    return `
         <html lang="es">
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,78 +48,76 @@ const body = (request) => {
                     <div style="width:100%;">
                         <div>
                             <div style="font-weight:bold;font-size:11px;" align="center">
-                                <label>Registro ITT-POS-02-01</label><br>
-                                <label>FORMATO DE SOLICITUD DEL ESTUDIANTE</label><br>
+                                <label>Registro ITT-POS-02-02</label><br>
+                                <label>FORMATO DE REGISTRO DE PROYECTO</label><br>
                                 <label>PARA LA TITULACIÓN INTEGRAL</label>
                             </div><br>
                             <div style="font-size:11px;" align="right">
-                                <u>Tepic, Nayarit, ${moment(request.creationDate).format('LL')}</u>
+                                <span>Asunto: Registro de proyecto para la titulación integral.</span>
                             </div><br>
                             <div style="font-weight:bold;font-size:11px;" align="left">
                                 <span>C. <u>${request.headProfessionalStudiesDivision}</u></span><br>
                                 <span>Jefe(a) de la División de Estudios Profesionales</span><br>
                                 <span style="letter-spacing:3px;">PRESENTE</span>
-                            </div><br>
-                            <div style="font-weight:bold;font-size:11px;" align="right">
-                                <span>At´n. <u>${request.degreeCoordinator}</u></span><br>
-                                <span>Coordinador(a) de apoyo a Titulación o equivalente</span>
                             </div>
                         </div><br>
                         <div>
                             <div style="font-size:11px;" align="left">
-                                <p>Por medio del presente solicito autorización para iniciar trámite de registro del proyecto
-                                    de titulación integral:</p>
-                            </div>
+                                <div>
+                                    <span>Departamento de: <u>Nombre departamento</u></span><br>
+                                    <div style="width:100%;display:inline-table;">
+                                        <span style="display:table-cell;text-align:left;">Lugar: <u>Tepic, Nayarit </u></span>&nbsp;&nbsp;
+                                        <span style="display:table-cell;text-align:right;">Fecha: <u>${moment(new Date()).format('LL')}</u></span>
+                                    </div>
+                                </div>
+                            </div><br>
                             <div>
                                 <table style="font-size:11px;border:1px solid black;width:100%;border-collapse:collapse" border="1" cellpadding="2px">
-                                    <tr>
-                                        <td style="width:130px;">Nombre:</td>
-                                        <td>${request.graduate.name.fullName}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width:130px;">Carrera:</td>
-                                        <td>${request.graduate.career}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width:130px;">No. de control:</td>
-                                        <td>${request.graduate.controlNumber}</td>
-                                    </tr>
                                     <tr>
                                         <td style="width:130px;">Nombre del proyecto:</td>
                                         <td>${request.request.projectName}</td>
                                     </tr>
                                     <tr>
-                                        <td style="width:130px;">Producto:</td>
-                                        <td>${request.request.product}</td>
+                                        <td style="width:130px;">Nombre(s) del (de los) asesor(es):</td>
+                                        <td>Asesor(es)</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:130px;">Número de estudiantes:</td>
+                                        <td>${request.request.numberParticipants}</td>
                                     </tr>
                                 </table>
-                            </div>
+                            </div><br>
                             <div style="font-size:11px;" align="left">
-                                <p>En espera de la aceptación de esta solicitud, quedo a sus órdenes.</p>
+                                <span>Datos del (de los) estudiante(s):</span>
+                                <table style="font-size:11px;border:1px solid black;width:100%;border-collapse:collapse" border="1" cellpadding="2px">
+                                     <tr>
+                                        <td>Nombre</td>
+                                        <td>No. de control</td>
+                                        <td>Carrera</td>
+                                    </tr>
+                                    <tr>
+                                        <td>${request.graduate.name.fullName}</td>
+                                        <td>${request.graduate.controlNumber}</td>
+                                        <td>${request.graduate.career}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>${request.graduate.name.fullName}</td>
+                                        <td>${request.graduate.controlNumber}</td>
+                                        <td>${request.graduate.career}</td>
+                                    </tr>
+                                </table>
+                            </div><br>
+                            <div style="border: 1px solid black;padding:5px;">
+                                <span>Observaciones:</span><br>
+                                <span>${request.observations ? request.observations : ''}</span>
                             </div>
-                        </div><br><br><br>
+                        </div><br>
                         <div>
                             <div style="font-weight:bold;font-size:11px;" align="center">
-                                <span>ATENTAMENTE</span><br>
-                                <u>${request.graduate.name.fullName}</u><br>
-                                <span>Nombre y firma del estudiante</span>
+                                <span>ATENTAMENTE</span><br><br><br><br>
+                                <u>Jefe departamento</u><br>
+                                <span>Nombre y firma del (de la) Jefe(a) de Departamento Académico</span>
                             </div><br><br>
-                            <div>
-                                <table style="font-size:11px;border:1px solid black;width:100%;border-collapse:collapse" border="1" cellpadding="2px">
-                                    <tr>
-                                        <td style="width:150px;">Dirección:</td>
-                                        <td style="width:150px;">${request.graduate.address}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width:150px;">Telefóno particular o de contacto:</td>
-                                        <td style="width:150px;">${request.telephoneContact}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="width:150px;">Correo electrónico del estudiante:</td>
-                                        <td style="width:150px;">${request.graduate.email}</td>
-                                    </tr>
-                                </table>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -127,11 +125,10 @@ const body = (request) => {
             </body>
         </html>
     `;
-    return template;
 };
 
 const footer = () => {
-    const template = `
+    return  `
         <html lang="es">
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -156,8 +153,8 @@ const footer = () => {
                     </tr>
                 </table>
         </body>
-        </html>`;
-    return template;
+        </html>
+    `;
 };
 
 module.exports = () => {
