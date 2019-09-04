@@ -17,6 +17,7 @@ const employee = require('./routers/employee.router')(wagner);
 const inscription = require('./routers/inscription.router')(wagner);
 const graduation = require('./routers/graduation.router')(wagner);
 const graduate = require('./routers/graduate.router')(wagner);
+const english = require('./routers/english.router')(wagner);
 
 let app = express();
 
@@ -41,11 +42,12 @@ const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`,
-    `${uri}user/send/code`, `${uri}inscription/sendmail`, `${uri}graduate/request`,
+    `${uri}user/send/code`, `${uri}inscription/sendmail`, `${uri}graduate/request`, `${uri}english`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/graduate\/.*/,
+    /^\/escolares\/credenciales\/english\/.*/,
   ]
 };
 
@@ -59,5 +61,6 @@ app.use(uri + 'employee', employee);
 app.use(uri + 'inscription', inscription);
 app.use(uri + 'graduationmail', graduation);
 app.use(uri + 'graduate', graduate);
+app.use(uri + 'english', english);
 
 module.exports = app;
