@@ -16,6 +16,7 @@ module.exports = (wagner) => {
     const Inscription = require('./inscription.model');
     const Period = require('./period.model');
     const Request = require('./request.model');
+    const English = require('./english.model');
 
     const models = {
         User,
@@ -24,9 +25,10 @@ module.exports = (wagner) => {
         Inscription,
         Period,
         Request,
+        English,
     };
 
     _.each(models, (v, k) => {
         wagner.factory(k, () => v);
     });
-}
+};
