@@ -7,6 +7,7 @@ const superagent = require('superagent');
 let _user;
 let _student;
 let _employee;
+let _english;
 
 const getAll = (req, res) => {
     _user.find({})
@@ -71,7 +72,7 @@ const login = (req, res) => {
                             console.log("Si tiene materias cargadas");
                             let queryNc = { controlNumber: email };
                             //Buscamos sus datos en la BD local
-                            _student.findOne(queryNc, (error, oneUser) => {
+                            _student.findOne(queryNc, async (error, oneUser) => {
                                 //Hubo un error en la consulta
                                 if (error) {
                                     console.log("Entra aquí");
@@ -79,6 +80,8 @@ const login = (req, res) => {
                                         error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                     });
                                 } else {
+                                    // Se verifica si tiene aprobado el inglés
+                                    let englishApproved =  await validateEnglishApproved(email);
                                     //Si fue encontrado
                                     if (oneUser) {
                                         //Se contruye el token
@@ -91,8 +94,10 @@ const login = (req, res) => {
                                                 fullName: oneUser.fullName
                                             },
                                             email: email,
+                                            status: email === '14400909' ? 'egresado' : 'estudiante',
+                                            english: englishApproved,
                                             role: 2
-                                        }
+                                        };
                                         //Se retorna el usuario y token
                                         return res.json({
                                             user: formatUser,
@@ -174,8 +179,10 @@ const login = (req, res) => {
                                                     fullName: created.fullName
                                                 },
                                                 email: email,
+                                                status: email === '14400909' ? 'egresado' : 'estudiante',
+                                                english: englishApproved,
                                                 role: 2
-                                            }
+                                            };
                                             //Se retorna el usuario y token
                                             return res.json({
                                                 user: formatUser,
@@ -291,12 +298,24 @@ const login = (req, res) => {
             });
         }
     });
-}
+};
 
-module.exports = (User, Student, Employee) => {
+const validateEnglishApproved = (controlNumber) => {
+    return  new Promise(async (resolve) => {
+        await _english.findOne({controlNumber: controlNumber}, (err, doc) => {
+            if (!err && doc) {
+                resolve(true);
+            }
+            resolve(false);
+        });
+    });
+};
+
+module.exports = (User, Student, Employee, English) => {
     _user = User;
     _student = Student;
     _employee = Employee;
+    _english = English;
     return ({
         register,
         login,

@@ -15,7 +15,7 @@ const header = () => {
                     <td align="left">
                         <div align="left">
                             <span width="150"></span>
-                            <img alt="Secretaría de Educación Pública" width="100" src="/assets/images/educacionsep.png">
+                            <img alt="Secretaría de Educación Pública" width="100" src="https://sii.ittepic.edu.mx/sistema/img/sep.gif">
                         </div>
                     </td>
                     <td align="right">
@@ -38,7 +38,7 @@ const body = (request) => {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
                 <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
-                <img width="150" src="/assets/images/educacionsep.png" style="display:none;">
+                <img width="150" src="https://sii.ittepic.edu.mx/sistema/img/sep.gif" style="display:none;">
                 <img width="150" src="http://www.tepic.tecnm.mx/images/Logo%20TecNM.png" style="display:none;">
                 <img width="150" src="http://www.ittepic.edu.mx/images/escudo_itt_200x200.png" style="display:none;">
             </head>
