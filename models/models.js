@@ -13,12 +13,16 @@ module.exports = (wagner) => {
     const User = require('./user.model');
     const Student = require('./student.model');
     const Employee = require('./employee.model');
-
-
+    const Role=require('./rol.model');
+    const Request=require('./request.model');
+    const Department=require('./department.model');
     const models = {
+        Department,
         User,
         Student,
-        Employee
+        Employee,
+        Role,
+        Request        
     };
 
     _.each(models, (v, k) => {
