@@ -7,5 +7,8 @@ module.exports = (wagner) => {
     router.post('/', (req, res) =>
         mailCtrl.sendGraduationMail(req, res));
 
+    router.post('/survey', (req, res) =>
+        mailCtrl.sendGraduationMailSurvey(req, res));
+
     return router;
 }
