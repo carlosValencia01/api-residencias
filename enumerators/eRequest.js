@@ -1,20 +1,23 @@
-const eREQUEST={
-    NONE:'Ninguno',
-    REQUEST:'Solicitado', 
-    VERIFIED:'Verificado',
-    REGISTERED:'Registrado',    
-    RELEASED:'Liberado',
-    VALIDATED:'Validado',
-    SCHEDULED:'Agendado',    
-    REALIZED:'Realizado',
-    APPROVED:'Aprobado'  
+const eREQUEST = {
+    NONE: 'Ninguno',
+    CAPTURED: 'Capturado',
+    SENT: 'Enviado',
+    VERIFIED: 'Verificado',
+    REGISTERED: 'Registrado',
+    RELEASED: 'Liberado',
+    DELIVERED:'Entregado',
+    VALIDATED: 'Validado',
+    ASSIGNED:'Asignado',
+    REALIZED: 'Realizado',
+    GENERATED: 'Generado'
     // 'Verificado',
     // 'Registrado',
-    
+
     // 'Validado',
     // 'Agendado',
     // 'Realizado',
     // 'Aprobado'
 };
 
-module.exports=eREQUEST;
+module.exports = eREQUEST;
+

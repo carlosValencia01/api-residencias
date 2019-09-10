@@ -11,7 +11,7 @@ let requestSchema = new mongoose.Schema({
     telephone: { type: String, required: true },
     honorificMention: { type: Boolean, required: true, default: false },
     // status: { type: Number, enum: [1, 2, 3, 4, 5, 6, 7, 8], required: true },
-    phase: { type: String, enum: ['Solicitado', 'Verificado', 'Registrado', 'Liberado', 'Validado', 'Agendado', 'Realizado', 'Aprobado'], required: true },
+    phase: { type: String, enum: ['Capturado', 'Enviado','Verificado', 'Registrado', 'Liberado', 'Entregado','Validado', 'Asignado', 'Realizado', 'Generado'], required: true },
     status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None'] },
     // cEstado: { type: String, required: true, enum: ['Pendiente', 'Confirmada','Cancelada','Finalizada','Inasistencia'], default: "Pendiente" },
     // statusDescription: { type: String, uppercase: true, trim: true },
@@ -26,7 +26,7 @@ let requestSchema = new mongoose.Schema({
     department: { name: { type: String }, boss: { type: String } },
     history: [
         {
-            phase: { type: String, enum: ['Solicitado', 'Verificado', 'Registrado', 'Liberado', 'Validado', 'Agendado', 'Realizado', 'Aprobado'] },
+            phase: { type: String, enum: ['Capturado', 'Enviado','Verificado', 'Registrado', 'Liberado', 'Entregado','Validado', 'Asignado', 'Realizado', 'Generado'] },
             status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None'] },
             observation: { type: String },
             achievementDate: { type: Date },

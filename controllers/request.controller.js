@@ -3,6 +3,7 @@ const status = require('http-status');
 const path = require('path');
 const eStatusRequest = require('../enumerators/eStatusRequest');
 const eRequest = require('../enumerators/eRequest');
+const eRole = require('../enumerators/eRole');
 let _request;
 //let _student;
 
@@ -12,7 +13,7 @@ const create = (req, res) => {
     request.applicationDate = new Date();
     request.studentId = req.params._id;
     //Add 08/08/2019
-    request.phase = eRequest.VERIFIED;
+    request.phase = eRequest.CAPTURED;
     request.status = eStatusRequest.PROCESS;
     //Add
     request.department = { name: request.department, boss: request.boss };
@@ -58,6 +59,65 @@ const getAllRequest = (req, res) => {
         .exec(handler.handleMany.bind(null, 'request', res));
 };
 
+const getRequestByStatus = (req, res) => {
+    const { phase } = req.params;    
+    switch (phase) {
+        case eRole.eSECRETARY: {            
+            _request.find({ phase: { $nin: ['Capturado','Enviado','Verificado'] } })
+                .select({
+                    history: 0,
+                })
+                .populate
+                ({
+                    path: 'studentId', model: "Student",
+                    select: {
+                        fullName: 1,
+                        controlNumber: 1,
+                        career: 1
+                    }
+                })
+                .exec(handler.handleMany.bind(null, 'request', res));
+                break;
+        }
+        case eRole.eCOORDINATION: {
+            _request.find({ phase: { $ne: 'Capturado' } })
+            .select({
+                history: 0,
+            })
+            .populate
+            ({
+                path: 'studentId', model: "Student",
+                select: {
+                    fullName: 1,
+                    controlNumber: 1,
+                    career: 1
+                }
+            })
+            .exec(handler.handleMany.bind(null, 'request', res));
+            break;
+        }
+        case eRole.eCHIEFACADEMIC: {
+            _request.find({ phase: { $nin: ['Capturado','Enviado'] } })
+            .select({
+                history: 0,
+            })
+            .populate
+            ({
+                path: 'studentId', model: "Student",
+                select: {
+                    fullName: 1,
+                    controlNumber: 1,
+                    career: 1
+                }
+            })
+            .exec(handler.handleMany.bind(null, 'request', res));
+            break;
+        }
+        default: {
+            return getAllRequest(req, res);
+        }
+    }
+}
 const getAllRequestApproved = (req, res) => {
     _request.find(
         { status: { $eq: 'Aprobado' } }
@@ -76,7 +136,7 @@ const getById = (req, res) => {
         select: {
             fullName: 1
         }
-    }).exec(handler.handleMany.bind(null, 'request', res));
+    }).exec(handler.handleOne.bind(null, 'request', res));
     // .exec((error, request) => {
     //     if (error) {
     //         return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);            
@@ -92,10 +152,11 @@ const getById = (req, res) => {
 const correctRequestWithoutFile = (req, res) => {
     const { _id } = req.params;
     let request = req.body;
+    //Modificar
+    request.phase = eRequest.CAPTURED;
     request.status = eStatusRequest.PROCESS;
     request.lastModified = new Date();
-    request.observation = '';  //Observaciones
-    console.log("Request without", request);
+    request.observation = '';  //Observaciones    
     _request.findOneAndUpdate({ studentId: _id }, request).then(update => {
         res.json({ request: update });
     }).catch(err => {
@@ -114,9 +175,10 @@ const correctRequest = (req, res) => {
         {
             type: request.Document, dateRegister: new Date(), nameFile: request.Career + '/' + (request.ControlNumber + "-" + request.FullName) + '/' + request.Document + path.extname(req.file.originalname), status: "wait"
         });
+    request.phase = eRequest.CAPTURED;
+    request.status = eStatusRequest.PROCESS;
     request.documents = tmpFile;
-    request.observation = '';  //Observaciones
-    console.log("Correct requests". request);
+    request.observation = '';  //Observaciones    
     _request.findOneAndUpdate({ studentId: _id }, request).then(update => {
         res.json({ request: update });
     }).catch(err => {
@@ -165,8 +227,8 @@ const updateRequest = (req, res) => {
         let item = {
             phase: request.phase,
             achievementDate: new Date(),
-            doer: data.doer,
-            observation: data.observation
+            doer: typeof (data.doer) !== 'undefined' ? data.doer : '',
+            observation: typeof (data.observation) !== 'undefined' ? data.observation : ''
         };
         if (typeof (request.history) === 'undefined')
             request.history = [];
@@ -177,12 +239,30 @@ const updateRequest = (req, res) => {
         //} else {
         //request.status = eStatusRequest.NONE;
         //item.status = eStatusRequest.ACCEPT;
+        console.log("DATA",data);
         switch (request.phase) {
-            case eRequest.REQUEST: {
+            case eRequest.CAPTURED: {
+                if (data.operation !== eStatusRequest.REJECT) {
+                    request.phase = eRequest.SENT;
+                    request.status = eStatusRequest.PROCESS;
+                    item.status = eStatusRequest.ACCEPT                    
+                }
+                else{
+                    request.phase = eRequest.NONE;
+                    request.status = eStatusRequest.PROCESS;
+                    item.status = eStatusRequest.REJECT
+                }
+                break;
+            }
+            case eRequest.SENT: {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.VERIFIED;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.ACCEPT
+                    item.status = eStatusRequest.ACCEPT                    
+                }else{
+                    request.phase = eRequest.CAPTURED;
+                    request.status = eStatusRequest.PROCESS;
+                    item.status = eStatusRequest.REJECT
                 }
                 break;
             }
@@ -236,6 +316,7 @@ const updateRequest = (req, res) => {
         console.log("OKO", request);
         request.save((errorReq, response) => {
             if (errorReq) {
+                console.log(errorReq);
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, errorReq);
             }
             var json = {};
@@ -263,6 +344,7 @@ module.exports = (Request) => {
         updateRequest,
         correctRequestWithoutFile,
         correctRequest,
-        addIntegrants
+        addIntegrants,
+        getRequestByStatus
     });
 }

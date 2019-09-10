@@ -73,6 +73,7 @@ module.exports = (wagner) => {
     });
 
     router.get('/', (req, res) => requestCtrl.getAllRequest(req, res));
+    router.get('/phase/:phase', (req,res)=>requestCtrl.getRequestByStatus(req, res));
     router.get('/approved', (req, res) => requestCtrl.getAllRequestApproved(req, res));
     router.put('/:_id/status', (req, res) => requestCtrl.updateRequest(req, res));
     router.put('/:_id/integrants', (req, res) => requestCtrl.addIntegrants(req, res));
