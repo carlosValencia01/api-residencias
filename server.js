@@ -18,6 +18,11 @@ const inscription = require('./routers/inscription.router')(wagner);
 const graduation = require('./routers/graduation.router')(wagner);
 const graduate = require('./routers/graduate.router')(wagner);
 const english = require('./routers/english.router')(wagner);
+const english = require('./routers/english.router')(wagner);
+const role = require('./routers/role.router')(wagner);
+const mail = require('./routers/mail.router')(wagner);
+const request = require('./routers/request.router')(wagner);
+const department = require('./routers/department.router')(wagner);
 
 let app = express();
 
@@ -63,4 +68,9 @@ app.use(uri + 'graduationmail', graduation);
 app.use(uri + 'graduate', graduate);
 app.use(uri + 'english', english);
 
+app.use(uri+'english', english);
+app.use(uri+'role', role);
+app.use(uri+'request', request);
+app.use(uri+'department',department);
+app.use(URL+'/sendmail', mail);
 module.exports = app;

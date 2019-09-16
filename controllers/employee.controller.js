@@ -92,7 +92,7 @@ const searchRfc = (req, res) => {
         return getAll(req, res);
     }
     const query = {
-        rfc:rfc
+        rfc: rfc
     };
     _employee.find(query, null, {
         skip: +start,
@@ -109,17 +109,21 @@ const create = (req, res, next) => {
     }).catch(err =>
         res.status(status.INTERNAL_SERVER_ERROR).json({
             error: err.toString()
-        }));
+        })
+    );
 }
 
 const createWithoutImage = (req, res) => {
     const employee = req.body;
+    console.log(employee);
     _employee.create(employee).then(created => {
         res.json(created);
-    }).catch(err =>
+    }).catch(err => {
+        console.log(err);
         res.status(status.INTERNAL_SERVER_ERROR).json({
             error: err.toString()
-        }));
+        })
+    });
 }
 
 const updateEmployee = (req, res) => {
@@ -157,33 +161,127 @@ const getOne = (req, res) => {
     const { _id } = req.params;
     const query = { _id: _id };
 
-    if(_id!='1') {
+    if (_id != '1') {
 
-    _employee.findById(query, (err, employee) => {
-        if (err) {
-            res.status(status.NOT_FOUND).json({
-                error: 'No se encontro la imagen para este registro'
-            });
-            /*res.status(status.INTERNAL_SERVER_ERROR).json({
-                error: err.toString()
-            });*/
-        }
-        if (employee.filename) {
-            // console.log('Entro AQUI');
-            res.set('Content-Type', 'image/jpeg');
-            fs.createReadStream(path.join('images', employee.filename)).pipe(res);
-        } else {
-            res.status(status.NOT_FOUND).json({
-                error: 'No se encontro la imagen para este registro'
-            });
-        }
+        _employee.findById(query, (err, employee) => {
+            if (err) {
+                res.status(status.NOT_FOUND).json({
+                    error: 'No se encontro la imagen para este registro'
+                });
+                /*res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                });*/
+            }
+            if (employee.filename) {
+                // console.log('Entro AQUI');
+                res.set('Content-Type', 'image/jpeg');
+                fs.createReadStream(path.join('images', employee.filename)).pipe(res);
+            } else {
+                res.status(status.NOT_FOUND).json({
+                    error: 'No se encontro la imagen para este registro'
+                });
+            }
 
-    });
-    }else {
+        });
+    } else {
         res.status(status.NOT_FOUND).json({
             error: 'No se encontro la imagen para este registro'
         });
     }
+}
+
+
+const csvDegree = (req, res) => {
+    const _employees = req.body;
+    var findEmployee = (data) => {
+        return _employee.findOne({ rfc: data.rfc }).then(
+            oneEmployee => {
+                if (!oneEmployee) {
+                    data.isNew = true;
+                    return data;
+                }
+                else {
+                    data._id = oneEmployee._id;
+                    return data;
+                }
+            }
+        );
+    }
+
+    var secondStep = (data) => {
+        if (data.isNew) {
+            delete data.isNew;
+            return _employee.create(data);
+        }
+        else {
+            const query = { _id: data._id };
+            // return _employee.findOneAndUpdate(query, { $set: { "degree.title": data.degree.title, "degree.cedula": data.degree.cedula } }, { upsert: true, new: true });
+            return _employee.findOneAndUpdate(query, data, { new: true });
+        }
+    };
+
+    var actions = _employees.map(findEmployee);
+    var results = Promise.all(actions);
+
+    results.then(data => {
+        return Promise.all(data.map(secondStep));
+    });
+
+    results.then((data) => {
+        res.json({ "Estatus": "Bien", "Data": data });
+    }).catch((error) => {
+        return res.json({ Error: error });
+    });
+}
+
+
+const searchGrade = (req, res) => {
+    const { search } = req.params;
+    let query = {
+        grade: { $exists: true },
+        $or: [
+            { rfc: { $regex: new RegExp(search, 'i') } },
+            { "name.fullName": { $regex: new RegExp(search, 'i') } }
+        ]
+    };
+    _employee.find(query, { name: 1, area: 1, position: 1, grade: 1 })
+        .exec(handler.handleMany.bind(null, 'employees', res));
+}
+const getEmployeeByArea = (req, res) => {
+    let query =
+        [
+            {
+                $group: {
+                    //_id: '$area.',
+                    _id:"$deptoId",
+                    values:
+                    {
+                        $push: { id: '$_id', name: '$name' }
+                    }
+                }
+            }
+        ];
+    _employee
+    .aggregate(query)
+    // .populate({
+    //         path:'deptoId',
+    //         model:'Department'
+    //     })
+        .exec(handler.handleMany.bind(null, 'employees', res));
+}
+
+// const getEmployeeByDepto = (req, res) => {
+//     _employee.find({})
+//         .populate()
+//         .exec(handler.handleMany.bind(null, 'employees', res));
+// }
+
+const updateEmployeGrade = (req, res) => {
+    const { _id } = req.params;
+    const _obj = req.body;
+    const query = { _id: _id };
+    _employee.findOneAndUpdate(query, _obj, { new: true })
+        .exec(handler.handleOne.bind(null, 'employee', res));
 }
 
 module.exports = (Employee) => {
@@ -199,6 +297,10 @@ module.exports = (Employee) => {
         updateEmployee,
         getByControlNumber,
         getById,
-        createWithoutImage
+        createWithoutImage,
+        csvDegree,
+        searchGrade,
+        updateEmployeGrade,
+        getEmployeeByArea
     });
 };

@@ -6,9 +6,10 @@ const del = require('del');
 const jwt = require('jsonwebtoken');
 const config = require('../_config');
 const superagent = require('superagent');
+const mongoose = require('mongoose');
 
 let _student;
-
+let _request;
 const getAll = (req, res) => {
     _student.find({})
         .exec(handler.handleMany.bind(null, 'students', res));
@@ -37,7 +38,7 @@ const verifyStatus = (req, res) => {
             console.log("Si tiene materias cargadas");
             return res.status(status.OK).json({
                 status: 1,
-                msg:'Si tiene materias cargadas'
+                msg: 'Si tiene materias cargadas'
             });
         } else {
             return res.status(status.UNAUTHORIZED).json({
@@ -106,6 +107,7 @@ const search = (req, res) => {
             $language: 'es'
         }
     };
+    console.log("query",query);
     _student.find(query, null, {
         skip: +start,
         limit: +limit
@@ -214,19 +216,154 @@ const create = (req,res) => {
 };
 */
 
-module.exports = (Student) => {
+const assignDocument = (req, res) => {
+    const { _id } = req.params;
+    //const _file = req.file;
+    const _doc = req.body;
+    //_doc.filename=_file.filename;        
+    const query = { _id: _id, documents: { $elemMatch: { type: _doc.type } } };
+    const push = { $push: { documents: _doc } };
+    _student.findOne(query, (e, student) => {
+        if (e)
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
+        if (student) {
+            _student.findOneAndUpdate(query, {
+                $set: {
+                    "documents.$.filename": _doc.filename,
+                    "documents.$.status": _doc.status, "documents.$.releaseDate": new Date()
+                }
+            }, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
+        } else {
+            _student.findOneAndUpdate({ _id: _id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
+        }
+    });
+    // _student.findOne(query,(e,student)=>{
+    //     if(e)
+    //         return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
+    //     let subQuery={documents:{$elemMatch:{type:_doc.type}}};
+    //     student.findOne(subQuery,(eDoc,document)=>{
+    //         if(eDoc)
+    //             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
+    //         if(document){
+    //             _student.findOneAndUpdate(query,push,{new:true}).exec(handler.handleOne.bind(null,'student',res));
+    //         }
+    //         else{
+    //             query={_id : _id, documents:{$elemMatch:{type:_doc.type}}};                
+    //             _student.findOneAndUpdate(query,push,{new:true}).exec(handler.handleOne.bind(null,'student',res));
+    //         }
+    //     })
+    // });        
+}
+
+
+const csvIngles = (req, res) => {
+    const _scholar = req.body;
+    var findStudent = (data) => {
+        return _student.findOne({ controlNumber: data.controlNumber }).then(
+            oneStudent => {
+                if (!oneStudent) {
+                    data.isNew = true;
+                    return data;
+                }
+                else {
+                    data._id = oneStudent._id;
+                    return data;
+                }
+            }
+        );
+    }
+
+    var secondStep = (data) => {
+        if (data.isNew) {
+            //Add Date;
+            data.document.releaseDate = new Date();
+            data.documents = new Array(data.document);
+            //Remove properties
+            delete data.document;
+            delete data.isNew;
+            return _student.create(data);
+        }
+        else {
+            const _doc = data.document;
+            _doc.releaseDate = new Date();
+            const query = { _id: data._id, documents: { $elemMatch: { type: _doc.type } } };
+            const push = { $push: { documents: _doc } };
+            _student.findOne(query).then(studentDoc => {
+                if (studentDoc) {
+                    return _student.findOneAndUpdate(query, { $set: { "documents.$.status": _doc.status, "documents.$.releaseDate": new Date() } }, { new: true });
+                }
+                else
+                    return _student.findOneAndUpdate({ _id: data._id }, push, { new: true });
+            });
+        }
+    };
+
+    var actions = _scholar.map(findStudent);
+    var results = Promise.all(actions);
+
+    results.then(data => {
+        return Promise.all(data.map(secondStep));
+    });
+
+    results.then((data) => {
+        res.json({ "Estatus": "Bien", "Data": data });
+    }).catch((error) => {
+        return res.json({ Error: error });
+    });
+}
+
+const getRequest = (req, res) => {    
+    const { _id } = req.params;    
+    _request.find({ studentId: _id }).populate({
+        path: 'studentId', model: "Student",
+        select: {
+            fullName: 1,
+            controlNumber:1,
+            career:1
+        }
+    }).exec(handler.handleOne.bind(null, 'request', res));
+};
+
+const getResource = (req, res) => {
+    const { _id } = req.params;
+    const { resource } = req.params;
+    _student.findOne({ _id: _id }, (error, student) => {
+        if (error)
+            return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
+        _request.findOne({ studentId: _id }, (errorRequest, request) => {
+            if (errorRequest)
+                return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
+            if (!request.documents)
+                return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
+            var fileInformation = request.documents.find(f => f.nameFile.includes(resource.toUpperCase()));
+            if (!fileInformation)
+                return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
+            res.set('Content-Type', 'image/jpeg');            
+            fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
+            // res.set('Content-Type', 'image/jpeg');
+            // fs.createReadStream(path.join('images', student.filename)).pipe(res);       
+        });
+    });
+}
+
+module.exports = (Student, Request) => {
     _student = Student;
+    _request = Request;
     return ({
         create,
         getOne,
         updateOne,
         getAll,
         search,
+        csvIngles,
         uploadImage,
         updateStudent,
         getByControlNumber,
         getById,
         verifyStatus,
-        createWithoutImage
+        createWithoutImage,
+        assignDocument,
+        getRequest,
+        getResource
     });
 };

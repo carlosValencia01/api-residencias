@@ -1,6 +1,5 @@
 const router = require('express').Router();
 const multer = require('multer');
-
 let UPLOAD_PATH = 'images'
 
 var storage = multer.diskStorage({
@@ -15,8 +14,8 @@ var storage = multer.diskStorage({
 let upload = multer({ storage: storage })
 
 module.exports = (wagner) => {
-    const studentCtrl = wagner.invoke((Student) =>
-        require('../controllers/student.controller')(Student));
+    const studentCtrl = wagner.invoke((Student, Request) =>
+        require('../controllers/student.controller')(Student, Request));
 
     router.get('/', (req, res) => studentCtrl.getAll(req, res));
     router.get('/:_id', (req, res) => studentCtrl.getById(req, res));
@@ -24,11 +23,18 @@ module.exports = (wagner) => {
     router.get('/verifystatus/:nc', (req, res) => studentCtrl.verifyStatus(req, res));
 
 
+    router.get('/request/:_id', (req, res) =>
+        studentCtrl.getRequest(req, res));
+
+
     router.get('/image/:_id', (req, res) =>
         studentCtrl.getOne(req, res));
 
     router.get('/search/:search', (req, res) =>
         studentCtrl.search(req, res));
+
+    router.get('/:resource/:_id', (req, res) =>
+        studentCtrl.getResource(req, res));
 
     router.post('/', upload.single('image'), function (req, res) {
         console.log('Creando Student con image!');
@@ -47,9 +53,17 @@ module.exports = (wagner) => {
 
     router.put('/image/:_id', upload.single('image'), function (req, res) {
         studentCtrl.uploadImage(req, res)
+    });
+
+    router.put('/document/:_id',
+        //upload.single('file'),
+        function (req, res) {
+            studentCtrl.assignDocument(req, res);
+        });
+
+    router.post('/csv', function (req, res) {
+        studentCtrl.csvIngles(req, res);
     })
-
-
     /*
     router.post('/', function (req, res) {
         console.log('creating pots');
