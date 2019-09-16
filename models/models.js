@@ -18,7 +18,10 @@ module.exports = (wagner) => {
     const Request = require('./request.model');
     const English = require('./english.model');
 
+    const Role=require('./rol.model');
+    const Department=require('./department.model');
     const models = {
+        Department,
         User,
         Student,
         Employee,
@@ -26,6 +29,7 @@ module.exports = (wagner) => {
         Period,
         Request,
         English,
+        Role      
     };
 
     _.each(models, (v, k) => {

@@ -9,7 +9,8 @@ let userSchema = new mongoose.Schema({
     },
     email: { type: String, required: true, unique: true },
     password: { type: String },
-    role: { type: Number }
+    role: { type: Number },
+    idRole: { type: mongoose.Schema.Types.ObjectId}
 });
 
 userSchema.pre('save', function (next) {
