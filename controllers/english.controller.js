@@ -1,11 +1,11 @@
+const handler = require('../utils/handler');
 const status = require('http-status');
-
-let _english;
+let _student;
 
 const loadData = (req, res) => {
     const student = req.body;
 
-    _english.create(student)
+    _student.create(student)
         .then(created => {
             res.json(created);
         })
@@ -20,7 +20,7 @@ const loadData = (req, res) => {
 const validateControlNumber = (req, res) => {
     const {controlNumber} = req.params;
 
-    _english.findOne({controlNumber: controlNumber}, (err, doc) => {
+    _student.findOne({controlNumber: controlNumber}, (err, doc) => {
         if (!err && doc) {
             return res.json({
                 ok: true,
@@ -35,17 +35,6 @@ const validateControlNumber = (req, res) => {
         });
     });
 };
-
-module.exports = (English) => {
-    _english = English;
-    return ({
-        validateControlNumber,
-        loadData,
-    });
-};
-const handler = require('../utils/handler');
-const status = require('http-status');
-let _student;
 
 const search = (req, res) => {
   const { search } = req.params;
