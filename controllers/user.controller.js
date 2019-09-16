@@ -65,7 +65,7 @@ const login = (req, res) => {
                     name: users[0].idRole.name,
                     permissions: users[0].idRole.permissions
                 },
-                role: 2
+                role: users[0].role
             }            
             //Se retorna el usuario y token
             return res.json({
