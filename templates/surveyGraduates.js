@@ -1,4 +1,8 @@
 module.exports = (ID,NOMBRE,NC) => {
+    
+    //const url = 'https://escolares.ittepic.edu.mx/surveyGraduates';
+    //const url = 'http://localhost:4200/surveyGraduates';
+    const url = 'http://104.248.94.77/surveyGraduates';
     const template = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//ES" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
     <html xmlns="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml"> 
       <head> 
@@ -52,7 +56,7 @@ module.exports = (ID,NOMBRE,NC) => {
                 </div>
 
                 <div style="text-align:center">
-                    <form action="http://localhost:4200/surveyGraduates/${ID}/${NC}">
+                    <form action="${url}/${ID}/${NC}">
                         <input style="background:#555555; color: white; border-radius: 9px; padding:15px; font-size:20px; font-weight: bold;" type="submit" value="Responder Encuesta">
                     </form> 
                 </div>
