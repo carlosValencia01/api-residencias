@@ -17,7 +17,7 @@ let employeeSchema = new mongoose.Schema({
         title: { type: String, uppercase: true, trim: true },
         cedula: { type: String, uppercase: true, trim: true },
         abbreviation: { type: String, uppercase: true, trim: true },
-        level: { type: String, enum: ['DOCTORADO', 'MAESTRÍA', 'LICENCIATURA'], uppercase: true, trim: true },
+        level: { type: String, enum: ['DOCTORADO', 'MAESTRIA', 'LICENCIATURA'], uppercase: true, trim: true },
         default: { type: Boolean, default: false }
     }],
 });

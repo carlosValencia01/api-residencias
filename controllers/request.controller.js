@@ -60,10 +60,10 @@ const getAllRequest = (req, res) => {
 };
 
 const getRequestByStatus = (req, res) => {
-    const { phase } = req.params;    
+    const { phase } = req.params;
     switch (phase) {
-        case eRole.eSECRETARY: {            
-            _request.find({ phase: { $nin: ['Capturado','Enviado','Verificado'] } })
+        case eRole.eSECRETARY: {
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } })
                 .select({
                     history: 0,
                 })
@@ -77,40 +77,40 @@ const getRequestByStatus = (req, res) => {
                     }
                 })
                 .exec(handler.handleMany.bind(null, 'request', res));
-                break;
+            break;
         }
         case eRole.eCOORDINATION: {
             _request.find({ phase: { $ne: 'Capturado' } })
-            .select({
-                history: 0,
-            })
-            .populate
-            ({
-                path: 'studentId', model: "Student",
-                select: {
-                    fullName: 1,
-                    controlNumber: 1,
-                    career: 1
-                }
-            })
-            .exec(handler.handleMany.bind(null, 'request', res));
+                .select({
+                    history: 0,
+                })
+                .populate
+                ({
+                    path: 'studentId', model: "Student",
+                    select: {
+                        fullName: 1,
+                        controlNumber: 1,
+                        career: 1
+                    }
+                })
+                .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eCHIEFACADEMIC: {
-            _request.find({ phase: { $nin: ['Capturado','Enviado'] } })
-            .select({
-                history: 0,
-            })
-            .populate
-            ({
-                path: 'studentId', model: "Student",
-                select: {
-                    fullName: 1,
-                    controlNumber: 1,
-                    career: 1
-                }
-            })
-            .exec(handler.handleMany.bind(null, 'request', res));
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
+                .select({
+                    history: 0,
+                })
+                .populate
+                ({
+                    path: 'studentId', model: "Student",
+                    select: {
+                        fullName: 1,
+                        controlNumber: 1,
+                        career: 1
+                    }
+                })
+                .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         default: {
@@ -210,15 +210,65 @@ const addIntegrants = (req, res) => {
         });
     });
 }
+const releasedRequest = (req, res) => {
+    const { _id } = req.params;
+    let data = req.body;
+    console.log("Upload fgile", data);
+    console.log("Upload fgile", _id);
+    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
+        (error, request) => {
+            if (error) {
+                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
+            }
+
+            if (!request) {
+                _request.update({ _id: _id }, {
+                    $set: {
+                        phase: eRequest.DELIVERED,
+                        status: eStatusRequest.NONE,
+                        lastModified: new Date()
+                    },
+                    $addToSet: {
+                        documents:
+                        {
+                            type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + "-" + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: "wait"
+                        },
+                        history: {
+                            phase: eRequest.RELEASED,
+                            achievementDate: new Date(),
+                            doer: typeof (data.Doer) !== 'undefined' ? data.doer : '',
+                            observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                            status: eStatusRequest.ACCEPT
+                        }
+                    }
+                }).exec(handler.handleOne.bind(null, 'request', res));
+            } else {
+                _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+                    $set: {
+                        "documents.$": { type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + "-" + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: "wait" },
+                        phase: eRequest.DELIVERED,
+                        status: eStatusRequest.NONE,
+                        lastModified: new Date()
+                    },
+                    $addToSet: {                     
+                        history: {
+                            phase: eRequest.RELEASED,
+                            achievementDate: new Date(),
+                            doer: typeof (data.Doer) !== 'undefined' ? data.doer : '',
+                            observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                            status: eStatusRequest.ACCEPT
+                        }
+                    }
+                }).exec(handler.handleOne.bind(null, 'request', res));
+            }
+        }
+    );
+}
+
 const updateRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    // if (data.operation === eStatusRequest.REJECT) {
-    //     let update = { $set: { lastModified: new Date(), status: 'Reject', 
-    //     observation: data.observation,
-    //     doer: data.doer } };
-    //     _request.findOneAndUpdate({ _id: _id }, update, { new: true }).exec(handler.handleOne.bind(null, 'request', res));
-    //} else {
+
     _request.findOne({ _id: _id }).exec((error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -232,22 +282,14 @@ const updateRequest = (req, res) => {
         };
         if (typeof (request.history) === 'undefined')
             request.history = [];
-
-        // if (data.operation === eStatusRequest.REJECT) {
-        //     request.status = eStatusRequest.REJECT;
-        //     item.status = eStatusRequest.REJECT;
-        //} else {
-        //request.status = eStatusRequest.NONE;
-        //item.status = eStatusRequest.ACCEPT;
-        console.log("DATA",data);
         switch (request.phase) {
             case eRequest.CAPTURED: {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.SENT;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.ACCEPT                    
+                    item.status = eStatusRequest.ACCEPT
                 }
-                else{
+                else {
                     request.phase = eRequest.NONE;
                     request.status = eStatusRequest.PROCESS;
                     item.status = eStatusRequest.REJECT
@@ -258,8 +300,8 @@ const updateRequest = (req, res) => {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.VERIFIED;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.ACCEPT                    
-                }else{
+                    item.status = eStatusRequest.ACCEPT
+                } else {
                     request.phase = eRequest.CAPTURED;
                     request.status = eStatusRequest.PROCESS;
                     item.status = eStatusRequest.REJECT
@@ -345,6 +387,7 @@ module.exports = (Request) => {
         correctRequestWithoutFile,
         correctRequest,
         addIntegrants,
+        releasedRequest,
         getRequestByStatus
     });
 }

@@ -6,8 +6,8 @@ const path = require('path');
 const uploads = require('../utils/uploads');
 const handler = require('../utils/handler');
 const status = require('http-status');
-let UPLOAD_FILE = 'documents/';
-let UPLOAD_FILE_TEMP = 'tmpFile/';
+const UPLOAD_FILE = 'documents/';
+const UPLOAD_FILE_TEMP = 'tmpFile/';
 
 //Load File
 // var storageFile = multer.diskStorage({
@@ -45,7 +45,8 @@ module.exports = (wagner) => {
             })
         });
 
-    router.put('/:_id', (req, res) => {        
+
+    router.put('/:_id', (req, res) => {
         uploads.uploadFile(req, res, function (err) {
             if (err instanceof multer.MulterError) {
                 console.log("Error Multer", err);
@@ -62,21 +63,42 @@ module.exports = (wagner) => {
                     if (typeof err !== "undefined") {
                         return handler.handleError(res, status.BAD_REQUEST, err);
                     } else {
-                        return requestCtrl.correctRequest(req,res);
+                        return requestCtrl.correctRequest(req, res);
                     }
                 });
             } else {
-                return requestCtrl.correctRequestWithoutFile(req,res);
+                return requestCtrl.correctRequestWithoutFile(req, res);
             }
 
         });
     });
 
     router.get('/', (req, res) => requestCtrl.getAllRequest(req, res));
-    router.get('/phase/:phase', (req,res)=>requestCtrl.getRequestByStatus(req, res));
+    router.get('/phase/:phase', (req, res) => requestCtrl.getRequestByStatus(req, res));
     router.get('/approved', (req, res) => requestCtrl.getAllRequestApproved(req, res));
     router.put('/:_id/status', (req, res) => requestCtrl.updateRequest(req, res));
     router.put('/:_id/integrants', (req, res) => requestCtrl.addIntegrants(req, res));
+    router.put('/:_id/released', function (req, res) {
+        uploads.uploadFile(req, res, function (err) {
+            if (err instanceof multer.MulterError) {
+                console.log("Error Multer", err);
+                return handler.handleError(res, status.BAD_REQUEST, err);
+            } else if (err) {
+                console.log("Error Upload", err);
+                return handler.handleError(res, status.BAD_REQUEST, err);
+            }
+            console.log("request",req.file)
+            let sourceFile = UPLOAD_FILE + '/' + UPLOAD_FILE_TEMP + req.params._id + path.extname(req.file.originalname);
+            let destFile = UPLOAD_FILE + req.body.Career + '/' + (req.body.ControlNumber + "-" + req.body.FullName) + '/' + req.body.Document + path.extname(req.file.originalname);
+            mv(sourceFile, destFile, { mkdirp: true }, function (err) {
+                if (typeof err !== "undefined") {
+                    return handler.handleError(res, status.BAD_REQUEST, err);
+                } else {
+                    return requestCtrl.releasedRequest(req, res)
+                }
+            });
+        })
+    });
     router.get('/:_id', (req, res) => requestCtrl.getById(req, res));
     return router;
 }
