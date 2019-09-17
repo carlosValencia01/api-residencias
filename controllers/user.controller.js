@@ -94,7 +94,7 @@ const login = (req, res) => {
                                                 fullName: oneUser.fullName
                                             },
                                             email: email,
-                                            status: email === '14400909' ? 'egresado' : 'estudiante',
+                                            status: 'estudiante',
                                             english: englishApproved,
                                             role: 2
                                         };
@@ -260,7 +260,7 @@ const login = (req, res) => {
                     return res.status(status.INTERNAL_SERVER_ERROR).json({
                         error: 'No se pudo conectar al SII, intente más tarde'
                     });
-                }   
+                }
             });
         }
         //Si es usuario administrativo del sistema
