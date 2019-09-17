@@ -1,6 +1,6 @@
 const handler = require('../utils/handler');
 const status = require('http-status');
-const fs = require('fs')
+const fs = require('fs');
 const path = require('path');
 const del = require('del');
 const jwt = require('jsonwebtoken');
@@ -344,7 +344,19 @@ const getResource = (req, res) => {
             // fs.createReadStream(path.join('images', student.filename)).pipe(res);       
         });
     });
-}
+};
+
+const getProjectCover = (req, res) => {
+  const {_id } = req.params;
+  _request.findOne({ _id: _id }, (err, request) => {
+      if (!err && request) {
+          res.set('Content-Type', 'application/pdf');
+          fs.createReadStream(path.join('documents', request.documents[0].nameFile)).pipe(res);
+      } else {
+          return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
+      }
+  });
+};
 
 module.exports = (Student, Request) => {
     _student = Student;
@@ -364,6 +376,7 @@ module.exports = (Student, Request) => {
         createWithoutImage,
         assignDocument,
         getRequest,
-        getResource
+        getResource,
+        getProjectCover,
     });
 };

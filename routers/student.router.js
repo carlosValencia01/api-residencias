@@ -33,6 +33,9 @@ module.exports = (wagner) => {
     router.get('/search/:search', (req, res) =>
         studentCtrl.search(req, res));
 
+    router.get('/projectCover/:_id', (req, res) =>
+        studentCtrl.getProjectCover(req, res));
+
     router.get('/:resource/:_id', (req, res) =>
         studentCtrl.getResource(req, res));
 
