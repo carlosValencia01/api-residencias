@@ -5,7 +5,6 @@ const eStatusRequest = require('../enumerators/eStatusRequest');
 const eRequest = require('../enumerators/eRequest');
 const eRole = require('../enumerators/eRole');
 let _request;
-//let _student;
 
 const create = (req, res) => {
     let request = req.body;
@@ -23,15 +22,6 @@ const create = (req, res) => {
             type: request.Document, dateRegister: new Date(), nameFile: request.Career + '/' + (request.ControlNumber + "-" + request.FullName) + '/' + request.Document + path.extname(req.file.originalname), status: "wait"
         });
     request.documents = tmpFile;
-    // student:this.cookiesService.ge   tData().user._id,
-    //   projectName:this.frmRequest.get('name').value,
-    //   email:this.frmRequest.get('email').value,
-    //   proposedDate: this.frmRequest.get('date').value,
-    //   applicationDate: new Date(),
-    //   status:"Solicitado",
-    //   telephone: this.frmRequest.get('telephone').value,
-    //   honorificMention:this.frmRequest.get('honorific').value,
-    //   lastModified: new Date(),    
     _request.create(request).then(created => {
 
         res.json({ request: created });
@@ -117,7 +107,8 @@ const getRequestByStatus = (req, res) => {
             return getAllRequest(req, res);
         }
     }
-}
+};
+
 const getAllRequestApproved = (req, res) => {
     _request.find(
         { status: { $eq: 'Aprobado' } }
@@ -134,19 +125,11 @@ const getById = (req, res) => {
     _request.find({ _id: _id }).populate({
         path: 'studentId', model: "Student",
         select: {
-            fullName: 1
+            fullName: 1,
+            controlNumber: 1,
+            career: 1
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
-    // .exec((error, request) => {
-    //     if (error) {
-    //         return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);            
-    //     }
-    //     if (!request) {
-    //         return handler.handleError(res, status.NOT_FOUND, {message: "Solicitud no encontrada"});   
-    //     }
-    //     console.log("reques", request);
-    //     return res.json({status:"OK"})         ;
-    // })
 };
 
 const correctRequestWithoutFile = (req, res) => {
@@ -164,7 +147,7 @@ const correctRequestWithoutFile = (req, res) => {
             error: err.toString()
         });
     })
-}
+};
 
 const correctRequest = (req, res) => {
     const { _id } = req.params;
@@ -188,7 +171,6 @@ const correctRequest = (req, res) => {
     })
 };
 
-
 const addIntegrants = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
@@ -209,16 +191,11 @@ const addIntegrants = (req, res) => {
             return res.status(status.OK).json(json);
         });
     });
-}
+};
+
 const updateRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    // if (data.operation === eStatusRequest.REJECT) {
-    //     let update = { $set: { lastModified: new Date(), status: 'Reject', 
-    //     observation: data.observation,
-    //     doer: data.doer } };
-    //     _request.findOneAndUpdate({ _id: _id }, update, { new: true }).exec(handler.handleOne.bind(null, 'request', res));
-    //} else {
     _request.findOne({ _id: _id }).exec((error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -233,12 +210,6 @@ const updateRequest = (req, res) => {
         if (typeof (request.history) === 'undefined')
             request.history = [];
 
-        // if (data.operation === eStatusRequest.REJECT) {
-        //     request.status = eStatusRequest.REJECT;
-        //     item.status = eStatusRequest.REJECT;
-        //} else {
-        //request.status = eStatusRequest.NONE;
-        //item.status = eStatusRequest.ACCEPT;
         console.log("DATA",data);
         switch (request.phase) {
             case eRequest.CAPTURED: {
@@ -308,7 +279,6 @@ const updateRequest = (req, res) => {
                 break;
             }
         }
-        //}
         request.history.push(item);
         request.doer = data.doer;
         request.observation = data.observation;
@@ -324,18 +294,10 @@ const updateRequest = (req, res) => {
             return res.status(status.OK).json(json);
         });
     });
-    //}
-
 };
-
-
-
-
-
 
 module.exports = (Request) => {
     _request = Request;
-    // _student=Student;
     return ({
         create,
         getById,
@@ -347,4 +309,4 @@ module.exports = (Request) => {
         addIntegrants,
         getRequestByStatus
     });
-}
+};
