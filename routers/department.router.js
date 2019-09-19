@@ -7,4 +7,4 @@ module.exports = (wagner) => {
         router.get('/employees', (req, res) => deptoCtrl.getAll(req, res));                
 
     return router;
-}
+};

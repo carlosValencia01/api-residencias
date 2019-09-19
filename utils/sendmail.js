@@ -1,5 +1,4 @@
 const helper = require('sendgrid').mail;
-const fs = require("fs");
 const config = require('../_config');
 const sg = require('sendgrid')(config.SENDGRID_APIKEY);
 
@@ -7,7 +6,6 @@ const sg = require('sendgrid')(config.SENDGRID_APIKEY);
 module.exports.send = (params, done) => {
     let { to_email, to_name, subject, message, type, sender } = params;
 
-    //from = config.sender_email;
     from = sender;
 
     mail = new helper.Mail();
@@ -25,8 +23,6 @@ module.exports.send = (params, done) => {
     content = new helper.Content(type, message);
     mail.addContent(content);
 
-    // console.log("Mensaje:"+message);
-
     var request = sg.emptyRequest({
         method: 'POST',
         path: '/v3/mail/send',
@@ -36,10 +32,8 @@ module.exports.send = (params, done) => {
     sg.API(request, function (error, response) {
         var res2 = {};
         res2.code = response.statusCode;
-        //res.status(status.BAD_REQUEST);
         switch (res2.code) {
             case 202:
-                //res.status(status.ACCEPTED);
                 res2.message = "Mensaje enviado";
                 res2.detail = "OK";
                 break;
@@ -108,6 +102,5 @@ module.exports.send = (params, done) => {
                 res2.detail = "SERVICE NOT AVAILABLE";
         }
         done(res2);
-        //res.json(res2);
     });
-}
+};

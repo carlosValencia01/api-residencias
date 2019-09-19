@@ -7,4 +7,4 @@ module.exports = () => {
         mailCtrl.sendmail(req, res));
 
     return router;
-}
+};

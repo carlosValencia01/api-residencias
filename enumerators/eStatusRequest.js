@@ -1,9 +1,9 @@
-const eStatusRequest={
+const eStatusRequest = {
     NONE:'None',
     PROCESS:'Process',
     ERROR:'Error',
     ACCEPT:'Accept',
     REJECT:'Reject'
-}
+};
 
-module.exports=eStatusRequest;
+module.exports = eStatusRequest;

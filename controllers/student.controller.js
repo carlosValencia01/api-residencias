@@ -2,14 +2,13 @@ const handler = require('../utils/handler');
 const status = require('http-status');
 const fs = require('fs');
 const path = require('path');
-const del = require('del');
 const jwt = require('jsonwebtoken');
 const config = require('../_config');
 const superagent = require('superagent');
-const mongoose = require('mongoose');
 
 let _student;
 let _request;
+
 const getAll = (req, res) => {
     _student.find({})
         .exec(handler.handleMany.bind(null, 'students', res));
@@ -52,9 +51,8 @@ const verifyStatus = (req, res) => {
 const getByControlNumber = (req, res) => {
     const { controlNumber } = req.body;
     console.log("ControlNumer" + controlNumber);
-    //Hacer la petición hacia API de NIP y número de control
+    // Hacer la petición hacia API de NIP y número de control
     _student.find({ controlNumber: controlNumber })
-        //.exec(handler.handleOne.bind(null, 'student', res));
         .exec(
             (err, students) => {
                 if (err) {
@@ -81,7 +79,7 @@ const getByControlNumber = (req, res) => {
                     },
                     email: oneStudent.controlNumber,
                     role: 2
-                }
+                };
 
                 res.json({
                     user: formatStudent,
@@ -114,7 +112,6 @@ const search = (req, res) => {
     }).exec(handler.handleMany.bind(null, 'students', res));
 };
 
-
 const create = (req, res, next) => {
     const student = req.body;
     _student.create(student).then(created => {
@@ -126,7 +123,7 @@ const create = (req, res, next) => {
             error: err.toString()
         })
     );
-}
+};
 
 const createWithoutImage = (req, res) => {
     const student = req.body;
@@ -137,7 +134,7 @@ const createWithoutImage = (req, res) => {
         res.status(status.INTERNAL_SERVER_ERROR).json({
             error: err.toString()
         }));
-}
+};
 
 const updateStudent = (req, res) => {
     const { _id } = req.params;
@@ -146,31 +143,28 @@ const updateStudent = (req, res) => {
     const query = { _id: _id };
     _student.findOneAndUpdate(query, student, { new: true })
         .exec(handler.handleOne.bind(null, 'student', res));
-}
+};
 
 const uploadImage = (req, res) => {
     const { _id } = req.params;
     const image = req.file;
-
-    // console.log('MIRA AQUIIIII',image);
 
     const query = { _id: _id };
     const updated = { filename: image.filename };
 
     _student.findOneAndUpdate(query, updated, { new: true })
         .exec(handler.handleOne.bind(null, 'student', res));
-}
+};
 
 const updateOne = (req, res, imgId) => {
-    const query = { _id: res.post_id }
+    const query = { _id: res.post_id };
 
     _student.findOneAndUpdate(query).exec((err, query) => {
         if (query) {
             handler.handleOne.bind(null, 'students', res)
         }
     })
-}
-
+};
 
 const getOne = (req, res) => {
     const { _id } = req.params;
@@ -183,12 +177,8 @@ const getOne = (req, res) => {
                 res.status(status.NOT_FOUND).json({
                     error: 'No se encontro la imagen para este registro'
                 });
-                /*res.status(status.INTERNAL_SERVER_ERROR).json({
-                    error: err.toString()
-                });*/
             }
             if (student.filename) {
-                // console.log('Entro AQUI');
                 res.set('Content-Type', 'image/jpeg');
                 fs.createReadStream(path.join('images', student.filename)).pipe(res);
             } else {
@@ -203,24 +193,11 @@ const getOne = (req, res) => {
             error: 'No se encontro la imagen para este registro'
         });
     }
-}
-/*
-const create = (req,res) => {
-    const student = req.body;
-    _student.findOneAndUpdate(student, student, {
-        strict: false,
-        upsert: true,
-        new: true,
-        runValidators: true
-    }).exec(handler.handleOne.bind(null, 'students', res));
 };
-*/
 
 const assignDocument = (req, res) => {
     const { _id } = req.params;
-    //const _file = req.file;
     const _doc = req.body;
-    //_doc.filename=_file.filename;        
     const query = { _id: _id, documents: { $elemMatch: { type: _doc.type } } };
     const push = { $push: { documents: _doc } };
     _student.findOne(query, (e, student) => {
@@ -237,24 +214,7 @@ const assignDocument = (req, res) => {
             _student.findOneAndUpdate({ _id: _id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
         }
     });
-    // _student.findOne(query,(e,student)=>{
-    //     if(e)
-    //         return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
-    //     let subQuery={documents:{$elemMatch:{type:_doc.type}}};
-    //     student.findOne(subQuery,(eDoc,document)=>{
-    //         if(eDoc)
-    //             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
-    //         if(document){
-    //             _student.findOneAndUpdate(query,push,{new:true}).exec(handler.handleOne.bind(null,'student',res));
-    //         }
-    //         else{
-    //             query={_id : _id, documents:{$elemMatch:{type:_doc.type}}};                
-    //             _student.findOneAndUpdate(query,push,{new:true}).exec(handler.handleOne.bind(null,'student',res));
-    //         }
-    //     })
-    // });        
-}
-
+};
 
 const csvIngles = (req, res) => {
     const _scholar = req.body;
@@ -271,7 +231,7 @@ const csvIngles = (req, res) => {
                 }
             }
         );
-    }
+    };
 
     var secondStep = (data) => {
         if (data.isNew) {
@@ -310,7 +270,7 @@ const csvIngles = (req, res) => {
     }).catch((error) => {
         return res.json({ Error: error });
     });
-}
+};
 
 const getRequest = (req, res) => {    
     const { _id } = req.params;    
@@ -340,8 +300,6 @@ const getResource = (req, res) => {
                 return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
             res.set('Content-Type', 'image/jpeg');            
             fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
-            // res.set('Content-Type', 'image/jpeg');
-            // fs.createReadStream(path.join('images', student.filename)).pipe(res);       
         });
     });
 };

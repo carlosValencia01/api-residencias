@@ -35,8 +35,6 @@ const getAll = (req, res) => {
   _student.find(query, { controlNumber: 1, fullName: 1, career: 1, "documents.$": 1 }).sort({ "documents.$.releaseDate": -1 }).limit(100).exec(handler.handleMany.bind(null, 'students', res));
 };
 
-
-
 const create = (req, res) => {
   let student = req.body;
   _student.findOne({ controlNumber: student.controlNumber }).then(
@@ -45,7 +43,6 @@ const create = (req, res) => {
       if (!oneStudent) {        
         student.document.releaseDate=new Date();
         student.documents = new Array(student.document);
-        //student.document[0].releaseDate = new Date();
         console.log("one", student);
         _student.create(student).then(created => {
           console.log("ESTUDIANTE ASS", created);
@@ -72,7 +69,7 @@ const create = (req, res) => {
         });
       }
     });
-}
+};
 
 const remove = (req, res) => {
   const { _id } = req.params;
@@ -92,9 +89,7 @@ const remove = (req, res) => {
       return res.status(status.OK).json({ student: student });
     })
   });
-  //  _student.findOneAndUpdate({_id:_id, documents: { $elemMatch: { type: 'Ingles' }}},
-  //   { $pop:{"documents.$":-1}}, { new: true }).exec(handler.handleOne.bind(null, 'student', res));    
-}
+};
 
 module.exports = (Student) => {
   _student = Student;

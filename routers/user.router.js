@@ -14,4 +14,4 @@ module.exports = (wagner) => {
         userCtrl.login(req, res));
   
     return router;
-  }
+  };

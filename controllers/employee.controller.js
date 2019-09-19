@@ -1,8 +1,7 @@
 const handler = require('../utils/handler');
 const status = require('http-status');
-const fs = require('fs')
+const fs = require('fs');
 const path = require('path');
-const del = require('del');
 const jwt = require('jsonwebtoken');
 const config = require('../_config');
 
@@ -24,7 +23,6 @@ const getByControlNumber = (req, res) => {
     console.log("ControlNumer" + controlNumber);
     //Hacer la petición hacia API de NIP y número de control
     _employee.find({ controlNumber: controlNumber })
-        //.exec(handler.handleOne.bind(null, 'employee', res));
         .exec(
             (err, employees) => {
                 if (err) {
@@ -51,7 +49,7 @@ const getByControlNumber = (req, res) => {
                     },
                     email: oneStudent.controlNumber,
                     role: 2
-                }
+                };
 
                 res.json({
                     user: formatStudent,
@@ -62,8 +60,6 @@ const getByControlNumber = (req, res) => {
             }
         )
 };
-
-
 
 const search = (req, res) => {
     const { start = 0, limit = 10 } = req.query;
@@ -111,7 +107,7 @@ const create = (req, res, next) => {
             error: err.toString()
         })
     );
-}
+};
 
 const createWithoutImage = (req, res) => {
     const employee = req.body;
@@ -124,7 +120,7 @@ const createWithoutImage = (req, res) => {
             error: err.toString()
         })
     });
-}
+};
 
 const updateEmployee = (req, res) => {
     const { _id } = req.params;
@@ -133,7 +129,7 @@ const updateEmployee = (req, res) => {
     const query = { _id: _id };
     _employee.findOneAndUpdate(query, employee, { new: true })
         .exec(handler.handleOne.bind(null, 'employee', res));
-}
+};
 
 const uploadImage = (req, res) => {
     const { _id } = req.params;
@@ -144,18 +140,17 @@ const uploadImage = (req, res) => {
 
     _employee.findOneAndUpdate(query, updated, { new: true })
         .exec(handler.handleOne.bind(null, 'employee', res));
-}
+};
 
 const updateOne = (req, res, imgId) => {
-    const query = { _id: res.post_id }
+    const query = { _id: res.post_id };
 
     _employee.findOneAndUpdate(query).exec((err, query) => {
         if (query) {
             handler.handleOne.bind(null, 'employees', res)
         }
-    })
-}
-
+    });
+};
 
 const getOne = (req, res) => {
     const { _id } = req.params;
@@ -168,12 +163,8 @@ const getOne = (req, res) => {
                 res.status(status.NOT_FOUND).json({
                     error: 'No se encontro la imagen para este registro'
                 });
-                /*res.status(status.INTERNAL_SERVER_ERROR).json({
-                    error: err.toString()
-                });*/
             }
             if (employee.filename) {
-                // console.log('Entro AQUI');
                 res.set('Content-Type', 'image/jpeg');
                 fs.createReadStream(path.join('images', employee.filename)).pipe(res);
             } else {
@@ -188,8 +179,7 @@ const getOne = (req, res) => {
             error: 'No se encontro la imagen para este registro'
         });
     }
-}
-
+};
 
 const csvDegree = (req, res) => {
     const _employees = req.body;
@@ -206,7 +196,7 @@ const csvDegree = (req, res) => {
                 }
             }
         );
-    }
+    };
 
     var secondStep = (data) => {
         if (data.isNew) {
@@ -215,7 +205,6 @@ const csvDegree = (req, res) => {
         }
         else {
             const query = { _id: data._id };
-            // return _employee.findOneAndUpdate(query, { $set: { "degree.title": data.degree.title, "degree.cedula": data.degree.cedula } }, { upsert: true, new: true });
             return _employee.findOneAndUpdate(query, data, { new: true });
         }
     };
@@ -232,8 +221,7 @@ const csvDegree = (req, res) => {
     }).catch((error) => {
         return res.json({ Error: error });
     });
-}
-
+};
 
 const searchGrade = (req, res) => {
     const { search } = req.params;
@@ -246,13 +234,13 @@ const searchGrade = (req, res) => {
     };
     _employee.find(query, { name: 1, area: 1, position: 1, grade: 1 })
         .exec(handler.handleMany.bind(null, 'employees', res));
-}
+};
+
 const getEmployeeByArea = (req, res) => {
     let query =
         [
             {
                 $group: {
-                    //_id: '$area.',
                     _id:"$deptoId",
                     values:
                     {
@@ -263,18 +251,8 @@ const getEmployeeByArea = (req, res) => {
         ];
     _employee
     .aggregate(query)
-    // .populate({
-    //         path:'deptoId',
-    //         model:'Department'
-    //     })
-        .exec(handler.handleMany.bind(null, 'employees', res));
-}
-
-// const getEmployeeByDepto = (req, res) => {
-//     _employee.find({})
-//         .populate()
-//         .exec(handler.handleMany.bind(null, 'employees', res));
-// }
+    .exec(handler.handleMany.bind(null, 'employees', res));
+};
 
 const updateEmployeGrade = (req, res) => {
     const { _id } = req.params;
@@ -282,7 +260,7 @@ const updateEmployeGrade = (req, res) => {
     const query = { _id: _id };
     _employee.findOneAndUpdate(query, _obj, { new: true })
         .exec(handler.handleOne.bind(null, 'employee', res));
-}
+};
 
 module.exports = (Employee) => {
     _employee = Employee;
