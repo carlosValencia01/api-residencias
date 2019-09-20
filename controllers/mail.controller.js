@@ -2,7 +2,6 @@ const status = require('http-status');
 const template_etitulos = require('../templates/etitulos');
 const send = require('../utils/sendmail');
 
-
 const sendmail = (req, res) => {
     console.log("Sending mail...");
     let { to_email, to_name, subject, sender, name } = req.body;
@@ -14,7 +13,7 @@ const sendmail = (req, res) => {
         message: template_etitulos(name),
         type: "text/html",
         sender: sender
-    }
+    };
     send.send(env, function (data) {
         if (data.code !== 202) {
             res.status(status.BAD_REQUEST);

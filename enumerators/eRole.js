@@ -1,7 +1,7 @@
-const eROLE={    
+const eROLE = {
     eSECRETARY:'secretaria',
     eCOORDINATION:'coordinacion',
     eCHIEFACADEMIC:'jefe'    
-}
+};
 
-module.exports=eROLE;
+module.exports = eROLE;

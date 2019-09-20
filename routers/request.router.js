@@ -2,24 +2,11 @@ const router = require('express').Router();
 const multer = require('multer');
 const mv = require('mv');
 const path = require('path');
-//const constants=require('../constants');
 const uploads = require('../utils/uploads');
 const handler = require('../utils/handler');
 const status = require('http-status');
 const UPLOAD_FILE = 'documents/';
 const UPLOAD_FILE_TEMP = 'tmpFile/';
-
-//Load File
-// var storageFile = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//         cb(null, UPLOAD_FILE);
-//     },
-//     filename: function (req, file, cb) {                        
-//         cb(null, UPLOAD_FILE_TEMP + req.params._id + path.extname(file.originalname));
-//     }
-// })
-
-// let uploadFile = multer({ storage: storageFile }).single('file');
 
 module.exports = (wagner) => {
     const requestCtrl = wagner.invoke((Request) => require('../controllers/request.controller')(Request));
@@ -101,4 +88,4 @@ module.exports = (wagner) => {
     });
     router.get('/:_id', (req, res) => requestCtrl.getById(req, res));
     return router;
-}
+};

@@ -13,4 +13,4 @@ module.exports = (wagner) => {
         router.delete('/remove/:_id', (req, res) => englishCtrl.remove(req, res));                
 
     return router;
-}
+};

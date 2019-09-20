@@ -21,31 +21,6 @@ let employeeSchema = new mongoose.Schema({
         default: { type: Boolean, default: false }
     }],
 });
-// , {
-//         toObject: {
-//             virtuals: true
-//         },
-//         toJSON: {
-//             virtuals: true
-//         }
-//     });
-// employeeSchema.set('toObject', { virtuals: true });
-// employeeSchema.set('toJSON', { virtuals: true });
-
-// employeeSchema.virtual('gradeMax').get(() => {
-//     if (typeof (this.grade) === 'undefined')
-//         return '';
-//     let isGrade = this.grade.find(x => x.level === 'DOCTORADO');
-//     if (typeof (isGrade) !== 'undefined')
-//         return isGrade.abbreviation;
-//     isGrade = this.grade.find(x => x.level === 'MAESTRÍA');
-//     if (typeof (isGrade) !== 'undefined')
-//         return isGrade.abbreviation;
-//     isGrade = this.grade.find(x => x.level === 'LICENCIATURA');
-//     if (typeof (isGrade) !== 'undefined')
-//         return isGrade.abbreviation;
-//     return "";
-// })
 const employeeModel = mongoose.model('Employee', employeeSchema, 'employees');
 
 module.exports = employeeModel;

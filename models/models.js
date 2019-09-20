@@ -28,4 +28,4 @@ module.exports = (wagner) => {
     _.each(models, (v, k) => {
         wagner.factory(k, () => v);
     });
-}
+};
