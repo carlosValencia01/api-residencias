@@ -82,8 +82,9 @@ const sendGraduationMailSurvey = (req, res) => {
     const {id} = req.body;
     let nombre = req.body.name;
     let nc = req.body.nc;
+    let carrera = req.body.carreer
     
-    let message = require('../templates/surveyGraduates')(id,nombre,nc)
+    let message = require('../templates/surveyGraduates')(id,nombre,nc,carrera)
     req.body.message= message;
     req.body.subject= "Encuesta Egresados";
     req.body.sender= "Comunicación y Difusión <comunicacion@ittepic.edu.mx>"
