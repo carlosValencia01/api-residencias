@@ -17,35 +17,10 @@ let employeeSchema = new mongoose.Schema({
         title: { type: String, uppercase: true, trim: true },
         cedula: { type: String, uppercase: true, trim: true },
         abbreviation: { type: String, uppercase: true, trim: true },
-        level: { type: String, enum: ['DOCTORADO', 'MAESTRÍA', 'LICENCIATURA'], uppercase: true, trim: true },
+        level: { type: String, enum: ['DOCTORADO', 'MAESTRIA', 'LICENCIATURA'], uppercase: true, trim: true },
         default: { type: Boolean, default: false }
     }],
 });
-// , {
-//         toObject: {
-//             virtuals: true
-//         },
-//         toJSON: {
-//             virtuals: true
-//         }
-//     });
-// employeeSchema.set('toObject', { virtuals: true });
-// employeeSchema.set('toJSON', { virtuals: true });
-
-// employeeSchema.virtual('gradeMax').get(() => {
-//     if (typeof (this.grade) === 'undefined')
-//         return '';
-//     let isGrade = this.grade.find(x => x.level === 'DOCTORADO');
-//     if (typeof (isGrade) !== 'undefined')
-//         return isGrade.abbreviation;
-//     isGrade = this.grade.find(x => x.level === 'MAESTRÍA');
-//     if (typeof (isGrade) !== 'undefined')
-//         return isGrade.abbreviation;
-//     isGrade = this.grade.find(x => x.level === 'LICENCIATURA');
-//     if (typeof (isGrade) !== 'undefined')
-//         return isGrade.abbreviation;
-//     return "";
-// })
 const employeeModel = mongoose.model('Employee', employeeSchema, 'employees');
 
 module.exports = employeeModel;

@@ -10,13 +10,6 @@ const eREQUEST = {
     ASSIGNED:'Asignado',
     REALIZED: 'Realizado',
     GENERATED: 'Generado'
-    // 'Verificado',
-    // 'Registrado',
-
-    // 'Validado',
-    // 'Agendado',
-    // 'Realizado',
-    // 'Aprobado'
 };
 
 module.exports = eREQUEST;

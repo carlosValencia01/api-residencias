@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const multer = require('multer');
 
-let UPLOAD_PATH = 'images'
+let UPLOAD_PATH = 'images';
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -11,9 +11,8 @@ var storage = multer.diskStorage({
         console.log(req.params);
         cb(null, file.fieldname + '-' + req.params._id)
     }
-})
-let upload = multer({ storage: storage })
-
+});
+let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
     const employeeCtrl = wagner.invoke((Employee) =>
@@ -49,7 +48,6 @@ module.exports = (wagner) => {
     router.put('/:_id', (req, res) =>
         employeeCtrl.updateEmployee(req, res));
 
-
     router.put('/image/:_id', upload.single('image'), function (req, res) {
         employeeCtrl.uploadImage(req, res)
     });
@@ -61,16 +59,8 @@ module.exports = (wagner) => {
     router.get('/grade/search/:search', (req, res) =>
         employeeCtrl.searchGrade(req, res));
 
-
     router.put('/grade/:_id', (req, res) =>
         employeeCtrl.updateEmployeGrade(req, res));
 
-    /*
-    router.post('/', function (req, res) {
-        console.log('creating pots');
-        employeeCtrl.create(req,res);
-    });
-    */
-
     return router;
-}
+};

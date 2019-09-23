@@ -3,7 +3,7 @@ module.exports = {
   passCrpt: "M}uwsh¿pd$w&",
   port: 3003,
   host: "cideti.com.mx",
-  dbhost: "localhost",
+  dbhost: "127.0.0.1",
   dbport: "27017",
   dbname: "credentials-db",
   password: "123456",
