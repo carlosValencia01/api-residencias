@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const multer = require('multer');
-
-let UPLOAD_PATH = 'images'
+let UPLOAD_PATH = 'images';
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -11,24 +10,32 @@ var storage = multer.diskStorage({
         console.log(req.params);
         cb(null, file.fieldname + '-' + req.params._id)
     }
-})
-let upload = multer({ storage: storage })
+});
+let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
-    const studentCtrl = wagner.invoke((Student) =>
-        require('../controllers/student.controller')(Student));
+    const studentCtrl = wagner.invoke((Student, Request) =>
+        require('../controllers/student.controller')(Student, Request));
 
     router.get('/', (req, res) => studentCtrl.getAll(req, res));
     router.get('/:_id', (req, res) => studentCtrl.getById(req, res));
 
     router.get('/verifystatus/:nc', (req, res) => studentCtrl.verifyStatus(req, res));
 
+    router.get('/request/:_id', (req, res) =>
+        studentCtrl.getRequest(req, res));
 
     router.get('/image/:_id', (req, res) =>
         studentCtrl.getOne(req, res));
 
     router.get('/search/:search', (req, res) =>
         studentCtrl.search(req, res));
+
+    router.get('/projectCover/:_id', (req, res) =>
+        studentCtrl.getProjectCover(req, res));
+
+    router.get('/:resource/:_id', (req, res) =>
+        studentCtrl.getResource(req, res));
 
     router.post('/', upload.single('image'), function (req, res) {
         console.log('Creando Student con image!');
@@ -44,18 +51,18 @@ module.exports = (wagner) => {
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
 
-
     router.put('/image/:_id', upload.single('image'), function (req, res) {
         studentCtrl.uploadImage(req, res)
-    })
-
-
-    /*
-    router.post('/', function (req, res) {
-        console.log('creating pots');
-        studentCtrl.create(req,res);
     });
-    */
+
+    router.put('/document/:_id',
+        function (req, res) {
+            studentCtrl.assignDocument(req, res);
+        });
+
+    router.post('/csv', function (req, res) {
+        studentCtrl.csvIngles(req, res);
+    });
 
     return router;
-}
+};

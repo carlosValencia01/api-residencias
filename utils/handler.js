@@ -31,5 +31,14 @@ var handleMany = function handleMany(property, res, error, result) {
    res.json(json);
 };
 
+const handleError = (res, _status, err) => {
+   return res.status(_status)
+       .json({
+           status: _status,
+           message: err.message.toString()
+       });
+};
+
 module.exports.handleOne = handleOne;
 module.exports.handleMany = handleMany;
+module.exports.handleError = handleError;

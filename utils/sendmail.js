@@ -5,7 +5,6 @@ const sg = require('sendgrid')(config.SENDGRID_APIKEY);
 module.exports.send = (params, done) => {
     let { to_email, to_name, subject, message, type, sender } = params;
 
-    //from = config.sender_email;
     from = sender;
 
     content = new helper.Content(type, message);
@@ -24,10 +23,6 @@ module.exports.send = (params, done) => {
 
     mail.addPersonalization(personalization);
 
-    mail.setFrom(from_email);
-
-    mail.setSubject(subject);
-
     var request = sg.emptyRequest({
         method: 'POST',
         path: '/v3/mail/send',
@@ -38,10 +33,8 @@ module.exports.send = (params, done) => {
         var res2 = {};
 
         res2.code = response.statusCode;
-        //res.status(status.BAD_REQUEST);
         switch (res2.code) {
             case 202:
-                //res.status(status.ACCEPTED);
                 res2.message = "Mensaje enviado";
                 res2.detail = "OK";
                 break;
@@ -110,6 +103,5 @@ module.exports.send = (params, done) => {
                 res2.detail = "SERVICE NOT AVAILABLE";
         }
         done(res2);
-        //res.json(res2);
     });
-}
+};

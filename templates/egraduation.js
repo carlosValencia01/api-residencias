@@ -41,10 +41,10 @@ module.exports = (ID,NOMBRE) => {
               </div>
               <hr style="height:2px; background:black">
               <div style="font-size:19px; text-align:center">
-                  <p>Recibe un cordial saludo<br><b>${NOMBRE}</b></p>
+                  <p>Estimado<br><b>${NOMBRE}</b></p>
               </div>
               <div style="font-size:15px;">
-                  <p>Se le hace entrega de la invitación para asistir a la <b>Ceremonia de Graduación ITTepic</b> que se llevará a cabo el día <b>4 de Octubre</b> del presente año a las <b>5:00 p.m</b>,<br> en el <b>Teatro del pueblo Alí Chumacero</b>.</p>
+                  <p>Te felicitamos por llegar a esta etapa tan importante para tu vida. TE RECORDAMOS QUE PARTICIPES EL DIA <b>3 DE OCTUBRE A LAS 8:00 A.M. EN LA FOTO OFICIAL DE GENERACIÓN OCTUBRE 2019</b>, ASÍ MISMO INVITARTE A PARTICIPAR EN EL ENSAYO GENERAL QUE SE LLEVARÁ A CABO EN LAS INSTALACIONES DEL TEATRO DEL PUEBLO EL DÍA <b>4 DE OCTUBRE A LAS 9:00 A.M.</b> Este evento es trascendental. Asimismo, te invitamos a CONTINUAR cerrando el ciclo académico con el proceso de Titulación y te conviertas en LICENCIADO, ARQUITECTO O INGENIERO.</p>
               </div>
               <hr style="height:2px; background:black">
               <div style="font-size:20px;">
@@ -53,6 +53,9 @@ module.exports = (ID,NOMBRE) => {
 
               <div style="text-align:center">
                 <img src="https://chart.googleapis.com/chart?chs=450x450&cht=qr&chl=${ID}&choe=UTF-8">
+              </div>
+              <div style="font-size:19px; text-align:center">
+                <p><b>Hora de ingreso 5:00 p.m - 5:30 p.m.</b></p>
               </div>
               <hr style="height:2px; background:black">
 

@@ -1,13 +1,10 @@
 const bodyParser = require('body-parser');
 const express = require('express');
+const expressJWT = require('express-jwt');
 const morgan = require('morgan');
 const wagner = require('wagner-core');
-// const path = require('path');
-const expressJWT = require('express-jwt');
-const config = require('./_config');
-
 const URL = `/escolares`;
-
+const config = require('./_config');
 // MODELS
 require('./models/models')(wagner);
 
@@ -18,6 +15,10 @@ const inscription = require('./routers/inscription.router')(wagner);
 const graduation = require('./routers/graduation.router')(wagner);
 const graduate = require('./routers/graduate.router')(wagner);
 const english = require('./routers/english.router')(wagner);
+const role = require('./routers/role.router')(wagner);
+// const mail = require('./routers/mail.router')(wagner);
+const request = require('./routers/request.router')(wagner);
+const department = require('./routers/department.router')(wagner);
 
 let app = express();
 
@@ -55,12 +56,16 @@ app.use(expressJWT({
   secret: config.secret
 }).unless(jwtOptions));
 
-app.use(uri + 'user', user);
-app.use(uri + 'student', student);
-app.use(uri + 'employee', employee);
-app.use(uri + 'inscription', inscription);
+
 app.use(uri + 'graduationmail', graduation);
 app.use(uri + 'graduate', graduate);
+// app.use(URL+'/sendmail', mail);
+app.use(uri + 'user', user);
+console.log("uri" + uri);
+app.use(uri + 'student', student);
+app.use(uri + 'employee', employee);
 app.use(uri + 'english', english);
-
+app.use(uri + 'role', role);
+app.use(uri + 'request', request);
+app.use(uri + 'department',department);
 module.exports = app;
