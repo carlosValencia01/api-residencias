@@ -67,6 +67,7 @@ const login = (req, res) => {
                         fullName: user.employeeId.name.fullName
                     },
                     email: user.email,
+                    role: user.role,
                     rol: {
                         name: user.idRole.name,
                         permissions: user.idRole.permissions
