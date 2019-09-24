@@ -23,6 +23,10 @@ module.exports.send = (params, done) => {
 
     mail.addPersonalization(personalization);
 
+    mail.setFrom(from_email);
+
+    mail.setSubject(subject);
+
     var request = sg.emptyRequest({
         method: 'POST',
         path: '/v3/mail/send',

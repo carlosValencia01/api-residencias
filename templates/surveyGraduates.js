@@ -1,8 +1,8 @@
 module.exports = (ID,NOMBRE,NC,CARRERA) => {
     
-    //const url = 'https://escolares.ittepic.edu.mx/surveyGraduates';
+    const url = 'https://escolares.ittepic.edu.mx/surveyGraduates';
     //const url = 'http://localhost:4200/surveyGraduates';
-    const url = 'http://104.248.94.77/surveyGraduates';
+    //const url = 'http://104.248.94.77/surveyGraduates';
     const template = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//ES" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
     <html xmlns="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml"> 
       <head> 
