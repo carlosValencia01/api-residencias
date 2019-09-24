@@ -59,26 +59,35 @@ const login = (req, res) => {
             }
             if (user) {
                 console.log(user);
-                const token = jwt.sign({ email: user.email }, config.secret);
-                let formatUser = {
-                    _id: user._id,
-                    name: {
-                        firstName: user.employeeId.name.firstName,
-                        lastName: user.employeeId.name.lastName,
-                        fullName: user.employeeId.name.fullName
-                    },
-                    email: user.email,
-                    role: user.role,
-                    rol: {
-                        name: user.idRole.name,
-                        permissions: user.idRole.permissions
+                user.validatePasswd(password, user.password, invalid => {
+                    // Password inválido
+                    if (invalid) {
+                        return res.status(status.FORBIDDEN).json({
+                            error: 'password is invalid'
+                        });
                     }
-                };
-                //Se retorna el usuario y token
-                return res.json({
-                    user: formatUser,
-                    token: token,
-                    action: 'signin'
+                    // Password válido, se genera el token
+                    const token = jwt.sign({ email: user.email }, config.secret);
+                    let formatUser = {
+                        _id: user._id,
+                        name: {
+                            firstName: user.employeeId.name.firstName,
+                            lastName: user.employeeId.name.lastName,
+                            fullName: user.employeeId.name.fullName
+                        },
+                        email: user.email,
+                        role: user.role,
+                        rol: {
+                            name: user.idRole.name,
+                            permissions: user.idRole.permissions
+                        }
+                    };
+                    //Se retorna el usuario y token
+                    return res.json({
+                        user: formatUser,
+                        token: token,
+                        action: 'signin'
+                    });
                 });
             } else {
                 // Validar si es alumno y su nc y NIP son válidos
