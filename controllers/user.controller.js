@@ -279,6 +279,99 @@ const login = (req, res) => {
     });
 };
 
+const getDataEmployee = (req, res) => {
+    const { email } = req.params;
+    const query = { email: email };
+
+    _user.findOne(query)
+        .populate({
+            path: "employeeId", model: "Employee",
+            select: {
+                rfc: 1, name: 1, area: 1, position: 1, _id: 1
+            }
+        })
+        .exec((err, employee) => {
+            if (!err && employee) {
+                const employeeData = {
+                    _id: employee.employeeId._id,
+                    rfc: employee.employeeId.rfc,
+                    email: employee.email,
+                    name: employee.employeeId.name,
+                    area: employee.employeeId.area,
+                    position: employee.employeeId.position
+                };
+                res.json({
+                    employee: employeeData
+                });
+            } else {
+                res.json({
+                    status: status.NOT_FOUND,
+                    error: err.toString()
+                });
+            }
+        });
+};
+
+const updateUserData = (req, res) => {
+    const { _id } = req.params;
+    const { employee, user } = req.body;
+    const query = { _id: _id };
+
+    _user.findOne({ employeeId: _id }, (err, userData) => {
+        if (!err && userData) {
+            userData.validatePasswd(user.oldPassword, userData.password, invalid => {
+                if (invalid) {
+                    return res.json({
+                        status: status.FORBIDDEN,
+                        error: 'La contraseña actual es incorrecta',
+                        password: false,
+                        employee: false
+                    });
+                }
+                userData.encrypt(user.newPassword, (pass) => {
+                    if (pass) {
+                        _user.updateOne({employeeId: _id}, {$set: {password: pass}}, (err, _) => {
+                            if (!err && _) {
+                                _employee.findOneAndUpdate(query, employee, (err, _) => {
+                                    if (!err && _) {
+                                        return res.json({
+                                            status: status.OK,
+                                            message: 'Datos actualizados con éxito',
+                                            password: true,
+                                            employee: true
+                                        });
+                                    } else {
+                                        return res.json({
+                                            status: status.OK,
+                                            message: 'Ocurrió un erro al actualizar los datos del empleado',
+                                            password: true,
+                                            employee: false
+                                        });
+                                    }
+                                });
+                            } else {
+                                return res.json({
+                                    status: status.OK,
+                                    message: 'Ocurrió un error al actualizar la contraseña',
+                                    password: false,
+                                    employee: false
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        } else {
+            return res.json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: 'No se encontró el usuario',
+                password: false,
+                employee: false
+            });
+        }
+    });
+};
+
 module.exports = (User, Student, Employee) => {
     _user = User;
     _student = Student;
@@ -286,6 +379,8 @@ module.exports = (User, Student, Employee) => {
     return ({
         register,
         login,
-        getAll
+        getAll,
+        getDataEmployee,
+        updateUserData,
     });
 };
