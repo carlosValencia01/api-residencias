@@ -45,7 +45,7 @@ module.exports = (ID,NOMBRE,NC,CARRERA) => {
                 </div>
                 <hr style="height:2px; background:black">
                 <div style="font-size:19px; text-align:center">
-                    <p>Estimado<br><b>${NOMBRE}</b></p>
+                    <p>Estimado(a)<br><b>${NOMBRE}</b></p>
                 </div>
                 <div style="font-size:15px;">
                     <p>Recibe una felicitación por haber concluido tus estudios en la carrera de<br><b>${CARRERA}</b><br>Para el Tecnológico Nacional de México campus Tepic, es de suma importancia elevar la calidad de sus servicios, es por ello que, para acceder a tu boleto electrónico es necesario que nos apoyes a contestar una encuesta.</p>
