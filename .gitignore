@@ -64,3 +64,6 @@ typings/
 #WebStorm project
 .idea
 sendgrid.env
+
+# Visual studio code projects
+.vscode
