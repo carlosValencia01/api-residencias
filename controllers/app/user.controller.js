@@ -317,57 +317,70 @@ const updateUserData = (req, res) => {
     const { employee, user } = req.body;
     const query = { _id: _id };
 
-    _user.findOne({ employeeId: _id }, (err, userData) => {
-        if (!err && userData) {
-            userData.validatePasswd(user.oldPassword, userData.password, invalid => {
-                if (invalid) {
-                    return res.json({
-                        status: status.FORBIDDEN,
-                        error: 'La contraseña actual es incorrecta',
-                        password: false,
-                        employee: false
-                    });
-                }
-                userData.encrypt(user.newPassword, (pass) => {
-                    if (pass) {
-                        _user.updateOne({employeeId: _id}, {$set: {password: pass}}, (err, _) => {
-                            if (!err && _) {
-                                _employee.findOneAndUpdate(query, employee, (err, _) => {
-                                    if (!err && _) {
-                                        return res.json({
-                                            status: status.OK,
-                                            message: 'Datos actualizados con éxito',
-                                            password: true,
-                                            employee: true
-                                        });
-                                    } else {
-                                        return res.json({
-                                            status: status.OK,
-                                            message: 'Ocurrió un erro al actualizar los datos del empleado',
-                                            password: true,
-                                            employee: false
-                                        });
-                                    }
-                                });
-                            } else {
-                                return res.json({
-                                    status: status.OK,
-                                    message: 'Ocurrió un error al actualizar la contraseña',
-                                    password: false,
-                                    employee: false
-                                });
-                            }
+    new Promise((resolve, reject) => {
+        _user.findOne({ employeeId: _id }, async (err, userData) => {
+            if (!err && userData) {
+                userData.validatePasswd(user.oldPassword, userData.password, async invalid => {
+                    if (!invalid) {
+                        const changedPassword = user.newPassword ? await changePassword(userData) : false;
+                        const changedEmployee = employee ? await changeEmployee() : false;
+                        resolve({
+                            password: changedPassword,
+                            employee: changedEmployee
                         });
+                    } else {
+                        resolve(false);
                     }
                 });
-            });
-        } else {
+            } else {
+                reject();
+            }
+        });
+    })
+    .then(data => {
+        if (!data) {
             return res.json({
                 status: status.INTERNAL_SERVER_ERROR,
-                error: 'No se encontró el usuario',
-                password: false,
-                employee: false
+                message: 'Contraseña incorrecta'
             });
+        }
+        return res.json({
+            password: data.password,
+            employee: data.employee
+        });
+    })
+    .catch(_ => {
+        return res.json({
+            status: status.NOT_FOUND,
+            password: false,
+            employee: false
+        });
+    });
+
+    const changePassword = (userData) => new Promise((resolve) => {
+        userData.encrypt(user.newPassword, async (pass) => {
+            if (pass) {
+                await _user.updateOne({ employeeId: _id }, {
+                    $set: { password: pass }}, (err, _) => {
+                        resolve(!err);
+                    });
+            } else {
+                resolve(false);
+            }
+        });
+    });
+
+    const changeEmployee = () => new Promise((resolve) => {
+        if (employee.name) {
+             _employee.updateOne(query, {
+                $set: {
+                    name: employee.name
+                }
+            }, (err, _) => {
+                resolve(!err);
+            });
+        } else {
+            resolve(false);
         }
     });
 };
