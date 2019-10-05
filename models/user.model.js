@@ -2,15 +2,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 let userSchema = new mongoose.Schema({
-    name: {
-        firstName: { type: String, required: true },
-        lastName: { type: String, required: true },
-        fullName: { type: String }
-    },
     email: { type: String, required: true, unique: true },
     password: { type: String },
     role: { type: Number },
-    idRole: { type: mongoose.Schema.Types.ObjectId}
+    idRole: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
+    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }
 });
 
 userSchema.pre('save', function (next) {
@@ -39,6 +35,23 @@ userSchema.method('validatePasswd', function (rpass, upass, cb) {
             cb(true);
         }
     });
+});
+
+userSchema.method('encrypt', (pass, cb) => {
+    if (!pass) {
+        cb(null);
+    } else {
+        bcrypt.genSalt(8, (err, salt) => {
+            bcrypt.hash(pass, salt, (err, hash) => {
+                if (err) {
+                    cb(null);
+                } else {
+                    pass = hash;
+                    cb(pass);
+                }
+            });
+        });
+    }
 });
 
 const userModel = mongoose.model('User', userSchema, 'users');

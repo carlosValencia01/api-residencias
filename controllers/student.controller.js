@@ -304,12 +304,16 @@ const getResource = (req, res) => {
     });
 };
 
-const getProjectCover = (req, res) => {
-  const {_id } = req.params;
+const getFilePDF = (req, res) => {
+  const { resource, _id } = req.params;
   _request.findOne({ _id: _id }, (err, request) => {
       if (!err && request) {
+          const fileInformation = request.documents.find(file => file.nameFile.includes(resource.toUpperCase()));
+          if (!fileInformation) {
+              return handler.handleError(res, status.NOT_FOUND, {message: "Recurso no encontrado"});
+          }
           res.set('Content-Type', 'application/pdf');
-          fs.createReadStream(path.join('documents', request.documents[0].nameFile)).pipe(res);
+          fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
       } else {
           return handler.handleError(res, status.NOT_FOUND, { message: "Recurso no encontrado" });
       }
@@ -335,6 +339,6 @@ module.exports = (Student, Request) => {
         assignDocument,
         getRequest,
         getResource,
-        getProjectCover,
+        getFilePDF,
     });
 };
