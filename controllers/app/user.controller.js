@@ -383,7 +383,7 @@ const updateUserData = (req, res) => {
             resolve(false);
         }
     });
-};
+}
 
 module.exports = (User, Student, Employee) => {
     _user = User;

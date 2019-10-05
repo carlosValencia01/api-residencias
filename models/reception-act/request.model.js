@@ -10,7 +10,7 @@ const requestSchema = new mongoose.Schema({
     actDate: { type: Date },
     telephone: { type: String, required: true },
     honorificMention: { type: Boolean, required: true, default: false },
-    phase: { type: String, enum: ['Capturado', 'Enviado','Verificado', 'Registrado', 'Liberado', 'Entregado','Validado', 'Asignado', 'Realizado', 'Generado'], required: true },
+    phase: { type: String, enum: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado', 'Validado', 'Asignado', 'Realizado', 'Generado'], required: true },
     status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None'] },
     lastModified: { type: Date, required: true },
     observation: { type: String, default: '' },
@@ -23,7 +23,7 @@ const requestSchema = new mongoose.Schema({
     department: { name: { type: String }, boss: { type: String } },
     history: [
         {
-            phase: { type: String, enum: ['Capturado', 'Enviado','Verificado', 'Registrado', 'Liberado', 'Entregado','Validado', 'Asignado', 'Realizado', 'Generado'] },
+            phase: { type: String, enum: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado', 'Validado', 'Asignado', 'Realizado', 'Generado'] },
             status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None'] },
             observation: { type: String },
             achievementDate: { type: Date },
@@ -35,7 +35,8 @@ const requestSchema = new mongoose.Schema({
             type: { type: String, required: true },
             dateRegister: { type: Date, required: true },
             nameFile: { type: String, required: true },
-            status: { type: String, enum: ['process', 'wait', 'finish', 'error'] }
+            observation: { type: String, default:'' },
+            status: { type: String, enum: ['Process', 'Accept', 'Reject'] }
         }
     ]
 });
