@@ -119,7 +119,7 @@ const login = (req, res) => {
                                             select: {
                                                 permissions: 1, name: 1, _id: 0
                                             }
-                                        }).exec((error, oneUser) => {
+                                        }).exec(async (error, oneUser) => {
                                             // Hubo un error en la consulta
                                             if (error) {
                                                 console.log('Entra aquí');
@@ -127,6 +127,10 @@ const login = (req, res) => {
                                                     error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                                 });
                                             } else {
+                                                // Se verifica si tiene aprobado el inglés
+                                                let englishApproved = await validateEnglishApproved(email);
+                                                // Se verifica si es egresado
+                                                let isGraduate = await validateGraduateStatus(email);
                                                 // Si fue encontrado
                                                 if (oneUser) {
                                                     // Se contruye el token
@@ -143,7 +147,9 @@ const login = (req, res) => {
                                                         rol: {
                                                             name: oneUser.idRole.name,
                                                             permissions: oneUser.idRole.permissions
-                                                        }
+                                                        },
+                                                        english: englishApproved,
+                                                        graduate: isGraduate
                                                     };
                                                     // Se retorna el usuario y token
                                                     return res.json({
@@ -240,7 +246,9 @@ const login = (req, res) => {
                                                                         rol: {
                                                                             name: user.idRole.name,
                                                                             permissions: user.idRole.permissions
-                                                                        }
+                                                                        },
+                                                                        english: englishApproved,
+                                                                        graduate: isGraduate
                                                                     };
                                                                     // Se retorna el usuario y token
                                                                     return res.json({
@@ -384,6 +392,33 @@ const updateUserData = (req, res) => {
         }
     });
 }
+
+const validateEnglishApproved = (controlNumber) => {
+    return new Promise(async (resolve) => {
+        await _student.findOne({
+            controlNumber: controlNumber,
+            documents: {
+                $elemMatch: {
+                    type: 'Ingles'
+                }
+            }
+        }, (err, doc) => {
+            if (!err && doc) {
+                resolve(true);
+            }
+            resolve(false);
+        });
+    });
+};
+
+const validateGraduateStatus = (controlNumber) => {
+    return new Promise((resolve) => {
+        if (controlNumber === '14400947') {
+            resolve(true);
+        }
+        resolve(false);
+    });
+};
 
 module.exports = (User, Student, Employee) => {
     _user = User;
