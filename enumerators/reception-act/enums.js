@@ -1,7 +1,17 @@
-const eFiles = {
-    CURP: 'CURP',
+const eFile = {
     PROYECTO: 'PROYECTO',
-    ACTA_NACIMIENTO: 'ACTA_NACIMIENTO'
+    SOLICITUD: 'SOLICITUD',
+    REGISTRO: 'REGISTRO',
+    CURP: 'CURP',
+    ACTA_NACIMIENTO: 'ACTA_NACIMIENTO',
+    CERTIFICADO_B: 'CERTIFICADO_BACHILLERATO',
+    CEDULA: 'CEDULA_TECNICA',
+    CERTIFICADO_L: 'CERTIFICADO_LICENCIATURA',
+    SERVICIO: 'SERVICIO_SOCIAL',
+    INGLES: 'LIBERACION_INGLES',
+    PAGO: 'RECIBO',
+    CERTIFICADO_R: 'REVALIDACION',
+    RELEASED: 'LIBERACION'
 };
 
 const eCareer = {
@@ -50,9 +60,9 @@ const eStatusRequest = {
 };
 
 module.exports = {
-        eCareer,
-        eFiles,
-        eRequest,
-        eRole,
-        eStatusRequest,
+    eCareer,
+    eFile,
+    eRequest,
+    eRole,
+    eStatusRequest,
 };

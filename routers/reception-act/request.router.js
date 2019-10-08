@@ -125,6 +125,9 @@ module.exports = (wagner) => {
         })
     });
 
+    router.post('/:_id/file/omit', (req, res) =>
+        requestCtrl.omitFile(req, res));
+
     router.get('/:_id', (req, res) =>
         requestCtrl.getById(req, res));
 

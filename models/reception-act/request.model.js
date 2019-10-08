@@ -17,6 +17,9 @@ const requestSchema = new mongoose.Schema({
     doer: { type: String },
     adviser: { type: String },
     noIntegrants: { type: Number },
+    jury: [
+        { type: String }
+    ],
     integrants: [
         { name: { type: String }, controlNumber: { type: Number }, career: { type: String } }
     ],
@@ -35,8 +38,8 @@ const requestSchema = new mongoose.Schema({
             type: { type: String, required: true },
             dateRegister: { type: Date, required: true },
             nameFile: { type: String, required: true },
-            observation: { type: String, default:'' },
-            status: { type: String, enum: ['Process', 'Accept', 'Reject'] }
+            observation: { type: String, default: '' },
+            status: { type: String, enum: ['Process', 'Accept', 'Reject', 'Omit'] }
         }
     ]
 });

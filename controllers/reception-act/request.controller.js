@@ -2,7 +2,7 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
-const { eRequest, eStatusRequest, eRole } = require('../../enumerators/reception-act/enums');
+const { eRequest, eStatusRequest, eRole, eFile } = require('../../enumerators/reception-act/enums');
 
 let _request;
 
@@ -180,6 +180,36 @@ const addIntegrants = (req, res) => {
     });
 }
 
+const omitFile = (req, res) => {
+    const { _id } = req.params;
+    let data = req.body;
+    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
+        (error, request) => {
+            if (error) {
+                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
+            }
+            if (!request) {
+                _request.update({ _id: _id }, {
+                    $set: {
+                        status: eStatusRequest.PROCESS
+                    },
+                    $addToSet: {
+                        documents:
+                        {
+                            type: data.Document, dateRegister: new Date(), nameFile: '', status: data.Status
+                        }
+                    }
+                }).exec(handler.handleOne.bind(null, 'request', res));
+            } else {
+                _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+                    $set: {
+                        "documents.$": { type: data.Document, dateRegister: new Date(), nameFile: '', status: data.Status }
+                    }
+                }).exec(handler.handleOne.bind(null, 'request', res));
+            }
+        });
+}
+
 const uploadFile = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
@@ -232,16 +262,50 @@ const fileCheck = (req, res) => {
     _request.findOneAndUpdate({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
         $set: {
             'documents.$.status': data.Status,
-            'documents.$.observation':data.Observation
+            'documents.$.observation': data.Observation
         }
-    }, { new: true }).exec(handler.handleOne.bind(null, 'request', res));
+    }, { new: true }, (error, request) => {
+        if (error)
+            return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
+        const result = request.documents.filter(doc => doc.status === "Accept" || doc.status === "Omit");
+        console.log("RESULT", result.length);
+        if (result.length === 13) {
+            _request.findOneAndUpdate({ _id: _id }, {
+                $set: {
+                    phase: eRequest.VALIDATED,
+                    status: eStatusRequest.PROCESS,
+                    lastModified: new Date()
+                },
+                $addToSet: {
+                    history: {
+                        phase: eRequest.DELIVERED,
+                        achievementDate: new Date(),
+                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                        status: eStatusRequest.ACCEPT
+                    }
+                }
+            }).exec(handler.handleOne.bind(null, 'request', res));
+        } else {
+            var json = {};
+            json['request'] = request;
+            return res.status(status.OK).json(json);
+        }
+    })
+
+    // .exec(handler.handleOne.bind(null, 'request', res));
 };
 
 const releasedRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    console.log('Upload fgile', data);
-    console.log('Upload fgile', _id);
+    let panel = [
+        data.President,
+        data.Secretary,
+        data.Vocal,
+        data.Substitute
+    ];
+
     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
         (error, request) => {
             if (error) {
@@ -252,8 +316,9 @@ const releasedRequest = (req, res) => {
                 _request.update({ _id: _id }, {
                     $set: {
                         phase: eRequest.RELEASED,
-                        status: eStatusRequest.ACCEPT,
-                        lastModified: new Date()
+                        status: eStatusRequest.PROCESS,
+                        lastModified: new Date(),
+                        jury: panel
                     },
                     $addToSet: {
                         documents:
@@ -273,15 +338,16 @@ const releasedRequest = (req, res) => {
                 _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
                     $set: {
                         'documents.$': { type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: 'Accept' },
-                        phase: eRequest.DELIVERED,
-                        status: eStatusRequest.NONE,
-                        lastModified: new Date()
+                        phase: eRequest.RELEASED,
+                        status: eStatusRequest.PROCESS,
+                        lastModified: new Date(),
+                        jury: panel
                     },
                     $addToSet: {
                         history: {
-                            phase: eRequest.RELEASED,
+                            phase: eRequest.REGISTERED,
                             achievementDate: new Date(),
-                            doer: typeof (data.Doer) !== 'undefined' ? data.doer : '',
+                            doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
                             observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
                             status: eStatusRequest.ACCEPT
                         }
@@ -295,7 +361,6 @@ const releasedRequest = (req, res) => {
 const updateRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    console.log('data send', data);
     _request.findOne({ _id: _id }).exec((error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -327,11 +392,15 @@ const updateRequest = (req, res) => {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.VERIFIED;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.ACCEPT
+                    item.status = eStatusRequest.ACCEPT;
+                    request.documents.push(
+                        {
+                            type: eFile.SOLICITUD, dateRegister: new Date(), nameFile: 'Solicitud', status: "Accept"
+                        });
                 } else {
                     request.phase = eRequest.CAPTURED;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.REJECT
+                    item.status = eStatusRequest.REJECT;
                 }
                 break;
             }
@@ -344,7 +413,11 @@ const updateRequest = (req, res) => {
                 else {
                     request.phase = eRequest.REGISTERED;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.ACCEPT
+                    item.status = eStatusRequest.ACCEPT;
+                    request.documents.push(
+                        {
+                            type: eFile.REGISTRO, dateRegister: new Date(), nameFile: 'Registro', status: "Accept"
+                        });
                 }
                 break;
             }
@@ -357,13 +430,13 @@ const updateRequest = (req, res) => {
                 else {
                     request.phase = eRequest.RELEASED;
                     request.status = eStatusRequest.PROCESS;
-                    item.status = eStatusRequest.ACCEPT
+                    item.status = eStatusRequest.ACCEPT;
                 }
                 break;
             }
             case eRequest.RELEASED: {
                 if (data.operation === eStatusRequest.REJECT) {
-                    request.phase = eRequest.VERIFIED;
+                    request.phase = eRequest.REGISTERED;
                     request.status = eStatusRequest.REJECT;
                     item.status = eStatusRequest.REJECT;
                 }
@@ -418,6 +491,7 @@ module.exports = (Request) => {
         releasedRequest,
         getRequestByStatus,
         uploadFile,
+        omitFile,
         getResource,
         fileCheck,
     });
