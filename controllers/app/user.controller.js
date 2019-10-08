@@ -131,6 +131,10 @@ const login = (req, res) => {
                                                 let englishApproved = await validateEnglishApproved(email);
                                                 // Se verifica si es egresado
                                                 let isGraduate = await validateGraduateStatus(email);
+                                                // Quitar permiso para acceder a la credencial
+                                                if (isGraduate) {
+                                                    oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
+                                                }
                                                 // Si fue encontrado
                                                 if (oneUser) {
                                                     // Se contruye el token
