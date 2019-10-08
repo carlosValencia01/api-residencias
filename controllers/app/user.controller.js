@@ -416,11 +416,21 @@ const validateEnglishApproved = (controlNumber) => {
 };
 
 const validateGraduateStatus = (controlNumber) => {
-    return new Promise((resolve) => {
-        if (controlNumber === '14400947') {
-            resolve(true);
-        }
-        resolve(false);
+    return new Promise(async (resolve) => {
+        const res = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/estatusAlumno/${controlNumber}`);
+        res.end()
+        res.on('response', (data) => {
+            const resStatus = data.body;
+            if (resStatus && resStatus.error === 'FALSE') {
+                if (resStatus.data.estatus_alumno === 'EGR') {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            } else {
+                resolve(false);
+            }
+        });
     });
 };
 
