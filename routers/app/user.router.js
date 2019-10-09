@@ -1,8 +1,8 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const userCtrl = wagner.invoke((User, Student, Employee) =>
-      require('../../controllers/app/user.controller')(User, Student, Employee));
+    const userCtrl = wagner.invoke((User, Student, Employee, Role) =>
+      require('../../controllers/app/user.controller')(User, Student, Employee, Role));
 
     router.get('/', (req, res) =>
         userCtrl.getAll(req, res));
