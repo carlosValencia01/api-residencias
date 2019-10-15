@@ -13,6 +13,7 @@ require('./models/shared/models')(wagner);
 const department = require('./routers/app/department.router')(wagner);
 const role = require('./routers/app/role.router')(wagner);
 const user = require('./routers/app/user.router')(wagner);
+const period = require('./routers/app/period.router')(wagner);
 
 // Inscriptions
 const inscription = require('./routers/inscriptions/inscription.router')(wagner);
@@ -51,13 +52,13 @@ const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
-    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`,
+    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`, `${uri}period/create`,`${uri}period`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/student\/document\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/request\/.*/,
-    /^\/escolares\/credenciales\/user\/.*/,
+    /^\/escolares\/credenciales\/user\/.*/,    
   ]
 };
 
@@ -69,6 +70,7 @@ app.use(expressJWT({
 app.use(uri + 'department', department);
 app.use(uri + 'role', role);
 app.use(uri + 'user', user);
+app.use(uri + 'period', period);
 
 // Credentials
 app.use(uri + 'employee', employee);
