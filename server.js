@@ -25,7 +25,9 @@ const request = require('./routers/reception-act/request.router')(wagner);
 const graduation = require('./routers/graduation/graduation.router')(wagner);
 
 // Shared
+const document = require('./routers/shared/document.router')(wagner);
 const employee = require('./routers/shared/employee.router')(wagner);
+const position = require('./routers/shared/position.router')(wagner);
 const student = require('./routers/shared/student.router')(wagner);
 
 let app = express();
@@ -51,13 +53,16 @@ const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
-    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`,
+    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department/employees`,
+    `${uri}document`, `${uri}position`, `${uri}department/all`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/student\/document\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/request\/.*/,
     /^\/escolares\/credenciales\/user\/.*/,
+    /^\/escolares\/credenciales\/document\/.*/,
+    /^\/escolares\/credenciales\/position\/.*/,
   ]
 };
 
@@ -69,19 +74,17 @@ app.use(expressJWT({
 app.use(uri + 'department', department);
 app.use(uri + 'role', role);
 app.use(uri + 'user', user);
-
-// Credentials
-app.use(uri + 'employee', employee);
-app.use(uri + 'student', student);
-
 // Inscriptions
 app.use(uri + 'inscription', inscription);
-
 // Reception act
 app.use(uri + 'english', english);
 app.use(uri + 'request', request);
-
 // Graduations
 app.use(uri + 'graduationmail', graduation);
+// Shared
+app.use(uri + 'document', document);
+app.use(uri + 'employee', employee);
+app.use(uri + 'position', position);
+app.use(uri + 'student', student);
 
 module.exports = app;

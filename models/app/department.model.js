@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 let departmentSchema = new mongoose.Schema({
     name: { type: String },
+    shortName: { type: String },
     careers: [{ type: String }]
 });
 

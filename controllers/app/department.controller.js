@@ -16,9 +16,15 @@ const getAll = (req, res) => {
   _department.aggregate(query2).exec(handler.handleMany.bind(null, 'departments', res));
 };
 
+const getAllDepartments = (req, res) => {
+  _department.find({})
+      .exec(handler.handleMany.bind(null, 'departments', res));
+};
+
 module.exports = (Deparment) => {
   _department = Deparment;
   return ({
-    getAll
+    getAll,
+    getAllDepartments,
   });
 };
