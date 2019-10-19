@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const wagner = require('wagner-core');
 const config = require('./_config');
 const URL = `/escolares`;
-
+const fileUpload = require('express-fileupload');
 // MODELS
 require('./models/shared/models')(wagner);
 
@@ -14,6 +14,7 @@ const department = require('./routers/app/department.router')(wagner);
 const role = require('./routers/app/role.router')(wagner);
 const user = require('./routers/app/user.router')(wagner);
 const period = require('./routers/app/period.router')(wagner);
+const drive = require('./routers/app/google-drive.router')();
 
 // Inscriptions
 const inscription = require('./routers/inscriptions/inscription.router')(wagner);
@@ -31,6 +32,7 @@ const student = require('./routers/shared/student.router')(wagner);
 
 let app = express();
 
+
 app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
@@ -40,7 +42,7 @@ app.use(bodyParser.urlencoded({
 app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
   next();
 });
 
@@ -52,7 +54,7 @@ const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
-    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`, `${uri}period/create`,`${uri}period`,
+    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`, `${uri}period/create`,`${uri}period`,`${uri}drive/upload`,`${uri}drive/upload/file`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/student\/document\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
@@ -61,7 +63,10 @@ const jwtOptions = {
     /^\/escolares\/credenciales\/user\/.*/,    
   ]
 };
-
+//files
+app.use(fileUpload({
+    limits: { fileSize: 1000000 }
+}));
 app.use(expressJWT({
   secret: config.secret
 }).unless(jwtOptions));
@@ -71,6 +76,7 @@ app.use(uri + 'department', department);
 app.use(uri + 'role', role);
 app.use(uri + 'user', user);
 app.use(uri + 'period', period);
+app.use(uri + 'drive', drive);
 
 // Credentials
 app.use(uri + 'employee', employee);

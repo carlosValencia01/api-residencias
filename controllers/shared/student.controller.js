@@ -215,6 +215,15 @@ const assignDocument = (req, res) => {
         }
     });
 };
+const assignDocumentDrive = (req, res) => {
+    const { _id } = req.params;
+    const _doc = req.body;    
+    console.log(_doc);
+    
+    const push = { $push: { documents: _doc } };
+    
+    _student.findOneAndUpdate({ _id: _id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));     
+};
 
 const csvIngles = (req, res) => {
     const _scholar = req.body;
@@ -340,5 +349,6 @@ module.exports = (Student, Request) => {
         getRequest,
         getResource,
         getFilePDF,
+        assignDocumentDrive,
     });
 };

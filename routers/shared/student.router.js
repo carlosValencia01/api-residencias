@@ -61,6 +61,9 @@ module.exports = (wagner) => {
     router.put('/document/:_id', (req, res) =>
         studentCtrl.assignDocument(req, res));
 
+    router.put('/document/drive/:_id', (req, res) =>
+        studentCtrl.assignDocumentDrive(req, res));
+
     router.post('/csv', (req, res) =>
         studentCtrl.csvIngles(req, res));
 
