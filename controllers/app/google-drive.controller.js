@@ -1,4 +1,6 @@
 const status = require('http-status');
+let _folder;
+const handler = require('../../utils/handler');
 
 const readline = require('readline');
 const {google} = require('googleapis');
@@ -75,9 +77,15 @@ function getAccessToken(oAuth2Client) {
 }
 
 
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ */
 const createFolder = (req,res)=> {
     const drive = google.drive({version: 'v3', auth});
-    const folderName = req.params.name;
+    const {folderName, period} = req.body;
+    
     var fileMetadata = {
         'name': folderName,
         'mimeType': 'application/vnd.google-apps.folder'
@@ -92,12 +100,21 @@ const createFolder = (req,res)=> {
                 action: 'create folder'
             });
         }
-        else {
-            console.log(folder);
-            
-            res.status(status.OK).json({
-                fileId: folder.data.id,        
-                action: 'create folder'
+        else { 
+            _folder.create({name:folderName,idPeriod:period,idFolderInDrive:folder.data.id}).then(
+                created=>{
+
+                    res.status(status.OK).json({
+                        folder: created,        
+                        action: 'create folder'
+                    });
+                }
+            ).catch(err =>{
+                console.log(err.toString());
+                
+                res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                })
             });
         };
       });
@@ -105,8 +122,8 @@ const createFolder = (req,res)=> {
 };
 const createFolderIntoFolder = (req,res)=> {    
     const drive = google.drive({version: 'v3',auth});
-    const folderName = req.params.name;
-    const parentFolderId = req.params.id;
+    const {folderName, period,parentFolderId} = req.body;
+    
     var fileMetadata = {
         'name': folderName,
         'mimeType': 'application/vnd.google-apps.folder',
@@ -125,9 +142,20 @@ const createFolderIntoFolder = (req,res)=> {
         else {
             console.log(folder);
             
-            res.status(status.OK).json({
-                fileId: folder.data.id,        
-                action: 'create folder'
+            _folder.create({name:folderName,idPeriod:period,idFolderInDrive:folder.data.id}).then(
+                created=>{
+
+                    res.status(status.OK).json({
+                        folder: created,        
+                        action: 'create folder'
+                    });
+                }
+            ).catch(err =>{
+                console.log(err.toString());
+                
+                res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                })
             });
         };
       });
@@ -171,7 +199,7 @@ const createFile =  async (req,res)=> {
         body: fs.createReadStream(filePath)
     };
 
-    fs.unlinkSync(filePath);//delete file from server
+   
     
     drive.files.create({
         requestBody:fileMetadata,
@@ -180,7 +208,7 @@ const createFile =  async (req,res)=> {
 
         },
         (err,file)=>{
-            
+            fs.unlinkSync(filePath);//delete file from server
             if(err) {
                 res.status(status.BAD_REQUEST).json({
                     error: err,        
@@ -223,7 +251,30 @@ const deleteFile =  (req,res)=> {
     });                   
 };
 
+const getAllFolders = (req, res) => { 
+    _folder.find({}).populate({
+        path: 'idPeriod', model: 'Period',
+        select: {
+            active: 1, name: 1, _id: 1
+        }
+    }).exec(handler.handleMany.bind(null, 'folders', res));
+};
+const getFoldersByPeriod = (req, res) => { 
+    const query = {
+        idPeriod:req.params.period
+    };
+        
+    _folder.find(query).populate({
+        path: 'idPeriod', model: 'Period',
+        select: {
+            active: 1, name: 1, _id: 1
+        }
+    }).exec(handler.handleMany.bind(null, 'folders', res));
+};
+
 const putr = async (req,res)=>{
+    
+    console.log(req);
     
     res.status(status.OK).json({
         
@@ -232,15 +283,16 @@ const putr = async (req,res)=>{
     
 };
 
-module.exports = () => {
-  
+module.exports = (Folder) => {
+  _folder = Folder;
   return ({
     createFile,
     createFolder,
     createFolderIntoFolder,
     deleteFile,
     putr,
-    
+    getAllFolders,
+    getFoldersByPeriod,
   });
 };
 

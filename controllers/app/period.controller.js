@@ -3,7 +3,7 @@ const handler = require('../../utils/handler');
 let _period;
 
 const getAll = (req, res) => { 
-  _period.find().find({}).exec(handler.handleMany.bind(null, 'periods', res));
+  _period.find({}).exec(handler.handleMany.bind(null, 'periods', res));
 };
 
 const createPeriod = (req,res)=> {

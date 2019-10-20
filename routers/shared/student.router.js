@@ -40,6 +40,10 @@ module.exports = (wagner) => {
 
     router.get('/:resource/:_id', (req, res) =>
         studentCtrl.getResource(req, res));
+    
+    router.get('/get/documents/drive/:_id', (req, res) =>
+        studentCtrl.getDocumentsDrive(req, res));
+
 
     router.post('/', upload.single('image'), (req, res) => {
         console.log('Creando Student con image!');

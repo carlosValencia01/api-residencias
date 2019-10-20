@@ -14,7 +14,7 @@ const department = require('./routers/app/department.router')(wagner);
 const role = require('./routers/app/role.router')(wagner);
 const user = require('./routers/app/user.router')(wagner);
 const period = require('./routers/app/period.router')(wagner);
-const drive = require('./routers/app/google-drive.router')();
+const drive = require('./routers/app/google-drive.router')(wagner);
 
 // Inscriptions
 const inscription = require('./routers/inscriptions/inscription.router')(wagner);
