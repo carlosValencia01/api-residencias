@@ -9,7 +9,7 @@ const studentSchema = new mongoose.Schema({
     nss: { type: String },
     nip: { type: String },    
     documents:[
-        { filename: { type: String }, releaseDate: { type: Date, default: new Date() }, type: { type: String }, status:{ type: String }, observations:{ type: String }, fileIdInDrive:{type:String} }
+        { filename: { type: String }, releaseDate: { type: Date, default: new Date() }, type: { type: String }, status:{ type: String }, observations:{ type: String }, fileIdInDrive:{type:String}}
     ],
     idRole: { type: mongoose.Schema.Types.ObjectId, ref:'Role' },
     firstName: {type:String},

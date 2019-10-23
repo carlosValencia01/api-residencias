@@ -9,7 +9,7 @@ const fs = require('fs');
 var auth;
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/drive'];
+const SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.metadata.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -109,8 +109,7 @@ const createFolder = (req,res)=> {
                         action: 'create folder'
                     });
                 }
-            ).catch(err =>{
-                console.log(err.toString());
+            ).catch(err =>{                
                 
                 res.status(status.INTERNAL_SERVER_ERROR).json({
                     error: err.toString()
@@ -139,9 +138,7 @@ const createFolderIntoFolder = (req,res)=> {
                 action: 'create folder'
             });
         }
-        else {
-            console.log(folder);
-            
+        else {                        
             _folder.create({name:folderName,idPeriod:period,idFolderInDrive:folder.data.id}).then(
                 created=>{
 
@@ -193,14 +190,11 @@ const createFile =  async (req,res)=> {
     };
     
     
-    // file content to upload
     let media = await {
         mimeType:mimeType,
-        body: fs.createReadStream(filePath)
+        body: fs.createReadStream(filePath)        
     };
-
-   
-    
+            
     drive.files.create({
         requestBody:fileMetadata,
         media:media,
@@ -218,6 +212,7 @@ const createFile =  async (req,res)=> {
                 res.status(201).json({
                     fileId: file.data.id,
                     name:fileMetadata.name,
+                    mimeType:mimeType,
                     action: 'create file'
                 });
             }                        
@@ -228,9 +223,7 @@ const deleteFile =  (req,res)=> {
     
     const drive = google.drive({version: 'v3', auth});
     
-    const fileId = req.params.id;
-   
-
+    const fileId = req.params.id;   
     drive.files.delete({
         fileId:fileId,
         fields:'id'      
@@ -272,15 +265,50 @@ const getFoldersByPeriod = (req, res) => {
     }).exec(handler.handleMany.bind(null, 'folders', res));
 };
 
-const putr = async (req,res)=>{
-    
-    console.log(req);
-    
-    res.status(status.OK).json({
-        
-        action: 'test'
-    });
-    
+const downloadFile = (req,res)=>{
+    const drive = google.drive({version: 'v3', auth});
+    const {fileId,fileName} = req.body; // enviado desde el cliente
+    // const fileId='1xJTAqfFZUv8kCUHsS9T6cRsknUX6fJbc'; //pdf
+    // const fileId='1H75kViaYggVmzQOniWjvW__q-zmdttD_'; //img
+    // const fileName = '15401011-CERTIFICADO.pdf';//pdf
+    // const fileName = '15401011-FOTO.png';//img
+    // const mimeType='application/pdf';//pdf    
+    const path = 'documents/tmpFile/'+fileName;
+    let dest = fs.createWriteStream (path);
+    drive.files.get({
+        fileId: fileId,        
+        alt:'media'
+      }, {responseType: 'stream'},
+      async (err,file)=>{
+          if(err) console.log(err);        
+          file.data.
+            on('end',()=>{
+                console.log('done');
+                fs.readFile(path,(error,data)=>{
+                    if(error) {
+                        console.log(error, '-=-=-=-=-=-=-=-=-');
+                        res.status(status.BAD_REQUEST).json({
+                            error: error,        
+                            action: 'download file'
+                        });
+                    }
+                    fs.unlinkSync(path);
+                    res.status(status.OK).json({
+                        action:'get file',
+                        file: fileName.indexOf('FOTO') !== -1 ? data.toString('base64') : data
+                    });                    
+                });                
+            }).on('error',(err)=>{
+                console.log('===--==',err);
+                res.status(status.BAD_REQUEST).json({
+                    error: err,        
+                    action: 'download file'
+                });
+                
+            }).pipe(dest);                    
+      }
+      ); 
+          
 };
 
 module.exports = (Folder) => {
@@ -289,10 +317,10 @@ module.exports = (Folder) => {
     createFile,
     createFolder,
     createFolderIntoFolder,
-    deleteFile,
-    putr,
+    deleteFile,    
     getAllFolders,
     getFoldersByPeriod,
+    downloadFile,
   });
 };
 

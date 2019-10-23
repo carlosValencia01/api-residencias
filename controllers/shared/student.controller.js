@@ -247,8 +247,7 @@ const getDocumentsDrive = (req,res)=>{
                 }
             }
         }]
-    ).exec((err,documents)=>{
-        console.log(documents,err);
+    ).exec((err,documents)=>{      
         
         if(err){
             res.status(status.BAD_REQUEST).json({
