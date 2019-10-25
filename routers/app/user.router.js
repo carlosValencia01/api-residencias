@@ -18,6 +18,6 @@ module.exports = (wagner) => {
 
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
-  
+
     return router;
   };

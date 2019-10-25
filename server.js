@@ -51,7 +51,7 @@ const uri = `${URL}/${v}/`;
 const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
-    `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
+    `${uri}student/create`, `${uri}inscription/updateStudent`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
     `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`, `${uri}period/create`,`${uri}period`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/student\/document\/.*/,
