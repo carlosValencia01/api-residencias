@@ -1,27 +1,32 @@
 const bodyParser = require('body-parser');
 const express = require('express');
+const expressJWT = require('express-jwt');
 const morgan = require('morgan');
 const wagner = require('wagner-core');
-// const path = require('path');
-const expressJWT = require('express-jwt');
 const config = require('./_config');
-
 const URL = `/escolares`;
 
 // MODELS
-require('./models/models')(wagner);
+require('./models/shared/models')(wagner);
 
-const user = require('./routers/user.router')(wagner);
-const student = require('./routers/student.router')(wagner);
-const employee = require('./routers/employee.router')(wagner);
-const inscription = require('./routers/inscription.router')(wagner);
-const graduation = require('./routers/graduation.router')(wagner);
-const graduate = require('./routers/graduate.router')(wagner);
-const english = require('./routers/english.router')(wagner);
-const role = require('./routers/role.router')(wagner);
-// const mail = require('./routers/mail.router')(wagner);
-const request = require('./routers/request.router')(wagner);
-const department = require('./routers/department.router')(wagner);
+// App
+const department = require('./routers/app/department.router')(wagner);
+const role = require('./routers/app/role.router')(wagner);
+const user = require('./routers/app/user.router')(wagner);
+
+// Inscriptions
+const inscription = require('./routers/inscriptions/inscription.router')(wagner);
+
+// Reception act
+const english = require('./routers/reception-act/english.router')(wagner);
+const request = require('./routers/reception-act/request.router')(wagner);
+
+// Graduation
+const graduation = require('./routers/graduation/graduation.router')(wagner);
+
+// Shared
+const employee = require('./routers/shared/employee.router')(wagner);
+const student = require('./routers/shared/student.router')(wagner);
 
 let app = express();
 
@@ -45,13 +50,14 @@ const uri = `${URL}/${v}/`;
 const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
-    `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`,
-    `${uri}user/send/code`, `${uri}inscription/sendmail`, `${uri}graduate/request`, `${uri}english`,
+    `${uri}student/create`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
+    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
+    /^\/escolares\/credenciales\/student\/document\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
-    /^\/escolares\/credenciales\/graduate\/.*/,
-    /^\/escolares\/credenciales\/english\/.*/,
+    /^\/escolares\/credenciales\/request\/.*/,
+    /^\/escolares\/credenciales\/user\/.*/,
   ]
 };
 
@@ -59,17 +65,23 @@ app.use(expressJWT({
   secret: config.secret
 }).unless(jwtOptions));
 
+// App
+app.use(uri + 'department', department);
+app.use(uri + 'role', role);
 app.use(uri + 'user', user);
-app.use(uri + 'student', student);
-app.use(uri + 'employee', employee);
-app.use(uri + 'inscription', inscription);
-app.use(uri + 'graduationmail', graduation);
-app.use(uri + 'graduate', graduate);
-app.use(uri + 'english', english);
 
-app.use(uri+'english', english);
-app.use(uri+'role', role);
-app.use(uri+'request', request);
-app.use(uri+'department',department);
-// app.use(URL+'/sendmail', mail);
+// Credentials
+app.use(uri + 'employee', employee);
+app.use(uri + 'student', student);
+
+// Inscriptions
+app.use(uri + 'inscription', inscription);
+
+// Reception act
+app.use(uri + 'english', english);
+app.use(uri + 'request', request);
+
+// Graduations
+app.use(uri + 'graduationmail', graduation);
+
 module.exports = app;

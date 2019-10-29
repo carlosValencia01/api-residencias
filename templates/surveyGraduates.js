@@ -1,8 +1,8 @@
-module.exports = (ID,NOMBRE,NC) => {
+module.exports = (ID,NOMBRE,NC,CARRERA) => {
     
-    //const url = 'https://escolares.ittepic.edu.mx/surveyGraduates';
+    const url = 'https://escolares.ittepic.edu.mx/surveyGraduates';
     //const url = 'http://localhost:4200/surveyGraduates';
-    const url = 'http://104.248.94.77/surveyGraduates';
+    //const url = 'http://104.248.94.77/surveyGraduates';
     const template = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//ES" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
     <html xmlns="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml"> 
       <head> 
@@ -45,14 +45,14 @@ module.exports = (ID,NOMBRE,NC) => {
                 </div>
                 <hr style="height:2px; background:black">
                 <div style="font-size:19px; text-align:center">
-                    <p>Recibe un cordial saludo<br><b>${NOMBRE}</b></p>
+                    <p>Estimado(a)<br><b>${NOMBRE}</b></p>
                 </div>
                 <div style="font-size:15px;">
-                    <p>Porfavor de contestar una pequeña encuesta para poder liberar su pase de entrada al evento de graduación</p>
+                    <p>Recibe una felicitación por haber concluido tus estudios en la carrera de<br><b>${CARRERA}</b><br>Para el Tecnológico Nacional de México campus Tepic, es de suma importancia elevar la calidad de sus servicios, es por ello que, para acceder a tu boleto electrónico es necesario que nos apoyes a contestar una encuesta.</p>
                 </div>
                 <hr style="height:2px; background:black">
                 <div style="font-size:15px;">
-                    <p>Haga click en el siguiente botón para acceder a la encuesta:</p>
+                    <p>Haz clic en el siguiente botón para acceder a la encuesta:</p>
                 </div>
 
                 <div style="text-align:center">
