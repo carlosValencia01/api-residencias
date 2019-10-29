@@ -5,6 +5,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 const superagent = require('superagent');
+const mongoose = require('mongoose');
 
 let _student;
 let _request;
@@ -215,6 +216,51 @@ const assignDocument = (req, res) => {
         }
     });
 };
+const assignDocumentDrive = (req, res) => {
+    const { _id } = req.params;
+    const _doc = req.body;    
+        
+    const push = { $push: { documents: _doc } };
+    
+    _student.findOneAndUpdate({ _id: _id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));     
+};
+
+const getDocumentsDrive = (req,res)=>{
+    const { _id } = req.params;
+    let id = mongoose.Types.ObjectId(_id);        
+    _student.aggregate([
+        { 
+            "$match": {
+                "_id" :id                
+            }
+        },
+        {
+            "$project": {
+                "documents": {
+                    "$filter": {
+                        "input": "$documents",
+                        "as": "document",
+                        "cond": { 
+                            "$eq": [ "$$document.type", "DRIVE" ]
+                        }
+                    }
+                }
+            }
+        }]
+    ).exec((err,documents)=>{      
+        
+        if(err){
+            res.status(status.BAD_REQUEST).json({
+                error: err,        
+                action: 'get documents'
+            });
+        }
+        res.status(status.OK).json({
+            documents:documents[0].documents,
+            action: 'get documents'
+        });
+    })
+};
 
 const csvIngles = (req, res) => {
     const _scholar = req.body;
@@ -340,5 +386,7 @@ module.exports = (Student, Request) => {
         getRequest,
         getResource,
         getFilePDF,
+        assignDocumentDrive,
+        getDocumentsDrive,
     });
 };

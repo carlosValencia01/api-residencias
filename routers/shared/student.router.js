@@ -40,6 +40,10 @@ module.exports = (wagner) => {
 
     router.get('/:resource/:_id', (req, res) =>
         studentCtrl.getResource(req, res));
+    
+    router.get('/get/documents/drive/:_id', (req, res) =>
+        studentCtrl.getDocumentsDrive(req, res));
+
 
     router.post('/', upload.single('image'), (req, res) => {
         console.log('Creando Student con image!');
@@ -60,6 +64,9 @@ module.exports = (wagner) => {
 
     router.put('/document/:_id', (req, res) =>
         studentCtrl.assignDocument(req, res));
+
+    router.put('/document/drive/:_id', (req, res) =>
+        studentCtrl.assignDocumentDrive(req, res));
 
     router.post('/csv', (req, res) =>
         studentCtrl.csvIngles(req, res));
