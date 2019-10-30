@@ -74,6 +74,14 @@ const updateDocumentAssign = (req, res) => {
     })
 };
 
+const getPositionsForDepartment = (req, res) => {
+    const { _departmentId } = req.params;
+    _position.find({ ascription: _departmentId })
+        .populate({ path: 'documents', model: 'Document' })
+        .populate({ path: 'ascription', model: 'Department' })
+        .exec(handler.handleMany.bind(null, 'positions', res));
+};
+
 module.exports = (Position, Employee) => {
     _position = Position;
     _employee = Employee;
@@ -83,5 +91,6 @@ module.exports = (Position, Employee) => {
         updatePosition,
         removePosition,
         updateDocumentAssign,
+        getPositionsForDepartment,
     });
 };

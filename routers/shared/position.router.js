@@ -19,5 +19,8 @@ module.exports = (wagner) => {
     router.put('/updateDocumentAssign/:_positionId', (req, res) =>
         positionCtrl.updateDocumentAssign(req, res));
 
+    router.get('/getPositions/:_departmentId', (req, res) =>
+        positionCtrl.getPositionsForDepartment(req, res));
+
     return router;
-}
+};

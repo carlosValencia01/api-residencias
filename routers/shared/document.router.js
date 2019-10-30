@@ -5,6 +5,9 @@ module.exports = (wagner) => {
         require('../../controllers/shared/document.controller')(Document, Position));
 
     router.get('/all', (req, res) =>
+        documentCtrl.getAllDocumentswithDepartments(req, res));
+
+    router.get('/allDocuments', (req, res) =>
         documentCtrl.getAllDocuments(req, res));
 
     router.post('/create', (req, res) =>
@@ -17,4 +20,4 @@ module.exports = (wagner) => {
         documentCtrl.removeDocument(req, res));
 
     return router;
-}
+};

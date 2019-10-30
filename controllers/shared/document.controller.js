@@ -1,9 +1,10 @@
+const handler = require('../../utils/handler');
 const status = require('http-status');
 
 let _document;
 let _position;
 
-const getAllDocuments = (req, res) => {
+const getAllDocumentswithDepartments = (req, res) => {
     _document.find({})
         .exec(async (err, docs) => {
             if (!err && docs) {
@@ -27,6 +28,11 @@ const getAllDocuments = (req, res) => {
               });
       });
     };
+};
+
+const getAllDocuments = (req, res) => {
+    _document.find({})
+        .exec(handler.handleMany.bind(null, 'documents', res));
 };
 
 const createDocument = (req, res) => {
@@ -85,6 +91,7 @@ module.exports = (Document, Position) => {
     _document = Document;
     _position = Position;
     return ({
+        getAllDocumentswithDepartments,
         getAllDocuments,
         createDocument,
         updateDocument,
