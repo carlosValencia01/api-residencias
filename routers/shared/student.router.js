@@ -3,11 +3,9 @@ const multer = require('multer');
 let UPLOAD_PATH = 'images';
 
 var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOAD_PATH)
-    },
+    destination: UPLOAD_PATH,
     filename: function (req, file, cb) {
-        console.log(req.params);
+        console.log(req.params,'filenameeeee');
         cb(null, file.fieldname + '-' + req.params._id)
     }
 });

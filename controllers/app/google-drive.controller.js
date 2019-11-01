@@ -1,7 +1,7 @@
 const status = require('http-status');
 let _folder;
 const handler = require('../../utils/handler');
-
+const stream = require('stream');
 const readline = require('readline');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -152,7 +152,7 @@ const createFolderIntoFolder = (req, res) => {
 
                 res.status(status.INTERNAL_SERVER_ERROR).json({
                     error: err.toString()
-                })
+                });
             });
         };
     });
@@ -163,45 +163,42 @@ const createFolderIntoFolder = (req, res) => {
  * create new file and save it in google drive
  * 
  */
-const createFile = async (req, res) => {
+const createOrUpdateFile = (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const content = req.body;
     const files = req.files;
-
-
     const bodyMedia = files.file.data;
-    const nameInDrive = req.body.filename.indexOf('FOTO') > 0 ? req.body.filename + '.' + files.file.name.split('.')[1] : req.body.filename;
-    const folderId = content.folderId;
     const mimeType = files.file.mimetype;
 
-    const filePath = 'documents/tmpFile/' + nameInDrive;
+    console.log(content);
 
+    //create bufferStream of document to save into google drive
+    const buffer = Uint8Array.from(bodyMedia);
+    var bufferStream = new stream.PassThrough();
+    bufferStream.end(buffer); 
 
-    await fs.writeFile(filePath, bodyMedia, 'binary', (err) => {
-        if (err) console.log('ERRORRRRR-----', err);
-
-    });
-    // name for display in google drive
-    let fileMetadata = {
-        name: nameInDrive,
+    let media = {
         mimeType: mimeType,
-        parents: [folderId]
+        body: bufferStream
     };
-
-
-    let media = await {
-        mimeType: mimeType,
-        body: fs.createReadStream(filePath)
-    };
-
-    drive.files.create({
-        requestBody: fileMetadata,
-        media: media,
-        fields: 'id'
-
-    },
-        (err, file) => {
-            fs.unlinkSync(filePath);//delete file from server
+   
+    if(content.newF=='true'){ //create new file
+        const image = files.file.name.split('.');
+        const nameInDrive = req.body.filename.indexOf('FOTO') > 0 ? req.body.filename + '.' + image[image.length-1] : req.body.filename;
+        const folderId = content.folderId;
+        
+        // name for display in google drive
+        let fileMetadata = {
+            name: nameInDrive,
+            mimeType: mimeType,
+            parents: [folderId]
+        };
+        drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id'
+        },
+        (err, file) => {            
             if (err) {
                 res.status(status.BAD_REQUEST).json({
                     error: err,
@@ -216,6 +213,24 @@ const createFile = async (req, res) => {
                 });
             }
         });
+    }else if(content.newF=='false'){ // update file
+        drive.files.update({
+            fileId: content.fileId,
+            media: media,
+        }, (err, file) => {
+            if (err) {
+                res.status(status.BAD_REQUEST).json({
+                    error: err,
+                    action: 'update file1'
+                });
+            }
+            res.status(status.OK).json({                
+                action: 'update file1'
+            });
+        });
+    }
+
+
 };
 
 
@@ -312,30 +327,32 @@ const downloadFile = (req, res) => {
 };
 const createFile2 = async (req, res) => {    
     const drive = google.drive({ version: 'v3', auth });
-    const { mimeType, nameInDrive, bodyMedia, folderId} = req.body;
+    const { mimeType, nameInDrive, bodyMedia, folderId, newF,fileId} = req.body;
     const filePath = 'documents/tmpFile/' + nameInDrive;
 
     await fs.writeFile(filePath,bodyMedia,'base64', (err) => {
         if (err) console.log('ERRORRRRR-----', err);
     });
-    // name for display in google drive
-    let fileMetadata = {
-        name: nameInDrive,
-        mimeType: mimeType,
-        parents: [folderId]
-    };
-
+    
     let media = await {
         mimeType: mimeType,
         body: fs.createReadStream(filePath)
     };
+    console.log(newF,'-dasdado',fileId);
+    if(newF){
 
-    drive.files.create({
-        requestBody: fileMetadata,
-        media: media,
-        fields: 'id'
-
-    },
+        // name for display in google drive
+        let fileMetadata = {
+            name: nameInDrive,
+            mimeType: mimeType,
+            parents: [folderId]
+        };
+        drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id'
+    
+        },
         (err, file) => {
             fs.unlinkSync(filePath);//delete file from server
             if (err) {
@@ -352,20 +369,39 @@ const createFile2 = async (req, res) => {
                 });
             }
         });
+    }else if(!newF){ // update file
+        drive.files.update({
+            fileId: fileId,
+            media: media,
+        }, (err, file) => {
+            fs.unlinkSync(filePath);//delete file from server
+            if (err) {
+                res.status(status.BAD_REQUEST).json({
+                    error: err,
+                    action: 'update file2'
+                });
+            }
+            console.log('whyy');
+            
+            res.status(status.OK).json({                
+                action: 'update file2'
+            });
+        });
+    }
 
 };
 
 module.exports = (Folder) => {
     _folder = Folder;
     return ({
-        createFile,
+        createOrUpdateFile,
         createFolder,
         createFolderIntoFolder,
         deleteFile,
         getAllFolders,
         getFoldersByPeriod,
         downloadFile,
-        createFile2,
+        createFile2,       
     });
 };
 

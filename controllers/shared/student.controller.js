@@ -149,12 +149,15 @@ const updateStudent = (req, res) => {
 const uploadImage = (req, res) => {
     const { _id } = req.params;
     const image = req.file;
+    console.log(_id);
+    console.log(image);
+    
+    
+    // const query = { _id: _id };
+    // const updated = { filename: image.filename };
 
-    const query = { _id: _id };
-    const updated = { filename: image.filename };
-
-    _student.findOneAndUpdate(query, updated, { new: true })
-        .exec(handler.handleOne.bind(null, 'student', res));
+    // _student.findOneAndUpdate(query, updated, { new: true })
+    //     .exec(handler.handleOne.bind(null, 'student', res));
 };
 
 const updateOne = (req, res, imgId) => {
