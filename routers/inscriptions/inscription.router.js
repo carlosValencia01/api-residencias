@@ -16,5 +16,9 @@ module.exports = (wagner) => {
     router.get('/getStudent/:_id', (req, res) =>
         studentCtrl.getById(req, res));
 
+    router.get('/getStudents', (req, res) =>
+        studentCtrl.getStudentsInscription(req, res));
+        //studentCtrl.getAll(req, res));
+
     return router;
 };

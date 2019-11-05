@@ -15,6 +15,11 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
+const getStudentsInscription = (req, res) => {
+    _student.find({"inscriptionStatus":{$exists:true}})
+        .exec(handler.handleMany.bind(null, 'students', res));
+};
+
 const getById = (req, res) => {
     const { _id } = req.params;
     _student.find({ _id: _id })
@@ -388,5 +393,6 @@ module.exports = (Student, Request) => {
         getFilePDF,
         assignDocumentDrive,
         getDocumentsDrive,
+        getStudentsInscription,
     });
 };
