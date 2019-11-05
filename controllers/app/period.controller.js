@@ -28,7 +28,7 @@ const createPeriod = (req,res)=> {
 const updatePeriod = (req,res)=> {
     
     const period = req.body;
-    console.log('period updaet',period);
+    console.log('period update',period);
     const idPeriod = req.params.id;
     _period.findOneAndUpdate({_id:idPeriod},period).then(updated => {
         res.status(status.OK).json({
