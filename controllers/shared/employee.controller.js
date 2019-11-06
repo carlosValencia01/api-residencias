@@ -14,7 +14,10 @@ const getAll = (req, res) => {
 
 const getById = (req, res) => {
     const { _id } = req.params;
-    _employee.find({ _id: _id })
+    _employee.findOne({ _id: _id })
+        .populate({
+            path: 'positions', model: 'Position', select: 'name ascription canSign',
+            populate: { path: 'ascription', model: 'Department', select: 'name shortName' }})
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
@@ -262,6 +265,38 @@ const updateEmployeGrade = (req, res) => {
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
+const updateEmployeePositions = (req, res) => {
+    const { _id } = req.params;
+    const _positions = req.body;
+
+    _employee.updateOne({ _id: _id }, { positions: _positions }, (err, updated) => {
+        if (!err && updated) {
+            res.json({ status: updated.n ? status.OK : status.NOT_FOUND });
+        } else {
+            res.json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: err.toString()
+            });
+        }
+    });
+};
+
+const updateEmployeeGrades = (req, res) => {
+    const { _id } = req.params;
+    const _grades = req.body;
+
+    _employee.updateOne({ _id: _id }, { grade: _grades }, (err, updated) => {
+        if (!err && updated) {
+            res.json({ status: updated.n ? status.OK : status.NOT_FOUND });
+        } else {
+            res.json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: err.toString()
+            });
+        }
+    });
+};
+
 module.exports = (Employee) => {
     _employee = Employee;
     return ({
@@ -279,6 +314,8 @@ module.exports = (Employee) => {
         csvDegree,
         searchGrade,
         updateEmployeGrade,
-        getEmployeeByArea
+        getEmployeeByArea,
+        updateEmployeePositions,
+        updateEmployeeGrades,
     });
 };

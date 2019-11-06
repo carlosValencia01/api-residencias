@@ -7,10 +7,6 @@ let employeeSchema = new mongoose.Schema({
         lastName: { type: String, required: true, uppercase: true, trim: true },
         fullName: { type: String, required: true, uppercase: true, trim: true }
     },
-    area: { type: String, required: true, uppercase: true, trim: true },
-    position: { type: String, required: true, uppercase: true, trim: true },
-    deptoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
-    isBoss: { type: Boolean, default: false },
     filename: { type: String },
     grade: [{
         _id: false,

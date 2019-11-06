@@ -61,5 +61,11 @@ module.exports = (wagner) => {
     router.put('/grade/:_id', (req, res) =>
         employeeCtrl.updateEmployeGrade(req, res));
 
+    router.put('/positions/:_id', (req, res) =>
+        employeeCtrl.updateEmployeePositions(req, res));
+
+    router.put('/grades/:_id', (req, res) =>
+        employeeCtrl.updateEmployeeGrades(req, res));
+
     return router;
 };
