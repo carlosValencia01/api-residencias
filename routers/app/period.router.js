@@ -6,6 +6,8 @@ module.exports = (wagner) => {
 
     router.get('/', (req, res) =>
         periodCtrl.getAll(req, res));
+    router.get('/active', (req, res) =>
+        periodCtrl.getActivePeriod(req, res));
     router.post('/create', (req, res) =>
         periodCtrl.createPeriod(req, res));
     router.put('/update/:id', (req, res) =>

@@ -8,40 +8,58 @@ const studentSchema = new mongoose.Schema({
     career: { type: String },
     nss: { type: String },
     nip: { type: String },    
+    folderId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Folder' },
+    idPeriodInscription: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' },
     documents:[
-        { filename: { type: String }, releaseDate: { type: Date, default: new Date() }, type: { type: String }, status:{ type: String }, observations:{ type: String }, fileIdInDrive:{type:String}}
+        { 
+            filename: { type: String }, 
+            releaseDate: { type: Date, default: new Date() }, 
+            type: { type: String }, 
+            // status:{ type: String },             
+            fileIdInDrive:{ type: String },
+            // observation:{ type: String },
+            status:[
+                {
+                    name: { type: String }, // Inscripciones:['EN PROCESO', 'RECHAZADO', 'VALIDADO', 'ACEPTADO']
+                    active: { type: Boolean },                    
+                    message:{ type: String },  // Se envio, Se actualizo, se rechazo, se valido, se acepto                  
+                    date:{ type: Date, default: new Date() },
+                    observation:{ type: String } // si fue rechazado
+                }
+            ]
+        }
     ],
     idRole: { type: mongoose.Schema.Types.ObjectId, ref:'Role' },
-    firstName: {type:String, required:true},
-    fatherLastName: {type:String, required:true},
-    motherLastName: {type:String, required:true},    
-    birthPlace: {type:String, required:true},
-    dateBirth: {type:String, required:true},
-    civilStatus: {type:String, required:true},
-    email: {type:String, required:true},
-    curp: {type:String, required:true},
-    nss: {type:String, required:true},
+    firstName: {type:String},
+    fatherLastName: {type:String},
+    motherLastName: {type:String},    
+    birthPlace: {type:String},
+    dateBirth: {type:String},
+    civilStatus: {type:String},
+    email: {type:String},
+    curp: {type:String},
+    nss: {type:String},
     sex: {type:String},
-    street: {type:String, required:true},
-    suburb: {type:String, required:true},
-    city: {type:String, required:true},
-    state: {type:String, required:true},
-    cp: {type:Number, required:true},
-    phone: {type:String, required:true},
-    etnia: {type:String, required:true},
+    street: {type:String},
+    suburb: {type:String},
+    city: {type:String},
+    state: {type:String},
+    cp: {type:Number},
+    phone: {type:String},
+    etnia: {type:String},
     typeEtnia: {type:String, required:false},
-    disability: {type:String, required:true},
+    disability: {type:String},
     typeDisability: {type:String, required:false},
-    originSchool: {type:String, required:true},
+    originSchool: {type:String},
     otherSchool: {type:String, required:false},
-    nameOriginSchool: {type:String, required:true},
-    averageOriginSchool: {type:Number, required:true},       
+    nameOriginSchool: {type:String},
+    averageOriginSchool: {type:Number},       
     statusInscripcion: {type: String},
     academicRecord:{type:Boolean},
     acceptedTerms:{type:Boolean},
     dateAcceptedTerms:{type:Date},
     stepWizard: {type:Number},
-    semestre: {type: String}
+    semester: {type: String}
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');

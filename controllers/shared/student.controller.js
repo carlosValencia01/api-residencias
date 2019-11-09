@@ -219,14 +219,196 @@ const assignDocument = (req, res) => {
         }
     });
 };
+/** Start functions for inscription */
 const assignDocumentDrive = (req, res) => {
     const { _id } = req.params;
-    const _doc = req.body;    
+    const _doc = req.body.doc;    
+    const status = req.body.status;       
         
     const push = { $push: { documents: _doc } };
     
-    _student.findOneAndUpdate({ _id: _id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));     
+    _student.findOneAndUpdate({ _id: _id }, push, { new: true })
+    .then(
+        async (doc)=>{
+            let statusChanged = await updateDocumentStatus(_id,_doc.filename,status);
+            if(statusChanged){
+                res.status(200).json({document:doc});
+            }else{
+                res.status(404).json({error:'Status without changes'});
+            }
+         }
+    ).catch(err=>{
+        res.status(404).json({
+            error:err,
+            action: 'get documents'
+        });
+    });    
 };
+async function updateDocumentStatus(_id,docName,status){
+    
+    console.log('1',status);
+    
+    const docid = await getActiveStatus(_id,docName);
+    if(docid){
+        
+        const result = docid[0];
+        console.log('3', result.documents[0].status.length);
+        const doc_id = result.documents[0]._id;
+        if(( result.documents[0].status.length) === 0) {//no hay estatus activo   
+            console.log('3.1',doc_id,_id);
+                     
+            return await _student.findOneAndUpdate(
+                {
+                    _id: _id,
+                    'documents._id':doc_id
+                },
+                { $push: { 'documents.$.status':status } },
+                { new: true }
+            )
+            .then(
+                doc=>{
+                    return true;
+                }
+            ).catch(err=>{ return false;});
+        }else{ //ya hay un estatus activado
+            console.log('3.2');
+            
+            return await _student.findOneAndUpdate( //cambiar active = false
+                {
+                    _id:_id,
+                    documents:{
+                        "$elemMatch":{_id:doc_id,"status.active":true}
+                        }
+                },
+                {
+                     "$set": { 
+                    "documents.$[outer].status.$[inner].active": false,}
+                },
+                { "arrayFilters": [
+                    { "outer._id": doc_id },
+                    { "inner.active": true }
+                ] }
+            )
+            .then(
+                async doc=>{
+                    console.log(doc,'4');
+                    
+                    return await _student.findOneAndUpdate(
+                        {
+                            '_id':_id,
+                            'documents._id':doc_id
+                        },
+                        { $push: { 'documents.$.status':status } },
+                        { new: true }
+                    )
+                    .then(
+                        doc=>{
+                            return true;
+                        }
+                    ).catch(err=>{ return false;});
+                }
+            ).catch(err=>{return false;});
+        }    
+    }
+    
+}
+
+async function getActiveStatus(_id,filename){
+    console.log(filename,'===fole',_id);
+    let id = mongoose.Types.ObjectId(_id);
+    return await _student.aggregate([
+        { 
+            "$match": {
+                "_id" :id                           
+            }
+        },
+        {
+           "$project": {
+                "documents": {
+                    "$filter": {
+                        "input": {
+                            "$map":{
+                                "input":"$documents",
+                                "as":"docs",
+                                "in":{
+                                   "$cond":[
+                                         {"$eq":["$$docs.filename",filename]},
+                                        {                                            
+                                            "filename":"$$docs.filename",
+                                            "_id":"$$docs._id",
+                                            "status":{
+                                                "$filter":{
+                                                    "input":"$$docs.status",
+                                                    "as":"status",
+                                                    "cond":{ "$eq": ["$$status.active",true] }
+                                                    }
+                                                }
+                                            },                                           
+                                            false
+                                    ]      
+                                    }
+                                }
+                            },
+                        "as": "cls",  
+                        "cond": "$$cls"
+                    }
+                    
+                }
+            }
+        }]).then( docm=>{
+            console.log('2',docm);
+            
+            return docm;
+
+        }).catch(err=>{
+            return false;
+        });
+}
+
+const getFolderId = (req, res) => {
+    const { _id } = req.params;                
+    _student.findOne({ _id: _id },{folderId:1,_id:0})
+    .populate({
+        path: 'folderId', model: 'Folder',
+        select: {
+            idFolderInDrive: 1
+        }
+    })
+    .then( folder=>{
+        
+        res.status(200).json({action:'get folderid',folder:folder.folderId});
+    }).catch(err=>{
+        console.log(err);
+        res.status(404).json({action:'get folderid',error:err});
+    });     
+};
+
+const updateDocumentLog = async (req,res)=>{
+    const { _id } = req.params;
+    const { filename, status } = req.body;
+    let statusChanged = await updateDocumentStatus(_id,filename,status);
+    console.log(statusChanged, req.body);
+    
+    if(statusChanged){
+        res.status(200).json({action:"Status updated"});
+    }else{
+        res.status(404).json({error:'Status without changes'});
+    }
+};
+
+const getPeriodInscription = (req, res) => {
+    const { _id } = req.params;                
+    _student.findOne({ _id: _id },{idPeriodInscription:1,_id:0})
+    .populate({
+        path: 'idPeriodInscription', model: 'Period',
+        select: {
+            periodName: 1,
+            year:1
+        }
+    })
+    .exec(handler.handleOne.bind(null, 'student', res));     
+};
+
 
 const getDocumentsDrive = (req,res)=>{
     const { _id } = req.params;
@@ -264,6 +446,8 @@ const getDocumentsDrive = (req,res)=>{
         });
     })
 };
+
+/** End functions for inscription */
 
 const csvIngles = (req, res) => {
     const _scholar = req.body;
@@ -391,5 +575,8 @@ module.exports = (Student, Request) => {
         getFilePDF,
         assignDocumentDrive,
         getDocumentsDrive,
+        getFolderId,
+        getPeriodInscription,
+        updateDocumentLog,
     });
 };

@@ -329,7 +329,8 @@ const createFile2 = async (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const { mimeType, nameInDrive, bodyMedia, folderId, newF,fileId} = req.body;
     const filePath = 'documents/tmpFile/' + nameInDrive;
-
+    console.log(nameInDrive);
+    
     await fs.writeFile(filePath,bodyMedia,'base64', (err) => {
         if (err) console.log('ERRORRRRR-----', err);
     });
@@ -338,7 +339,7 @@ const createFile2 = async (req, res) => {
         mimeType: mimeType,
         body: fs.createReadStream(filePath)
     };
-    console.log(newF,'-dasdado',fileId);
+    console.log(newF,'-dasdado',folderId);
     if(newF){
 
         // name for display in google drive
@@ -384,7 +385,8 @@ const createFile2 = async (req, res) => {
             console.log('whyy');
             
             res.status(status.OK).json({                
-                action: 'update file2'
+                action: 'update file2',
+                filename:nameInDrive
             });
         });
     }

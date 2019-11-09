@@ -1,8 +1,8 @@
 module.exports = {
   secret: '*Vs1k4e(Y}wpz${hz%w5rSwD',
   passCrpt: 'M}uwsh¿pd$w&',
-  port: 3004,
-  //port: 3003,
+  // port: 3004,
+  port: 3003,
   host: 'cideti.com.mx',
   dbhost: 'localhost',
   dbport: '27017',

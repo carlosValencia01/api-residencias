@@ -6,39 +6,53 @@ const getAll = (req, res) => {
   _period.find({}).exec(handler.handleMany.bind(null, 'periods', res));
 };
 
+const getActivePeriod = (req,res)=>{
+    _period.findOne({active:true})
+        .then( period=>{
+            if(period) {
+                res.status(status.OK).json({model:'period',action:'get active',period:period});
+            }else{
+                res.status(status.NOT_FOUND).json({model:'period',action:'get active', error:'There are not any periods active'});
+            } 
+        }).catch( error=>{
+            res.status(status.BAD_REQUEST).json({
+                model:'period',action:'get active', error: error.toString()
+            });
+        });
+};
+
 const createPeriod = (req,res)=> {
-    console.log('period');
-    
+       
     const period = req.body;
     _period.create(period).then(created => {
         res.status(status.OK).json({
-            period: created,        
+            period: created,
+            model:'period',         
             action: 'create'
         });
 
-    }).catch(err =>{
-        console.log(err.toString());
-        
-        res.status(status.INTERNAL_SERVER_ERROR).json({
-            error: err.toString()
-        })
+    }).catch(err =>{            
+        res.status(status.BAD_REQUEST).json({
+            model:'period',action:'create', error: err.toString()
+        });
     });
 };
 
 const updatePeriod = (req,res)=> {
     
     const period = req.body;
-    console.log('period update',period);
+    
     const idPeriod = req.params.id;
     _period.findOneAndUpdate({_id:idPeriod},period).then(updated => {
         res.status(status.OK).json({
+            model:'period', 
             period: updated,        
             action: 'updated'
         });
 
     }).catch(err =>
         res.status(status.BAD_REQUEST).json({
-            error: err.toString()
+            model:'period',action:'updated', error: err.toString()
         }));
 };
 
@@ -46,6 +60,7 @@ module.exports = (Period) => {
   _period = Period;
   return ({
     getAll,
+    getActivePeriod,
     createPeriod,
     updatePeriod
   });

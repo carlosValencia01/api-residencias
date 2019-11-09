@@ -8,10 +8,10 @@ const periodSchema = new mongoose.Schema({
     endDate :{ type: Date},    
     insPerInitDate:{type: Date},
     insPerEndDate:{type: Date},
-    arecPerInitDate:{type: Date},
+    arecPerInitDate:{type: Date}, // arec = acto recepcional
     arecPerEndDate:{type: Date},
-    arecInitShed:{type: Number},
-    arecEndShed:{type: Number},
+    arecInitShed:{type: Number}, // inicio horario agenda acto recepcional
+    arecEndShed:{type: Number}, // fin horario agenda acto recepcional
 });
 
 const periodModel = mongoose.model('Period', periodSchema, 'periods');

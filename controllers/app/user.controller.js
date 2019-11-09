@@ -57,7 +57,7 @@ const login = (req, res) => {
                 });
             }
             if (user) {
-                console.log(user);
+                console.log(user,'==========user');
                 user.validatePasswd(password, user.password, invalid => {
                     // Password inválido
                     if (invalid) {
