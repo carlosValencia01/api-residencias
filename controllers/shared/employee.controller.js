@@ -266,14 +266,33 @@ const updateEmployeGrade = (req, res) => {
 };
 
 const updateEmployeePositions = (req, res) => {
-    const { _id } = req.params;
+    const {_id} = req.params;
     const _positions = req.body;
 
-    _employee.updateOne({ _id: _id }, { positions: _positions }, (err, updated) => {
+    _employee.updateOne({_id: _id}, {positions: _positions}, (err, updated) => {
         if (!err && updated) {
-            res.json({ status: updated.n ? status.OK : status.NOT_FOUND });
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
         } else {
-            res.json({
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    error: err.toString()
+                });
+        }
+    });
+};
+
+const updateEmployeeGrades = (req, res) => {
+    const {_id} = req.params;
+    const _grades = req.body;
+
+    _employee.updateOne({_id: _id}, {grade: _grades}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR).json({
                 status: status.INTERNAL_SERVER_ERROR,
                 error: err.toString()
             });
@@ -281,18 +300,20 @@ const updateEmployeePositions = (req, res) => {
     });
 };
 
-const updateEmployeeGrades = (req, res) => {
-    const { _id } = req.params;
-    const _grades = req.body;
+const updateEmployeeGradesAndPositions = (req, res) => {
+    const {_id} = req.params;
+    const {positions, grades} = req.body;
 
-    _employee.updateOne({ _id: _id }, { grade: _grades }, (err, updated) => {
+    _employee.updateOne({_id: _id}, {positions: positions, grade: grades}, (err, updated) => {
         if (!err && updated) {
-            res.json({ status: updated.n ? status.OK : status.NOT_FOUND });
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
         } else {
-            res.json({
-                status: status.INTERNAL_SERVER_ERROR,
-                error: err.toString()
-            });
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    error: err.toString()
+                });
         }
     });
 };
@@ -317,5 +338,6 @@ module.exports = (Employee) => {
         getEmployeeByArea,
         updateEmployeePositions,
         updateEmployeeGrades,
+        updateEmployeeGradesAndPositions,
     });
 };

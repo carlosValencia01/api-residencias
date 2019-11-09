@@ -7,6 +7,8 @@ let employeeSchema = new mongoose.Schema({
         lastName: { type: String, required: true, uppercase: true, trim: true },
         fullName: { type: String, required: true, uppercase: true, trim: true }
     },
+    gender: { type: String, trim: true, enum: ['FEMENINO', 'MASCULINO', 'OTRO'] },
+    birthDate: { type: Date },
     filename: { type: String },
     grade: [{
         _id: false,
