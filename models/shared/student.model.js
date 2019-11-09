@@ -59,7 +59,8 @@ const studentSchema = new mongoose.Schema({
     acceptedTerms:{type:Boolean},
     dateAcceptedTerms:{type:Date},
     stepWizard: {type:Number},
-    semester: {type: String}
+    semestre: {type: String},
+    inscriptionStatus: {type: String},
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');
