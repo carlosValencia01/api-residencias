@@ -580,12 +580,9 @@ module.exports = (Student, Request) => {
         getFilePDF,
         assignDocumentDrive,
         getDocumentsDrive,
-<<<<<<< HEAD
         getFolderId,
         getPeriodInscription,
         updateDocumentLog,
-=======
         getStudentsInscription,
->>>>>>> inscriptions-module
     });
 };
