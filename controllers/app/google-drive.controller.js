@@ -181,10 +181,10 @@ const createOrUpdateFile = (req, res) => {
         mimeType: mimeType,
         body: bufferStream
     };
-   
+    
+    const image = files.file.name.split('.');
+    const nameInDrive = req.body.filename.indexOf('FOTO') > 0 ? req.body.filename + '.' + image[image.length-1] : req.body.filename;
     if(content.newF=='true'){ //create new file
-        const image = files.file.name.split('.');
-        const nameInDrive = req.body.filename.indexOf('FOTO') > 0 ? req.body.filename + '.' + image[image.length-1] : req.body.filename;
         const folderId = content.folderId;
         
         // name for display in google drive
@@ -225,7 +225,8 @@ const createOrUpdateFile = (req, res) => {
                 });
             }
             res.status(status.OK).json({                
-                action: 'update file1'
+                action: 'update file1',
+                name:nameInDrive
             });
         });
     }
