@@ -334,7 +334,11 @@ const createFile2 = async (req, res) => {
     
     await fs.writeFile(filePath,bodyMedia,'base64', (err) => {
         if (err) console.log('ERRORRRRR-----', err);
+        console.log('2');
+        
     });
+    console.log('3');
+    
     
     let media = await {
         mimeType: mimeType,
@@ -356,6 +360,8 @@ const createFile2 = async (req, res) => {
     
         },
         (err, file) => {
+            console.log('4');
+            
             fs.unlinkSync(filePath);//delete file from server
             if (err) {
                 res.status(status.BAD_REQUEST).json({

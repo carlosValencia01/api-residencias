@@ -452,6 +452,20 @@ const getDocumentsDrive = (req,res)=>{
     })
 };
 
+const getCareerDetail = (req,res)=>{
+    const {_id} = req.params;
+        
+    _student.findOne({_id:_id},{careerId:1}).populate('careerId').then(
+        student=>{
+            if(student){
+                res.status(status.OK).json({career:student.careerId});
+            }else{
+                res.status(status.NOT_FOUND).json({error:'No encontrado'})
+            }
+        }
+    ).catch(err=>{res.status(status.BAD_REQUEST).json({error:err.toString()})});
+};
+
 /** End functions for inscription */
 
 const csvIngles = (req, res) => {
@@ -584,5 +598,6 @@ module.exports = (Student, Request) => {
         getPeriodInscription,
         updateDocumentLog,
         getStudentsInscription,
+        getCareerDetail,
     });
 };
