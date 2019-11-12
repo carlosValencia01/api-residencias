@@ -16,7 +16,7 @@ const getById = (req, res) => {
     const { _id } = req.params;
     _employee.findOne({ _id: _id })
         .populate({
-            path: 'positions', model: 'Position', select: 'name ascription canSign',
+            path: 'positions.position', model: 'Position', select: 'name ascription canSign',
             populate: { path: 'ascription', model: 'Department', select: 'name shortName' }})
         .exec(handler.handleOne.bind(null, 'employee', res));
 };

@@ -18,7 +18,13 @@ let employeeSchema = new mongoose.Schema({
         level: { type: String, enum: ['DOCTORADO', 'MAESTRIA', 'LICENCIATURA'], uppercase: true, trim: true },
         default: { type: Boolean, default: false }
     }],
-    positions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Position' }]
+    positions: [{
+        _id: false,
+        position: {type: mongoose.Schema.Types.ObjectId, ref: 'Position'},
+        status: {type: String, trim: true, uppercase: true, enum: ['ACTIVE', 'INACTIVE']},
+        activateDate: {type: Date},
+        deactivateDate: {type: Date}
+    }]
 });
 const employeeModel = mongoose.model('Employee', employeeSchema, 'employees');
 
