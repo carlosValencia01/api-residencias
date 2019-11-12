@@ -61,6 +61,7 @@ const studentSchema = new mongoose.Schema({
     stepWizard: {type:Number},
     semestre: {type: String},
     inscriptionStatus: {type: String},
+    observationsAnalysis: {type: String}
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');
