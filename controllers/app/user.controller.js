@@ -58,7 +58,7 @@ const login = (req, res) => {
                 });
             }
             if (user) {
-                console.log(user);
+                console.log(user,'==========user');
                 user.validatePasswd(password, user.password, invalid => {
                     // Password inválido
                     if (invalid) {
@@ -97,7 +97,7 @@ const login = (req, res) => {
                         deadline: 20000, // but allow 1 minute for the file to finish loading.
                     }).then((res1) => {
                         const respApi = res1.body;
-                        console.log(respApi);
+                        console.log(respApi,'============================');
 
                         // Está registrado en el SII y su NIP y Password son correctos
                         if (respApi.data && respApi.data.existe === '1') {
@@ -111,6 +111,8 @@ const login = (req, res) => {
 
                                 // Tiene carga activa
                                 if (respApi2 && respApi2.error === 'FALSE') {
+                                    console.log(respApi2);
+                                    
                                     console.log('Si tiene materias cargadas');
                                     let queryNc = { controlNumber: email };
                                     // Buscamos sus datos en la BD local
@@ -241,6 +243,8 @@ const login = (req, res) => {
                                                                 })
                                                                 .exec((err, user) => {
                                                                     // Se contruye el token
+                                                                    console.log(user,'soy user');
+                                                                    
                                                                     const token = jwt.sign({ email: user.controlNumber }, config.secret);
                                                                     let formatUser = {
                                                                         _id: user._id,

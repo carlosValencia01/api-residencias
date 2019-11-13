@@ -13,6 +13,7 @@ module.exports = (wagner) => {
     
     // App
     const Department = require('../app/department.model');
+    const Folder = require('../app/google-drive-folder.model');
     const Period = require('../app/period.model');
     const Role = require('../app/role.model');
     const User = require('../app/user.model');
@@ -26,6 +27,7 @@ module.exports = (wagner) => {
     // Shared
     const Employee = require('./employee.model');
     const Student = require('./student.model');
+    const Career = require('./career.model');
     
     const models = {
         // App
@@ -33,7 +35,7 @@ module.exports = (wagner) => {
         Period,
         Role,
         User,
-        
+        Folder,
         // Inscriptions
         Inscription,
         
@@ -43,6 +45,7 @@ module.exports = (wagner) => {
         // Shared
         Employee,
         Student,
+        Career,
     };
 
     _.each(models, (v, k) => {
