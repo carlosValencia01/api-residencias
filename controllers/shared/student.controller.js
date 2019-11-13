@@ -8,6 +8,7 @@ const superagent = require('superagent');
 
 let _student;
 let _request;
+let _role;
 
 const getAll = (req, res) => {
     _student.find({})
@@ -112,8 +113,11 @@ const search = (req, res) => {
     }).exec(handler.handleMany.bind(null, 'students', res));
 };
 
-const create = (req, res, next) => {
+const create = async (req, res, next) => {
+
     const student = req.body;
+    const studentRoleId = await getStudentRoleId();
+    student.idRole = studentRoleId;
     _student.create(student).then(created => {
         res.json({
             presentation: created
@@ -125,8 +129,10 @@ const create = (req, res, next) => {
     );
 };
 
-const createWithoutImage = (req, res) => {
+const createWithoutImage = async (req, res) => {
     const student = req.body;
+    const studentRoleId = await getStudentRoleId();
+    student.idRole = studentRoleId;
     console.log(student);
     _student.create(student).then(created => {
         res.json(created);
@@ -320,9 +326,21 @@ const getFilePDF = (req, res) => {
   });
 };
 
-module.exports = (Student, Request) => {
+const getStudentRoleId = () => {
+    return new Promise(async (resolve) => {
+        await _role.findOne({ name: { $regex: new RegExp(`^Estudiante$`) } }, (err, role) => {
+            if (!err && role) {
+                resolve(role.id);
+            }
+        });
+    });
+};
+
+
+module.exports = (Student, Request, Role) => {
     _student = Student;
     _request = Request;
+    _role = Role;
     return ({
         create,
         getOne,

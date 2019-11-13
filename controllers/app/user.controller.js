@@ -7,6 +7,7 @@ const superagent = require('superagent');
 let _user;
 let _student;
 let _employee;
+let _role;
 
 const getAll = (req, res) => {
     _user.find({})
@@ -166,13 +167,16 @@ const login = (req, res) => {
                                                     const fatherName = (respApi2.data.apellido_paterno && respApi2.data.apellido_paterno !== ' ') ? ' ' + respApi2.data.apellido_paterno : '';
                                                     const motherName = (respApi2.data.apellido_materno && respApi2.data.apellido_materno !== ' ') ? ' ' + respApi2.data.apellido_materno : '';
 
+                                                    // Obtener id del rol para estudiente
+                                                    const studentId = await getRoleId('Estudiante');
                                                     let studentNew = {
                                                         fullName: respApi2.data.nombre_alumno + fatherName + motherName,
                                                         controlNumber: respApi2.data.nocontrol,
                                                         nip: password,
                                                         career: ' ',
                                                         //Rol a estudiante
-                                                        idRole: '5ce1982478de152cb608f153'
+                                                  
+                                                        idRole: studentId
                                                     };
 
                                                     switch (respApi2.data.carrera) {
@@ -434,10 +438,21 @@ const validateGraduateStatus = (controlNumber) => {
     });
 };
 
-module.exports = (User, Student, Employee) => {
+const getRoleId = (roleName) => {
+    return new Promise(async (resolve) => {
+        await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
+            if (!err && role) {
+                resolve(role.id);
+            }
+        });
+    });
+};
+
+module.exports = (User, Student, Employee, Role) => {
     _user = User;
     _student = Student;
     _employee = Employee;
+    _role = Role;
     return ({
         register,
         login,
