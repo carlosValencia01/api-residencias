@@ -93,10 +93,29 @@ const searchRfc = (req, res) => {
     const query = {
         rfc: rfc
     };
-    _employee.find(query, null, {
-        skip: +start,
-        limit: +limit
-    }).exec(handler.handleMany.bind(null, 'employees', res));
+    _employee
+        .findOne(query)
+        .populate({
+            path: 'positions.position',
+            model: 'Position',
+            select: 'name ascription -_id',
+            populate: {path: 'ascription', model: 'Department', select: 'name shortName -_id'}
+        })
+        .exec((err, employee) => {
+            if (!err && employee) {
+                const positions = employee.positions.filter(pos => pos.status === 'ACTIVE');
+                employee.positions = positions.slice();
+                res
+                    .status(status.OK)
+                    .json(employee);
+            } else {
+                res
+                    .status(err ? status.INTERNAL_SERVER_ERROR : status.NOT_FOUND)
+                    .json({
+                        error: err ? err.toString() : 'Empleado no encontrado'
+                    });
+            }
+        });
 };
 
 const create = (req, res, next) => {
