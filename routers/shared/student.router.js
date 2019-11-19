@@ -12,8 +12,10 @@ var storage = multer.diskStorage({
 let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
-    const studentCtrl = wagner.invoke((Student, Request) =>
-        require('../../controllers/shared/student.controller')(Student, Request));
+
+    const studentCtrl = wagner.invoke((Student, Request, Role) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role));
+
 
     router.get('/', (req, res) =>
         studentCtrl.getAll(req, res));
@@ -46,6 +48,9 @@ module.exports = (wagner) => {
         studentCtrl.getFolderId(req, res));
     router.get('/get/periodinscription/:_id', (req, res) =>
         studentCtrl.getPeriodInscription(req, res));
+
+    router.get('/get/career/:_id', (req, res) =>
+        studentCtrl.getCareerDetail(req, res));
 
 
 

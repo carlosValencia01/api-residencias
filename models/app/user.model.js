@@ -6,7 +6,8 @@ let userSchema = new mongoose.Schema({
     password: { type: String },
     role: { type: Number },
     idRole: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
-    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }
+    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+    careerId : {type: mongoose.Schema.Types.ObjectId, ref: 'Career' },
 });
 
 userSchema.pre('save', function (next) {

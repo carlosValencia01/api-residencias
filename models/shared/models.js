@@ -27,6 +27,7 @@ module.exports = (wagner) => {
     // Shared
     const Employee = require('./employee.model');
     const Student = require('./student.model');
+    const Career = require('./career.model');
     
     const models = {
         // App
@@ -44,6 +45,7 @@ module.exports = (wagner) => {
         // Shared
         Employee,
         Student,
+        Career,
     };
 
     _.each(models, (v, k) => {

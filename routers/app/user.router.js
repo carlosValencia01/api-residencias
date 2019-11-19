@@ -1,11 +1,14 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const userCtrl = wagner.invoke((User, Student, Employee) =>
-      require('../../controllers/app/user.controller')(User, Student, Employee));
+
+    const userCtrl = wagner.invoke((User, Student, Employee, Role) =>
+      require('../../controllers/app/user.controller')(User, Student, Employee, Role));
 
     router.get('/', (req, res) =>
         userCtrl.getAll(req, res));
+    router.get('/secretaries', (req, res) =>
+        userCtrl.getSecretaries(req, res));
 
     router.get('/employee/:email', (req, res) =>
         userCtrl.getDataEmployee(req, res));
@@ -18,6 +21,8 @@ module.exports = (wagner) => {
 
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
+    router.put('/update/user/:_id', (req, res) =>
+        userCtrl.updateUser(req, res));
 
     return router;
   };

@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 
 let _student;
 let _request;
+let _role;
 
 const getAll = (req, res) => {
     _student.find({})
@@ -118,8 +119,11 @@ const search = (req, res) => {
     }).exec(handler.handleMany.bind(null, 'students', res));
 };
 
-const create = (req, res, next) => {
+const create = async (req, res, next) => {
+
     const student = req.body;
+    const studentRoleId = await getStudentRoleId();
+    student.idRole = studentRoleId;
     _student.create(student).then(created => {
         res.json({
             presentation: created
@@ -131,8 +135,10 @@ const create = (req, res, next) => {
     );
 };
 
-const createWithoutImage = (req, res) => {
+const createWithoutImage = async (req, res) => {
     const student = req.body;
+    const studentRoleId = await getStudentRoleId();
+    student.idRole = studentRoleId;
     console.log(student);
     _student.create(student).then(created => {
         res.json(created);
@@ -452,6 +458,20 @@ const getDocumentsDrive = (req,res)=>{
     })
 };
 
+const getCareerDetail = (req,res)=>{
+    const {_id} = req.params;
+        
+    _student.findOne({_id:_id},{careerId:1}).populate('careerId').then(
+        student=>{
+            if(student){
+                res.status(status.OK).json({career:student.careerId});
+            }else{
+                res.status(status.NOT_FOUND).json({error:'No encontrado'})
+            }
+        }
+    ).catch(err=>{res.status(status.BAD_REQUEST).json({error:err.toString()})});
+};
+
 /** End functions for inscription */
 
 const csvIngles = (req, res) => {
@@ -558,9 +578,21 @@ const getFilePDF = (req, res) => {
   });
 };
 
-module.exports = (Student, Request) => {
+const getStudentRoleId = () => {
+    return new Promise(async (resolve) => {
+        await _role.findOne({ name: { $regex: new RegExp(`^Estudiante$`) } }, (err, role) => {
+            if (!err && role) {
+                resolve(role.id);
+            }
+        });
+    });
+};
+
+
+module.exports = (Student, Request, Role) => {
     _student = Student;
     _request = Request;
+    _role = Role;
     return ({
         create,
         getOne,
@@ -584,5 +616,6 @@ module.exports = (Student, Request) => {
         getPeriodInscription,
         updateDocumentLog,
         getStudentsInscription,
+        getCareerDetail,
     });
 };

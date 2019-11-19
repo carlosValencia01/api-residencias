@@ -29,6 +29,7 @@ const graduation = require('./routers/graduation/graduation.router')(wagner);
 // Shared
 const employee = require('./routers/shared/employee.router')(wagner);
 const student = require('./routers/shared/student.router')(wagner);
+const career = require('./routers/shared/career.router')(wagner);
 
 let app = express();
 
@@ -81,6 +82,7 @@ app.use(uri + 'role', role);
 app.use(uri + 'user', user);
 app.use(uri + 'period', period);
 app.use(uri + 'drive', drive);
+app.use(uri + 'career', career);
 
 // Credentials
 app.use(uri + 'employee', employee);

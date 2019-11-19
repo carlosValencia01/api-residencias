@@ -5,6 +5,7 @@ const stream = require('stream');
 const readline = require('readline');
 const { google } = require('googleapis');
 const fs = require('fs');
+var toUint8Array = require('base64-to-uint8array');
 
 var auth;
 
@@ -174,7 +175,7 @@ const createOrUpdateFile = (req, res) => {
 
     //create bufferStream of document to save into google drive
     const buffer = Uint8Array.from(bodyMedia);
-    var bufferStream = new stream.PassThrough();
+    let bufferStream = new stream.PassThrough();
     bufferStream.end(buffer); 
 
     let media = {
@@ -295,11 +296,10 @@ const downloadFile = (req, res) => {
         fileId: fileId,
         alt: 'media'
     }, { responseType: 'stream' },
-        async (err, file) => {
+        (err, file) => {
             if (err) console.log(err);
             file.data.
-                on('end', () => {
-                    console.log('done');
+                on('end', () => {                
                     fs.readFile(path, (error, data) => {
                         if (error) {
                             console.log(error, '-=-=-=-=-=-=-=-=-');
@@ -330,17 +330,17 @@ const createFile2 = async (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const { mimeType, nameInDrive, bodyMedia, folderId, newF,fileId} = req.body;
     const filePath = 'documents/tmpFile/' + nameInDrive;
-    console.log(nameInDrive);
-    
-    await fs.writeFile(filePath,bodyMedia,'base64', (err) => {
-        if (err) console.log('ERRORRRRR-----', err);
-    });
+    // console.log(nameInDrive);
+
+    let buffer = toUint8Array(bodyMedia);
+    let bufferStream = new stream.PassThrough();
+    bufferStream.end(buffer); 
     
     let media = await {
         mimeType: mimeType,
-        body: fs.createReadStream(filePath)
+        body: bufferStream
     };
-    console.log(newF,'-dasdado',folderId);
+    
     if(newF){
 
         // name for display in google drive
@@ -356,7 +356,7 @@ const createFile2 = async (req, res) => {
     
         },
         (err, file) => {
-            fs.unlinkSync(filePath);//delete file from server
+                                    
             if (err) {
                 res.status(status.BAD_REQUEST).json({
                     error: err,
@@ -365,8 +365,7 @@ const createFile2 = async (req, res) => {
             } else {
                 res.status(201).json({
                     fileId: file.data.id,
-                    name: fileMetadata.name,
-                    // mimeType:mimeType,
+                    name: fileMetadata.name,                    
                     action: 'create file'
                 });
             }
@@ -375,15 +374,13 @@ const createFile2 = async (req, res) => {
         drive.files.update({
             fileId: fileId,
             media: media,
-        }, (err, file) => {
-            fs.unlinkSync(filePath);//delete file from server
+        }, (err, file) => {            
             if (err) {
                 res.status(status.BAD_REQUEST).json({
                     error: err,
                     action: 'update file2'
                 });
-            }
-            console.log('whyy');
+            }            
             
             res.status(status.OK).json({                
                 action: 'update file2',
