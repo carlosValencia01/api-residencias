@@ -7,6 +7,8 @@ module.exports = (wagner) => {
 
     router.get('/', (req, res) =>
         userCtrl.getAll(req, res));
+    router.get('/secretaries', (req, res) =>
+        userCtrl.getSecretaries(req, res));
 
     router.get('/employee/:email', (req, res) =>
         userCtrl.getDataEmployee(req, res));
@@ -19,6 +21,8 @@ module.exports = (wagner) => {
 
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
+    router.put('/update/user/:_id', (req, res) =>
+        userCtrl.updateUser(req, res));
 
     return router;
   };
