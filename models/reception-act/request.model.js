@@ -6,12 +6,14 @@ const requestSchema = new mongoose.Schema({
     applicationDate: { type: Date, required: true },
     projectName: { type: String, required: true },
     product: { type: String, required: true },
-    proposedDate: { type: Date, required: true },
+    proposedDate: { type: Date},
+    proposedHour: { type: Number },
+    place: { type: String },
     actDate: { type: Date },
     telephone: { type: String, required: true },
     honorificMention: { type: Boolean, required: true, default: false },
     phase: { type: String, enum: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado', 'Validado', 'Asignado', 'Realizado', 'Generado'], required: true },
-    status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None'] },
+    status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None', 'Wait', 'Cancelled'] },
     lastModified: { type: Date, required: true },
     observation: { type: String, default: '' },
     doer: { type: String },
@@ -27,7 +29,7 @@ const requestSchema = new mongoose.Schema({
     history: [
         {
             phase: { type: String, enum: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado', 'Validado', 'Asignado', 'Realizado', 'Generado'] },
-            status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None'] },
+            status: { type: String, enum: ['Process', 'Accept', 'Error', 'Reject', 'None', 'Cancelled'] },
             observation: { type: String },
             achievementDate: { type: Date },
             doer: { type: String, required: true }
@@ -37,7 +39,7 @@ const requestSchema = new mongoose.Schema({
         {
             type: { type: String, required: true },
             dateRegister: { type: Date, required: true },
-            nameFile: { type: String, required: true },
+            nameFile: { type: String, default: '' },
             observation: { type: String, default: '' },
             status: { type: String, enum: ['Process', 'Accept', 'Reject', 'Omit'] }
         }

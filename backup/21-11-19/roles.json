@@ -1,0 +1,97 @@
+[
+    {
+        "_id": ObjectId("5dd3195332c9605c0873aa9d"),
+        "name": "Jefe Académico",
+        "description": "Rol asignado para jefe académico",
+        "permissions": [
+            {
+                "label": "Titulación",
+                "icon": "assignment",
+                "routerLink": "progressPage",
+                "level": 1
+            }
+        ]
+    },
+    {
+        "_id": ObjectId("5dd3196d32c9605c0873aa9e"),
+        "name": "Coordinación de Titulación",
+        "description": "Rol asignado para coordinacion",
+        "permissions": [
+            {
+                "label": "Titulación",
+                "icon": "assignment",
+                "routerLink": "progressPage",
+                "level": 1
+            },
+            {
+                "label": "Agenda",
+                "icon": "calendar_today",
+                "routerLink": "diary",
+                "level": 1
+            }
+        ]
+    },
+    {
+        "_id": ObjectId("5dd319b832c9605c0873aa9f"),
+        "name": "Servicios Estudiantiles",
+        "description": "Rol asignado para servicios",
+        "permissions": [
+            {
+                "label": "Titulación",
+                "icon": "assignment",
+                "routerLink": "progressPage",
+                "level": 1
+            }
+        ]
+    },
+    {
+        "_id": ObjectId("5ce19e0578de152cb608f358"),
+        "name": "Administrador",
+        "description": "Rol asignado para administración",
+        "permissions": [
+            {
+                "label": "Credenciales",
+                "icon": "credit_card",
+                "level": 1,
+                "items": [
+                    {
+                        "label": "Alumnos",
+                        "icon": "account_box",
+                        "routerLink": "student",
+                        "level": 2
+                    },
+                    {
+                        "label": "Trabajadores",
+                        "icon": "contact_phone",
+                        "routerLink": "employeeCard",
+                        "level": 2
+                    }
+                ]
+            },
+            {
+                "label": "Ingles",
+                "icon": "school",
+                "routerLink": "english",
+                "level": 1
+            },
+            {
+                "label": "Grados",
+                "icon": "description",
+                "routerLink": "grades",
+                "level": 1
+            },
+            {
+                "label": "Mi Titulación",
+                "icon": "school",
+                "routerLink": "graduation",
+                "level": 1
+            },
+            {
+                "label": "Titulación",
+                "icon": "assignment",
+                "routerLink": "progressPage",
+                "level": 1
+            }
+        ]
+    }
+]

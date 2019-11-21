@@ -48,7 +48,8 @@ const eRequest = {
 const eRole = {
     eSECRETARY: 'secretaria',
     eCOORDINATION: 'coordinacion',
-    eCHIEFACADEMIC: 'jefe'
+    eCHIEFACADEMIC: 'jefe',
+    eSTUDENTSERVICES: 'servicios'
 };
 
 const eStatusRequest = {
@@ -56,7 +57,10 @@ const eStatusRequest = {
     PROCESS: 'Process',
     ERROR: 'Error',
     ACCEPT: 'Accept',
-    REJECT: 'Reject'
+    REJECT: 'Reject',
+    WAIT: 'Wait',
+    CANCELLED: 'Cancelled',
+    ASSIGN: 'Assign'
 };
 
 module.exports = {
