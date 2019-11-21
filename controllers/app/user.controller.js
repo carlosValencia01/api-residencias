@@ -555,6 +555,48 @@ const getRoleId = (roleName) => {
     });
 };
 
+/**
+ * START FOR APP MOVILE
+ */
+
+ const studentLogin = (req,res)=>{
+    const {nc,nip} = req.body;
+    _student.findOne({controlNumber: nc},{documents:0,folderId:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0})
+        .populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName:1,shortName:1,acronym:1,_id:1
+            }
+        }).exec(async (error, oneUser) => {                                          
+                if (oneUser) {
+                    // Se contruye el token
+                    if(oneUser.nip == nip){
+                        const token = jwt.sign({ nc: oneUser.controlNumber }, config.secret);             
+                        let {fullName,shortName,acronym,_id} = oneUser.careerId;
+                        let career ={fullName,shortName,acronym,_id};                    
+                        let user = {student:oneUser,career};
+                        // user.student.career = undefined;                    
+                        user.student.careerId = undefined;                    
+                       
+                        return res.status(status.OK).json({
+                            user: user,
+                            token: token,
+                            action: 'signin'
+                        });
+                    }else{
+                        return res.status(status.NOT_FOUND).json({
+                            error: 'El nip proporcionado no es valido.'
+                        });
+                    }
+                }else{
+                    return res.status(status.NOT_FOUND).json({
+                        error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                    });
+                }            
+        });
+ };
+
+
 module.exports = (User, Student, Employee, Role) => {
     _user = User;
     _student = Student;
@@ -567,6 +609,7 @@ module.exports = (User, Student, Employee, Role) => {
         getDataEmployee,
         updateUserData,
         getSecretaries,
-        updateUser
+        updateUser,
+        studentLogin,
     });
 };

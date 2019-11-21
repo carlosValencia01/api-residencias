@@ -18,6 +18,8 @@ module.exports = (wagner) => {
 
     router.post('/login', (req, res) =>
         userCtrl.login(req, res));
+    router.post('/student/login', (req, res) =>
+        userCtrl.studentLogin(req, res));
 
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
