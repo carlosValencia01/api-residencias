@@ -22,7 +22,7 @@ const inscription = require('./routers/inscriptions/inscription.router')(wagner)
 // Reception act
 const english = require('./routers/reception-act/english.router')(wagner);
 const request = require('./routers/reception-act/request.router')(wagner);
-
+const range = require('./routers/reception-act/range.router')(wagner);
 // Graduation
 const graduation = require('./routers/graduation/graduation.router')(wagner);
 
@@ -94,7 +94,7 @@ app.use(uri + 'inscription', inscription);
 // Reception act
 app.use(uri + 'english', english);
 app.use(uri + 'request', request);
-
+app.use(uri + 'range', range);
 // Graduations
 app.use(uri + 'graduationmail', graduation);
 

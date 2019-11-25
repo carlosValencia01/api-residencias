@@ -1,0 +1,44 @@
+[
+    {
+        "_id": ObjectId("5dd3181332c9605c0873aa9a"),
+        "name": {
+            "firstName": "Coordinacion",
+            "lastName": "Titulacion",
+            "fullName": "Coordinacion Titulacion"
+        },
+        "email": "coordtitulacion@ittepic.edu.mx",
+        "password": "$2a$08$h3WWbNghqKo8RHHSLUM2C.WGW.AfPuY9hHefdgwr3sgfUOUAG32XG",
+        "role": 1,
+        "idRole": ObjectId("5dd3196d32c9605c0873aa9e"),
+        "employeeId": ObjectId("5bf6e2d310dae73bcc98b1a9"),
+        "__v": 0
+    },
+    {
+        "_id": ObjectId("5dd3188032c9605c0873aa9b"),
+        "name": {
+            "firstName": "Departamento",
+            "lastName": "Sistema",
+            "fullName": "Departamento Sistemas"
+        },
+        "email": "sistemascomp@ittepic.edu.mx",
+        "password": "$2a$08$h3WWbNghqKo8RHHSLUM2C.WGW.AfPuY9hHefdgwr3sgfUOUAG32XG",
+        "role": 1,
+        "idRole": ObjectId("5dd3195332c9605c0873aa9d"),
+        "employeeId": ObjectId("5bf6e2d310dae73bcc98b1a9"),
+        "__v": 0
+    },
+    {
+        "_id": ObjectId("5dd318a732c9605c0873aa9c"),
+        "name": {
+            "firstName": "Servicios",
+            "lastName": "Estudiantiles",
+            "fullName": "Servicios Estudiantiles"
+        },
+        "email": "gtvinculacion@ittepic.edu.mx",
+        "password": "$2a$08$h3WWbNghqKo8RHHSLUM2C.WGW.AfPuY9hHefdgwr3sgfUOUAG32XG",
+        "role": 1,
+        "idRole": ObjectId("5dd319b832c9605c0873aa9f"),
+        "employeeId": ObjectId("5bf6e2d310dae73bcc98b1a9"),
+        "__v": 0
+    }
+]

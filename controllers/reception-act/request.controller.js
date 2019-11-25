@@ -5,7 +5,7 @@ const fs = require('fs');
 const { eRequest, eStatusRequest, eRole, eFile } = require('../../enumerators/reception-act/enums');
 
 let _request;
-
+let _ranges;
 const create = (req, res) => {
     let request = req.body;
     request.lastModified = new Date();
@@ -78,6 +78,20 @@ const getRequestByStatus = (req, res) => {
         }
         case eRole.eCHIEFACADEMIC: {
             _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
+                .populate
+                ({
+                    path: 'studentId', model: 'Student',
+                    select: {
+                        fullName: 1,
+                        controlNumber: 1,
+                        career: 1
+                    }
+                })
+                .exec(handler.handleMany.bind(null, 'request', res));
+            break;
+        }
+        case eRole.eSTUDENTSERVICES: {
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado','Verificado','Registrado'] } })
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
@@ -267,33 +281,34 @@ const fileCheck = (req, res) => {
     }, { new: true }, (error, request) => {
         if (error)
             return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
-        const result = request.documents.filter(doc => doc.status === "Accept" || doc.status === "Omit");
-        console.log("RESULT", result.length);
-        if (result.length === 13) {
-            _request.findOneAndUpdate({ _id: _id }, {
-                $set: {
-                    phase: eRequest.VALIDATED,
-                    status: eStatusRequest.PROCESS,
-                    lastModified: new Date()
-                },
-                $addToSet: {
-                    history: {
-                        phase: eRequest.DELIVERED,
-                        achievementDate: new Date(),
-                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                        status: eStatusRequest.ACCEPT
-                    }
-                }
-            }).exec(handler.handleOne.bind(null, 'request', res));
-        } else {
-            var json = {};
-            json['request'] = request;
-            return res.status(status.OK).json(json);
-        }
-    })
+        console.log("reqq", request);
+        const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+        // if (result.length === 13) {
+        _request.findOneAndUpdate({ _id: _id }, {
+            $set: {
 
-    // .exec(handler.handleOne.bind(null, 'request', res));
+                // phase: eRequest.ASSIGNED,
+                // status: eStatusRequest.NONE,
+                phase: eRequest.DELIVERED,
+                status: result.length === 13 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
+                lastModified: new Date(),
+            },
+            $addToSet: {
+                history: {
+                    phase: eRequest.DELIVERED,
+                    achievementDate: new Date(),
+                    doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                    observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                    status: eStatusRequest.ACCEPT
+                }
+            }
+        }).exec(handler.handleOne.bind(null, 'request', res));
+        // } else {
+        //     var json = {};
+        //     json['request'] = request;
+        //     return res.status(status.OK).json(json);
+        // }
+    })
 };
 
 const releasedRequest = (req, res) => {
@@ -316,7 +331,9 @@ const releasedRequest = (req, res) => {
                 _request.update({ _id: _id }, {
                     $set: {
                         phase: eRequest.RELEASED,
-                        status: eStatusRequest.PROCESS,
+                        // status: eStatusRequest.PROCESS, 17/11
+                        status: eStatusRequest.NONE,
+                        proposedHour: data.proposedHour,
                         lastModified: new Date(),
                         jury: panel
                     },
@@ -339,8 +356,10 @@ const releasedRequest = (req, res) => {
                     $set: {
                         'documents.$': { type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: 'Accept' },
                         phase: eRequest.RELEASED,
-                        status: eStatusRequest.PROCESS,
+                        // status: eStatusRequest.PROCESS, 17/11
+                        status: eStatusRequest.NONE,
                         lastModified: new Date(),
+                        proposedHour: data.proposedHour,
                         jury: panel
                     },
                     $addToSet: {
@@ -361,6 +380,7 @@ const releasedRequest = (req, res) => {
 const updateRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
+    console.log("Data", data);
     _request.findOne({ _id: _id }).exec((error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -378,7 +398,8 @@ const updateRequest = (req, res) => {
             case eRequest.CAPTURED: {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.SENT;
-                    request.status = eStatusRequest.PROCESS;
+                    // request.status = eStatusRequest.PROCESS; 17/11
+                    request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT
                 }
                 else {
@@ -391,7 +412,8 @@ const updateRequest = (req, res) => {
             case eRequest.SENT: {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.VERIFIED;
-                    request.status = eStatusRequest.PROCESS;
+                    // request.status = eStatusRequest.PROCESS; 17/11
+                    request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT;
                     request.documents.push(
                         {
@@ -412,7 +434,8 @@ const updateRequest = (req, res) => {
                 }
                 else {
                     request.phase = eRequest.REGISTERED;
-                    request.status = eStatusRequest.PROCESS;
+                    // request.status = eStatusRequest.PROCESS; 17/11
+                    request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT;
                     request.documents.push(
                         {
@@ -447,13 +470,99 @@ const updateRequest = (req, res) => {
                 }
                 break;
             }
+            case eRequest.DELIVERED: {
+                if (data.operation === eStatusRequest.REJECT) {
+                    request.phase = eRequest.DELIVERED;
+                    request.status = eStatusRequest.PROCESS;
+                    item.status = eStatusRequest.REJECT;
+                }
+                else {
+                    request.phase = eRequest.ASSIGNED;
+                    request.status = eStatusRequest.NONE;
+                    item.status = eStatusRequest.ACCEPT
+                }
+                break;
+            }
             case eRequest.VALIDATED: {
                 break;
             }
-            case eRequest.SCHEDULED: {
+            case eRequest.ASSIGNED: {
+                switch (data.operation) {
+                    case eStatusRequest.PROCESS: {
+                        request.status = eStatusRequest.PROCESS;
+                        request.proposedDate = data.appointment;
+                        request.place = 'Aula de Titulación';
+                        item.status = eStatusRequest.PROCESS;
+                        break;
+                        // None->Process->Aceptada
+                        // None-Process->REJECT
+                        // Reject->Process
+                        // None-Process->Wait
+                        // Wait->ACCEPT
+
+                    }
+                    case eStatusRequest.ASSIGN: {
+                        request.phase = eRequest.REALIZED;
+                        request.proposedDate = data.appointment;
+                        request.proposedHour = data.minutes;
+                        request.status = eStatusRequest.PROCESS;
+                        request.place = data.place;
+                        item.status = eStatusRequest.ACCEPT;
+                        break;
+                    }
+                    case eStatusRequest.ACCEPT: {
+                        request.phase = eRequest.REALIZED;
+                        request.status = eStatusRequest.PROCESS;
+                        item.status = eStatusRequest.ACCEPT;
+                        break;
+                    }
+                    case eStatusRequest.REJECT: {
+                        request.status = eStatusRequest.REJECT;
+                        item.status = eStatusRequest.REJECT;
+                        break;
+                    }
+                }
                 break;
             }
             case eRequest.REALIZED: {
+                let tmpDateCompare = new Date();
+                let tmpDateRequest = new Date(request.proposedDate);
+                tmpDateRequest.setHours(0, 0, 0, 0);
+                tmpDateRequest.setHours(request.proposedHour / 60, request.proposedHour % 60, 0, 0);
+                switch (data.operation) {
+                    case eStatusRequest.CANCELLED: {
+                        if (tmpDateCompare.getTime() > tmpDateRequest.getTime()) {
+                            return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento Inamovible' });
+                        }
+                        request.phase = eRequest.ASSIGNED;
+                        request.status = eStatusRequest.CANCELLED;
+                        item.status = eStatusRequest.CANCELLED;
+                        item.phase = 'Asignado';
+                        break;
+                    }
+                    case eStatusRequest.ACCEPT: {
+
+                        if (tmpDateCompare.getTime() < (tmpDateRequest.getTime() + 3600000)) {
+                            // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
+                            return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
+                        }
+                        request.phase = eRequest.GENERATED;
+                        request.status = eStatusRequest.NONE;
+                        item.status = eStatusRequest.ACCEPT;
+                        item.phase = 'Realizado';
+                        break;
+                    }
+                    case eStatusRequest.REJECT: {
+                        if (tmpDateCompare.getTime() < (tmpDateRequest.getTime() + 3600000)) {
+                            // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
+                            return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
+                        }
+                        request.status = eStatusRequest.REJECT;
+                        item.status = eStatusRequest.REJECT;
+                        item.phase = 'Realizado';
+                        break;
+                    }
+                }
                 break;
             }
             case eRequest.APPROVED: {
@@ -464,7 +573,7 @@ const updateRequest = (req, res) => {
         request.doer = data.doer;
         request.observation = data.observation;
         request.lastModified = new Date();
-        console.log('OKO', request);
+
         request.save((errorReq, response) => {
             if (errorReq) {
                 console.log(errorReq);
@@ -477,8 +586,148 @@ const updateRequest = (req, res) => {
     });
 };
 
-module.exports = (Request) => {
+const groupDiary = (req, res) => {
+    let data = req.body;
+    // let StartDate = new Date();
+    // StartDate.setDate(1);
+    // StartDate.setMonth(data.month);
+    let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    let query =
+        [
+            {
+                $match: {
+                    "proposedDate": { $gte: StartDate, $lte: new Date(StartDate.getFullYear(), data.month + 1, 0) },
+                    $or: [{ "phase": "Asignado", "status": "Process" }, { "phase": "Realizado" }]
+                }
+            },
+            {
+                $lookup: {
+                    from: "students",
+                    localField: "studentId",
+                    foreignField: "_id",
+                    as: "Student"
+                }
+            },
+            {
+                $group: {
+                    _id: '$Student.career',
+                    values:
+                    {
+                        $push: {
+                            id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
+                            jury: '$jury', place: '$place'
+                        }
+                    }
+                }
+            }
+        ];
+    _request.aggregate(query, (error, diary) => {
+        if (error)
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+        _ranges.find(
+            {
+                $or: [{ start: { $gte: StartDate, $lte: EndDate } },
+                { end: { $gte: StartDate, $lte: EndDate } },
+                { start: { $gte: StartDate, $lte: EndDate } },
+                { $and: [{ start: { $lte: StartDate } }, { end: { $gte: StartDate } }] }
+                ]
+            }
+            , function (error, ranges) {
+                if (error)
+                    return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+                res.status(status.OK);
+                res.json({ Diary: diary, Ranges: ranges });
+            });
+    });
+
+    //.exec(handler.handleMany.bind(null, 'Diary', res));
+}
+const groupRequest = (req, res) => {
+    let data = req.body;
+    let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
+    // StartDate.setFullYear(data.year);        
+    // StartDate.setMonth(data.month);
+    // StartDate.setHours(0, 0, 0, 0);
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    console.log("Start", StartDate, "End", EndDate);
+    let query =
+        [
+            {
+                $match: { "proposedDate": { $gte: StartDate, $lte: EndDate } }
+            },
+            {
+                $lookup: {
+                    from: "students",
+                    localField: "studentId",
+                    foreignField: "_id",
+                    as: "Student"
+                }
+            },
+            {
+                // _id: { company: "$company", event: "$event" },
+                $group: {
+                    _id: {
+                        minutes: '$proposedHour', career: '$Student.career',
+                        date: { $dateToString: { format: "%Y-%m-%d", date: '$proposedDate' } }
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ];
+    _request
+        .aggregate(query, (error, schedule) => {
+            if (error)
+                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+            _ranges.find(
+                {
+                    $or: [{ start: { $gte: StartDate, $lte: EndDate } },
+                    { end: { $gte: StartDate, $lte: EndDate } },
+                    { start: { $gte: StartDate, $lte: EndDate } },
+                    { $and: [{ start: { $lte: StartDate } }, { end: { $gte: StartDate } }] }
+                    ]
+                }
+                , function (error, ranges) {
+                    if (error)
+                        return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+                    res.status(status.OK);
+                    res.json({ Schedule: schedule, Ranges: ranges });
+                });
+        });
+    //.exec(handler.handleMany.bind(null, 'Schedule', res));
+}
+
+const StudentsToSchedule = (req, res) => {
+    let query =
+        [
+            {
+                $match: {
+                    "phase": "Asignado",
+                    $or: [
+                        { "status": "None" },
+                        { "status": "Cancelled" },
+                        { "status": "Reject" }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "students", localField: "studentId", foreignField: "_id", as: "Student"
+                }
+            },
+            {
+                $project: {
+                    Student: 1, phase: 1, status: 1
+                }
+            }
+        ];
+    _request.aggregate(query).exec(handler.handleMany.bind(null, 'Students', res));
+}
+
+
+module.exports = (Request, Range) => {
     _request = Request;
+    _ranges = Range;
     return ({
         create,
         getById,
@@ -493,6 +742,9 @@ module.exports = (Request) => {
         uploadFile,
         omitFile,
         getResource,
+        groupDiary,
         fileCheck,
+        groupRequest,
+        StudentsToSchedule
     });
 };

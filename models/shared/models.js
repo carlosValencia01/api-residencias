@@ -10,20 +10,20 @@ module.exports = (wagner) => {
     });
 
     wagner.factory('db', () => mongoose);
-    
+
     // App
     const Department = require('../app/department.model');
     const Folder = require('../app/google-drive-folder.model');
     const Period = require('../app/period.model');
     const Role = require('../app/role.model');
     const User = require('../app/user.model');
-    
+
     // Inscriptions
     const Inscription = require('../inscriptions/inscription.model');
-    
+
     // Reception act
     const Request = require('../reception-act/request.model');
-    
+    const Range = require('../reception-act/ranges.models');
     // Shared
     const Employee = require('./employee.model');
     const Student = require('./student.model');
@@ -36,9 +36,10 @@ module.exports = (wagner) => {
         Role,
         User,
         Folder,
+
         // Inscriptions
         Inscription,
-        
+
         // Reception act
         Request,
 
@@ -46,6 +47,7 @@ module.exports = (wagner) => {
         Employee,
         Student,
         Career,
+        Range,
     };
 
     _.each(models, (v, k) => {
