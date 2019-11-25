@@ -25,7 +25,9 @@ module.exports = (wagner) => {
     const Request = require('../reception-act/request.model');
     const Range = require('../reception-act/ranges.models');
     // Shared
+    const Document = require('./document.model');
     const Employee = require('./employee.model');
+    const Position = require('./position.model');
     const Student = require('./student.model');
     const Career = require('./career.model');
     
@@ -44,7 +46,9 @@ module.exports = (wagner) => {
         Request,
 
         // Shared
+        Document,
         Employee,
+        Position,
         Student,
         Career,
         Range,

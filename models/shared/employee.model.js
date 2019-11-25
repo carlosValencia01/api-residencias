@@ -7,11 +7,9 @@ let employeeSchema = new mongoose.Schema({
         lastName: { type: String, required: true, uppercase: true, trim: true },
         fullName: { type: String, required: true, uppercase: true, trim: true }
     },
-    area: { type: String, required: true, uppercase: true, trim: true },
-    position: { type: String, required: true, uppercase: true, trim: true },
+    gender: { type: String, trim: true, enum: ['FEMENINO', 'MASCULINO', 'OTRO'] },
+    birthDate: { type: Date },
     filename: { type: String },
-    deptoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
-    isBoss: { type: Boolean, default: false },
     grade: [{
         _id: false,
         title: { type: String, uppercase: true, trim: true },
@@ -20,6 +18,13 @@ let employeeSchema = new mongoose.Schema({
         level: { type: String, enum: ['DOCTORADO', 'MAESTRIA', 'LICENCIATURA'], uppercase: true, trim: true },
         default: { type: Boolean, default: false }
     }],
+    positions: [{
+        _id: false,
+        position: {type: mongoose.Schema.Types.ObjectId, ref: 'Position'},
+        status: {type: String, trim: true, uppercase: true, enum: ['ACTIVE', 'INACTIVE']},
+        activateDate: {type: Date},
+        deactivateDate: {type: Date}
+    }]
 });
 const employeeModel = mongoose.model('Employee', employeeSchema, 'employees');
 
