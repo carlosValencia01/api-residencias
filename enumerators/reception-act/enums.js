@@ -11,7 +11,12 @@ const eFile = {
     INGLES: 'LIBERACION_INGLES',
     PAGO: 'RECIBO',
     CERTIFICADO_R: 'REVALIDACION',
-    RELEASED: 'LIBERACION'
+    RELEASED: 'LIBERACION',
+    INCONVENIENCE: 'NO_INCONVENIENCIA',
+    PHOTOS: 'FOTOS',
+    INE: 'INE',
+    CED_PROFESIONAL: 'CEDULA_PROFESIONAL',
+    XML: 'XML'
 };
 
 const eCareer = {
@@ -42,14 +47,16 @@ const eRequest = {
     VALIDATED: 'Validado',
     ASSIGNED: 'Asignado',
     REALIZED: 'Realizado',
-    GENERATED: 'Generado'
+    GENERATED: 'Generado',
+    TITLED: 'Titulado'
 };
 
 const eRole = {
     eSECRETARY: 'secretaria',
     eCOORDINATION: 'coordinacion',
     eCHIEFACADEMIC: 'jefe',
-    eSTUDENTSERVICES: 'servicios'
+    eSTUDENTSERVICES: 'servicios',
+    eHEADSCHOOLSERVICE:'escolares'
 };
 
 const eStatusRequest = {
@@ -60,7 +67,8 @@ const eStatusRequest = {
     REJECT: 'Reject',
     WAIT: 'Wait',
     CANCELLED: 'Cancelled',
-    ASSIGN: 'Assign'
+    ASSIGN: 'Assign',
+    FINALIZED: 'Finalized'
 };
 
 module.exports = {
