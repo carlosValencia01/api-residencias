@@ -62,6 +62,20 @@ const getRequestByStatus = (req, res) => {
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
+        case eRole.eHEADSCHOOLSERVICE: {
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } })
+                .populate
+                ({
+                    path: 'studentId', model: 'Student',
+                    select: {
+                        fullName: 1,
+                        controlNumber: 1,
+                        career: 1
+                    }
+                })
+                .exec(handler.handleMany.bind(null, 'request', res));
+            break;
+        }
         case eRole.eCOORDINATION: {
             _request.find({ phase: { $ne: 'Capturado' } })
                 .populate
@@ -91,7 +105,7 @@ const getRequestByStatus = (req, res) => {
             break;
         }
         case eRole.eSTUDENTSERVICES: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado','Verificado','Registrado'] } })
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } })
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
@@ -180,9 +194,9 @@ const addIntegrants = (req, res) => {
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
         if (!request)
             return handler.handleError(res, status.NOT_FOUND, { message: 'Solicitud no encontrada' });
-        console.log('Data', data);
+        // console.log('Data', data);
         request.integrants = data;
-        console.log('REQUS', request);
+        // console.log('REQUS', request);
         request.save((errorReq, response) => {
             if (errorReq) {
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, errorReq);
@@ -245,9 +259,13 @@ const uploadFile = (req, res) => {
                     }
                 }).exec(handler.handleOne.bind(null, 'request', res));
             } else {
+
+                // console.log("dd", (data.IsEdit === 'true' ? 'Accept' : 'Process'));
                 _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
                     $set: {
-                        'documents.$': { type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: 'Process' }
+                        'documents.$': {
+                            type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
+                        }
                     }
                 }).exec(handler.handleOne.bind(null, 'request', res));
             }
@@ -281,33 +299,55 @@ const fileCheck = (req, res) => {
     }, { new: true }, (error, request) => {
         if (error)
             return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
-        console.log("reqq", request);
+        // console.log("reqq", request);
         const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
-        // if (result.length === 13) {
-        _request.findOneAndUpdate({ _id: _id }, {
-            $set: {
+        if (result.length === 14) {
+            _request.findOneAndUpdate({ _id: _id }, {
+                $set: {
 
-                // phase: eRequest.ASSIGNED,
-                // status: eStatusRequest.NONE,
-                phase: eRequest.DELIVERED,
-                status: result.length === 13 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
-                lastModified: new Date(),
-            },
-            $addToSet: {
-                history: {
-                    phase: eRequest.DELIVERED,
-                    achievementDate: new Date(),
-                    doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                    observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                    status: eStatusRequest.ACCEPT
+                    // phase: eRequest.ASSIGNED,
+                    phase: eRequest.VALIDATED,
+                    status: eStatusRequest.NONE,
+                    // phase: eRequest.DELIVERED,
+                    // status: result.length === 14 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
+                    lastModified: new Date(),
+                },
+                $addToSet: {
+                    history: {
+                        phase: eRequest.DELIVERED,
+                        achievementDate: new Date(),
+                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                        status: eStatusRequest.ACCEPT
+                    }
                 }
+            }).exec(handler.handleOne.bind(null, 'request', res));
+        } else {
+
+            if (result.length === 18) {
+                _request.findOneAndUpdate({ _id: _id }, {
+                    $set: {
+                        phase: eRequest.TITLED,
+                        status: eStatusRequest.ACCEPT,
+                        lastModified: new Date(),
+                    },
+                    $addToSet: {
+                        history: {
+                            phase: eRequest.TITLED,
+                            achievementDate: new Date(),
+                            doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                            observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                            status: eStatusRequest.PROCESS
+                        }
+                    }
+                }).exec(handler.handleOne.bind(null, 'request', res));
             }
-        }).exec(handler.handleOne.bind(null, 'request', res));
-        // } else {
-        //     var json = {};
-        //     json['request'] = request;
-        //     return res.status(status.OK).json(json);
-        // }
+            else {
+                var json = {};
+                json['request'] = request;
+                return res.status(status.OK).json(json);
+            }
+        }
     })
 };
 
@@ -380,7 +420,7 @@ const releasedRequest = (req, res) => {
 const updateRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    console.log("Data", data);
+    // console.log("Data", data);
     _request.findOne({ _id: _id }).exec((error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -466,11 +506,32 @@ const updateRequest = (req, res) => {
                 else {
                     request.phase = eRequest.DELIVERED;
                     request.status = eStatusRequest.NONE;
+                    request.documents.push(
+                        {
+                            type: eFile.PHOTOS, dateRegister: new Date(), nameFile: 'Fotos', status: "Process"
+                        });
                     item.status = eStatusRequest.ACCEPT
                 }
                 break;
             }
             case eRequest.DELIVERED: {
+                // if (data.operation === eStatusRequest.REJECT) {
+                //     request.phase = eRequest.DELIVERED;
+                //     request.status = eStatusRequest.PROCESS;
+                //     item.status = eStatusRequest.REJECT;
+                // }
+                // else {
+                //     request.phase = eRequest.ASSIGNED;
+                //     request.documents.push(
+                //         {
+                //             type: eFile.INCONVENIENCE, dateRegister: new Date(), nameFile: 'No_Inconveniencia', status: "Accept"
+                //         });
+                //     request.status = eStatusRequest.NONE;
+                //     item.status = eStatusRequest.ACCEPT
+                // }
+                break;
+            }
+            case eRequest.VALIDATED: {
                 if (data.operation === eStatusRequest.REJECT) {
                     request.phase = eRequest.DELIVERED;
                     request.status = eStatusRequest.PROCESS;
@@ -478,12 +539,13 @@ const updateRequest = (req, res) => {
                 }
                 else {
                     request.phase = eRequest.ASSIGNED;
+                    request.documents.push(
+                        {
+                            type: eFile.INCONVENIENCE, dateRegister: new Date(), nameFile: 'No_Inconveniencia', status: "Accept"
+                        });
                     request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT
                 }
-                break;
-            }
-            case eRequest.VALIDATED: {
                 break;
             }
             case eRequest.ASSIGNED: {
@@ -542,10 +604,10 @@ const updateRequest = (req, res) => {
                     }
                     case eStatusRequest.ACCEPT: {
 
-                        if (tmpDateCompare.getTime() < (tmpDateRequest.getTime() + 3600000)) {
-                            // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
-                            return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
-                        }
+                        // if (tmpDateCompare.getTime() < (tmpDateRequest.getTime() + 3600000)) {
+                        //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
+                        //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
+                        // }
                         request.phase = eRequest.GENERATED;
                         request.status = eStatusRequest.NONE;
                         item.status = eStatusRequest.ACCEPT;
@@ -553,10 +615,10 @@ const updateRequest = (req, res) => {
                         break;
                     }
                     case eStatusRequest.REJECT: {
-                        if (tmpDateCompare.getTime() < (tmpDateRequest.getTime() + 3600000)) {
-                            // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
-                            return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
-                        }
+                        // if (tmpDateCompare.getTime() < (tmpDateRequest.getTime() + 3600000)) {
+                        //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
+                        //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
+                        // }
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
                         item.phase = 'Realizado';
@@ -565,7 +627,54 @@ const updateRequest = (req, res) => {
                 }
                 break;
             }
-            case eRequest.APPROVED: {
+            case eRequest.GENERATED: {
+                switch (data.operation) {
+                    //Fue generada el acta
+                    case eStatusRequest.PROCESS: {
+                        request.status = eStatusRequest.ACCEPT;
+                        item.phase = 'Generado';
+                        item.status = eStatusRequest.PROCESS;
+                        break;
+                    }
+                    case eStatusRequest.REJECT: {
+                        request.phase = eRequest.REALIZED;
+                        request.status = eStatusRequest.PROCESS;
+                        item.phase = 'Generado';
+                        item.status = eStatusRequest.REJECT;
+                    }
+                    //Se valida que el titulado paso por ella
+                    case eStatusRequest.ACCEPT: {
+                        request.phase = eRequest.TITLED;
+                        request.status = eStatusRequest.NONE;
+                        item.status = eStatusRequest.ACCEPT
+                        item.phase = 'Generado';
+                    }
+                }
+                break;
+            }
+            case eRequest.TITLED: {
+                switch (data.operation) {
+                    //Fue notificado al alumno que pase por el título
+                    case eStatusRequest.PROCESS: {
+                        request.status = eStatusRequest.PROCESS;
+                        item.phase = 'Titulado';
+                        item.status = eStatusRequest.NONE;
+                        break;
+                    }
+                    case eStatusRequest.REJECT: {
+                        request.phase = eRequest.GENERATED;
+                        request.status = eStatusRequest.NONE;
+                        item.phase = 'Titulado';
+                        item.status = eStatusRequest.REJECT;
+                    }
+                    //Se valida que pasarón por el titulo
+                    case eStatusRequest.FINALIZED: {
+                        request.phase = eRequest.TITLED;
+                        request.status = eStatusRequest.FINALIZED;
+                        item.status = eStatusRequest.ACCEPT
+                        item.phase = 'Titulado';
+                    }
+                }
                 break;
             }
         }
@@ -576,7 +685,7 @@ const updateRequest = (req, res) => {
 
         request.save((errorReq, response) => {
             if (errorReq) {
-                console.log(errorReq);
+                // console.log(errorReq);
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, errorReq);
             }
             var json = {};
@@ -654,7 +763,12 @@ const groupRequest = (req, res) => {
     let query =
         [
             {
-                $match: { "proposedDate": { $gte: StartDate, $lte: EndDate } }
+                $match: {
+                    "proposedDate": { $gte: StartDate, $lte: EndDate }, $or: [
+                        { "phase": "Asignado", "status": "Process" },
+                        { "phase": "Realizado", "status": "Process" }]
+                }
+
             },
             {
                 $lookup: {
@@ -668,8 +782,8 @@ const groupRequest = (req, res) => {
                 // _id: { company: "$company", event: "$event" },
                 $group: {
                     _id: {
-                        minutes: '$proposedHour', career: '$Student.career',
-                        date: { $dateToString: { format: "%Y-%m-%d", date: '$proposedDate' } }
+                        minutes: '$proposedHour', career: '$Student.career', date: '$proposedDate'
+                        // date: { $dateToString: { format: "%Y-%m-%d", date: '$proposedDate' } }
                     },
                     count: { $sum: 1 }
                 }
