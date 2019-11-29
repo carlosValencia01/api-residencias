@@ -5,7 +5,7 @@ const status = require('http-status');
 let _career;
 
 const getAll = (req, res) => {
-    _career.find({})
+    _career.find({},{fullName: 1,shortName:1,acronym:1,_id:1})
         .exec(handler.handleMany.bind(null, 'careers', res));
 };
 
