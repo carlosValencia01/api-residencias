@@ -82,6 +82,75 @@ const getPositionsForDepartment = (req, res) => {
         .exec(handler.handleMany.bind(null, 'positions', res));
 };
 
+const getAvailablePositionsByDepartment = async (req, res) => {
+    const { _departmentId, _employeeId } = req.params;
+    const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
+    const departmentBoss = await _getDeparmentBoss(_departmentId);
+    const occupiedPositions = (departmentBoss ? activePositionsEmployee.concat([departmentBoss]) : activePositionsEmployee).map(({name}) => name);
+    _position.find({ascription: _departmentId})
+        .populate({path: 'ascription', model: 'Department', select: '-careers'})
+        .select('name ascription canSign')
+        .exec((err, data) => {
+           if (!err && data) {
+               const availablePositions = data.filter(pos => !occupiedPositions.includes(pos.name));
+                res.status(status.OK)
+                    .json(availablePositions);
+           } else {
+               res.status(status.INTERNAL_SERVER_ERROR)
+                   .json({error: err ? err.toString() : 'Ocurrió un error'})
+           }
+        });
+};
+
+const _getActivePositionsByEmployee = (employeeId) => {
+    return new Promise(resolve => {
+        _employee.findOne({_id: employeeId})
+            .populate({
+                path: 'positions.position', model: 'Position', select: 'name ascription',
+            })
+            .exec((err, data) => {
+                if (!err && data) {
+                    const activePositions = data.positions
+                        .filter(pos => pos.status === 'ACTIVE')
+                        .map(pos => pos.position);
+                    resolve(activePositions);
+                } else {
+                    resolve([]);
+                }
+            });
+    });
+};
+
+const _getDeparmentBoss = (departmentId) => {
+    return new Promise(resolve => {
+        const query = {
+            $and: [
+                {ascription: departmentId},
+                {name: 'JEFE DE DEPARTAMENTO'}
+            ]
+        };
+        _position.findOne(query)
+            .select('name ascription')
+            .exec((err, data) => {
+                if (!err && data) {
+                    const query = {
+                        positions: {$elemMatch: {$and: [{position: data._id}, {status: 'ACTIVE'}]}}
+                    };
+                    _employee.findOne(query)
+                        .populate({path: 'positions.position', model: 'Position', select: 'name ascription'})
+                        .exec((err, data) => {
+                            if (!err && data) {
+                                const position = data.positions.filter(({status}) => status === 'ACTIVE')[0].position;
+                                resolve(position);
+                            } else {
+                                resolve(null);
+                            }
+                        });
+                }
+            });
+    });
+};
+
 module.exports = (Position, Employee) => {
     _position = Position;
     _employee = Employee;
@@ -92,5 +161,6 @@ module.exports = (Position, Employee) => {
         removePosition,
         updateDocumentAssign,
         getPositionsForDepartment,
+        getAvailablePositionsByDepartment,
     });
 };
