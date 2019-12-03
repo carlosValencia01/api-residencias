@@ -73,10 +73,10 @@ const jwtOptions = {
     /^\/escolares\/credenciales\/position\/.*/,
   ]
 };
-//files
-// app.use(fileUpload({
-//     limits: { fileSize: 1000000 }
-// }));
+// files
+app.use(fileUpload({
+    limits: { fileSize: 1000000 }
+}));
 app.use(expressJWT({
   secret: config.secret
 }).unless(jwtOptions));
