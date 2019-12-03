@@ -7,6 +7,9 @@ module.exports = (wagner) => {
     const studentCtrl = wagner.invoke((Student, Request) =>
         require('../../controllers/shared/student.controller')(Student, Request));
 
+    const notificationCtrl = wagner.invoke(() =>
+        require('../../controllers/notificationMail/notification.controller')());
+
     router.post('/sendmail', (req, res) =>
         inscriptionCtrl.sendTemplateMail(req, res));
 
@@ -19,6 +22,9 @@ module.exports = (wagner) => {
     router.get('/getStudents', (req, res) =>
         studentCtrl.getStudentsInscription(req, res));
         //studentCtrl.getAll(req, res));
+
+    router.post('/notificationMail', (req, res) =>
+        notificationCtrl.sendNotification(req, res));
 
     return router;
 };
