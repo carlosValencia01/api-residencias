@@ -336,6 +336,73 @@ const downloadFile = (req, res) => {
     }
 
 };
+
+const downloadPhoto = (req,res)=>{
+    const drive = google.drive({ version: 'v3', auth });
+    const { fileId, fileName } = req.body; // enviado desde el cliente
+    console.log(fileId,fileName,'download');
+    
+    
+    if(fileName && fileId){
+        if(fileName.indexOf('FOTO') !==-1){
+                       
+            const path = 'documents/tmpFile/' + fileName;
+            let dest = fs.createWriteStream(path);
+            drive.files.get({
+                fileId: fileId,
+                alt: 'media'
+            }, { responseType: 'stream' },
+                (err, file) => {
+                    if (err){
+                        console.log('===-**-==', err);
+                                res.status(status.BAD_REQUEST).json({
+                                    error: err,
+                                    action: 'download file'
+                                });
+                       
+                    }else{
+                        
+                        file.data.
+                            on('end', () => {                
+                                fs.readFile(path, (error, data) => {
+                                    if (error) {
+                                        console.log(error, '-=-=-=-=-=-=-=-=-');
+                                        res.status(status.BAD_REQUEST).json({
+                                            error: error,
+                                            action: 'download file'
+                                        });
+                                    }
+                                    fs.unlinkSync(path);
+                                    res.status(status.OK).json({
+                                        action: 'get file',
+                                        file: fileName.indexOf('FOTO') !== -1 ? data.toString('base64') : data
+                                    });
+                                });
+                            }).on('error', (err) => {
+                                console.log('===--==', err);
+                                res.status(status.BAD_REQUEST).json({
+                                    error: err,
+                                    action: 'download file'
+                                });
+            
+                            }).pipe(dest);
+                    } 
+                }
+            );
+        }else{
+            res.status(304).json({
+                action: 'get file - not f',
+                
+            });
+        }
+        }else{
+            res.status(404).json({
+                action: 'get file - not found',
+                
+            });
+        }
+};
+
 const createFile2 = async (req, res) => {    
     const drive = google.drive({ version: 'v3', auth });
     const { mimeType, nameInDrive, bodyMedia, folderId, newF,fileId} = req.body;
@@ -414,6 +481,7 @@ module.exports = (Folder) => {
         getFoldersByPeriod,
         downloadFile,
         createFile2,       
+        downloadPhoto
     });
 };
 
