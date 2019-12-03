@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const wagner = require('wagner-core');
 const config = require('./_config');
 const URL = `/escolares`;
-// const fileUpload = require('express-fileupload');
+const fileUpload = require('express-fileupload');
 // MODELS
 require('./models/shared/models')(wagner);
 
