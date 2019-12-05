@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const wagner = require('wagner-core');
 const config = require('./_config');
 const URL = `/escolares`;
+// const URL = `/api`;
 const fileUpload = require('express-fileupload');
 // MODELS
 require('./models/shared/models')(wagner);
@@ -55,11 +56,12 @@ app.use(function (req, res, next) {
 
 // ROUTERS
 const v = 'credenciales';
+// const v = 'v1';
 const uri = `${URL}/${v}/`;
 
 const jwtOptions = {
   path: [
-    `${uri}user/login`, `${uri}user/register`, `${uri}student/login`, `/favicon.ico`,
+    `${uri}user/login`, `${uri}user/register`,`${uri}user/student/login` ,`${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}inscription/updateStudent`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
     `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}period/create` ,`${uri}drive/upload`,`${uri}drive/upload/file`,
     `${uri}department/employees`, `${uri}document`, `${uri}position`, `${uri}department/all`,

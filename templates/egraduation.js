@@ -66,7 +66,7 @@ module.exports = (ID,NOMBRE) => {
           </div>
           <div style="text-align:center; font-size:15px"><img
           <p class="sub align-center" style="box-sizing: border-box; color: #AEAEAE; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 1.5em; margin-top: 0;" align="center"> 
-          <img src="https://www.sittepic.tech/sit_pruebas/img/escudo_itt.png" width="64px"> 
+          <img src="http://www.tepic.tecnm.mx/images/itt_escudo.png" width="64px"> 
           </p> 
           <p class="sub align-center" style="box-sizing: border-box; color: #FFFFFF; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 1.5em; margin-top: 0;" align="center">© ITT Instituto Tecnológico de Tepic</p> 
           <p class="sub align-center" style="box-sizing: border-box; color: #FFFFFF; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 1.5em; margin-top: 0;" align="center">Email enviado automáticamente<br>Tepic, Nayarit, México</p> 

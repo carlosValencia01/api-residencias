@@ -12,6 +12,7 @@ const periodSchema = new mongoose.Schema({
     arecPerEndDate:{type: Date},
     arecInitShed:{type: Number}, // inicio horario agenda acto recepcional
     arecEndShed:{type: Number}, // fin horario agenda acto recepcional
+    certificateDeliveryDate: {type: Date} //fecha de entrega del certificado
 });
 
 const periodModel = mongoose.model('Period', periodSchema, 'periods');
