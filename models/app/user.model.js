@@ -7,7 +7,9 @@ let userSchema = new mongoose.Schema({
     role: { type: Number },
     idRole: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
-    careerId : {type: mongoose.Schema.Types.ObjectId, ref: 'Career' },
+    careers:[
+        { careerId : {type: mongoose.Schema.Types.ObjectId, ref: 'Career' } }
+    ]
 });
 
 userSchema.pre('save', function (next) {

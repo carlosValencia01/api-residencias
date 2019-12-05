@@ -23,7 +23,7 @@ const getSecretaries = (req,res)=>{
             name: 1,_id:0
         }
     }).populate({
-        path: 'careerId', model: 'Career',
+        path: 'careers.careerId', model: 'Career',
         select: {
             fullName: 1,shortName:1,acronym:1
         }
@@ -498,12 +498,39 @@ const updateUserData = (req, res) => {
     });
 };
 
-const updateUser = (req,res)=>{
-    const {data} = req.body;
-    const {_id} = req.params;
-    const query = {_id:_id};
-    _user.findOneAndUpdate(query, data, { new: true })
-    .exec(handler.handleOne.bind(null, 'user', res));
+const updateCareersUser = (req,res)=>{
+    const careerId = req.body.careerId;
+    const {action,_id} = req.params;
+    console.log(req.body);
+    
+    console.log(careerId,action,_id);
+    if(careerId){
+
+        const query = {_id:_id};
+        if(action === 'insert'){
+            _user.findOneAndUpdate(query, {'$push':{careers:{careerId}}})
+            .then(
+                user=>{
+                    if(user){
+                        res.status(status.OK).json({msg:'updated'});
+                    }else{
+                        res.status(status.NOT_FOUND).json({err:'not found'});
+                    }
+                }
+            ).catch(
+                err=>{
+                    console.log(err);
+                    
+                    res.status(status.NOT_FOUND).json({err:'not found'});
+                }
+            );
+        }else if(action === 'delete'){
+            _user.findOneAndUpdate(query, {'$pull':{careers:{careerId}}})
+            .exec(handler.handleOne.bind(null, 'user', res));
+        }
+    }else{
+        res.status(status.NOT_FOUND).json({err:'not found'});
+    }
 };
 
 const validateEnglishApproved = (controlNumber) => {
@@ -555,6 +582,48 @@ const getRoleId = (roleName) => {
     });
 };
 
+/**
+ * START FOR APP MOVILE
+ */
+
+ const studentLogin = (req,res)=>{
+    const {nc,nip} = req.body;
+    _student.findOne({controlNumber: nc},{documents:0,folderId:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0})
+        .populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName:1,shortName:1,acronym:1,_id:1
+            }
+        }).exec(async (error, oneUser) => {                                          
+                if (oneUser) {
+                    // Se contruye el token
+                    if(oneUser.nip == nip){
+                        const token = jwt.sign({ nc: oneUser.controlNumber }, config.secret);             
+                        let {fullName,shortName,acronym,_id} = oneUser.careerId;
+                        let career ={fullName,shortName,acronym,_id};                    
+                        let user = {student:oneUser,career};
+                        // user.student.career = undefined;                    
+                        user.student.careerId = undefined;                    
+                       
+                        return res.status(status.OK).json({
+                            user: user,
+                            token: token,
+                            action: 'signin'
+                        });
+                    }else{
+                        return res.status(status.NOT_FOUND).json({
+                            error: 'El nip proporcionado no es valido.'
+                        });
+                    }
+                }else{
+                    return res.status(status.NOT_FOUND).json({
+                        error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                    });
+                }            
+        });
+ };
+
+
 module.exports = (User, Student, Employee, Role) => {
     _user = User;
     _student = Student;
@@ -567,6 +636,7 @@ module.exports = (User, Student, Employee, Role) => {
         getDataEmployee,
         updateUserData,
         getSecretaries,
-        updateUser
+        updateCareersUser,
+        studentLogin,
     });
 };
