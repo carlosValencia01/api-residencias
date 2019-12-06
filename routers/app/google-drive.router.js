@@ -25,7 +25,7 @@ module.exports = (wagner) => {
     router.post('/get/file', (req, res) =>
         driveCtrl.downloadFile(req, res));
 
-    router.get('/get/photo', (req, res) =>
+    router.post('/get/photo', (req, res) =>
         driveCtrl.downloadPhoto(req, res));
 
     router.post('/upload/file2', (req, res) =>
