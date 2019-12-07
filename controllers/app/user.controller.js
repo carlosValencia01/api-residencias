@@ -588,7 +588,7 @@ const getRoleId = (roleName) => {
 
  const studentLogin = (req,res)=>{
     const {nc,nip} = req.body;
-    _student.findOne({controlNumber: nc},{documents:0,folderId:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0})
+    _student.findOne({controlNumber: nc},{documents:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0})
         .populate({
             path: 'careerId', model: 'Career',
             select: {
