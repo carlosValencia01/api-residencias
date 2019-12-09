@@ -60,10 +60,16 @@ const _getEmployeesByDepartment = (department) => {
   });
 };
 
+const getAllDepartments = (req, res) => {
+  _department.find({})
+      .exec(handler.handleMany.bind(null, 'departments', res));
+};
+
 module.exports = (Deparment, Employee) => {
   _department = Deparment;
   _employee = Employee;
   return ({
-    getAll
+    getAll,
+    getAllDepartments,
   });
 };

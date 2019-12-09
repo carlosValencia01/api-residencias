@@ -14,8 +14,8 @@ var storage = multer.diskStorage({
 let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
-    const employeeCtrl = wagner.invoke((Employee) =>
-        require('../../controllers/shared/employee.controller')(Employee));
+    const employeeCtrl = wagner.invoke((Employee, Position) =>
+        require('../../controllers/shared/employee.controller')(Employee, Position));
 
     router.get('/', (req, res) =>
         employeeCtrl.getAll(req, res));
@@ -60,6 +60,21 @@ module.exports = (wagner) => {
 
     router.put('/grade/:_id', (req, res) =>
         employeeCtrl.updateEmployeGrade(req, res));
+
+    router.put('/positions/:_id', (req, res) =>
+        employeeCtrl.updateEmployeePositions(req, res));
+
+    router.put('/grades/:_id', (req, res) =>
+        employeeCtrl.updateEmployeeGrades(req, res));
+
+    router.put('/gradesPositions/:_id', (req, res) =>
+        employeeCtrl.updateEmployeeGradesAndPositions(req, res));
+
+    router.post('/uploadCsvPositions/:_employeeId', (req, res) =>
+        employeeCtrl.uploadEmployeePositionsByCsv(req, res));
+
+    router.post('/uploadCsvGrades/:_employeeId', (req, res) =>
+        employeeCtrl.uploadEmployeeGradesByCsv(req, res));
 
     return router;
 };

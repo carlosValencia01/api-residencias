@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 
 let _employee;
+let _position;
 
 const getAll = (req, res) => {
     _employee.find({})
@@ -14,7 +15,10 @@ const getAll = (req, res) => {
 
 const getById = (req, res) => {
     const { _id } = req.params;
-    _employee.find({ _id: _id })
+    _employee.findOne({ _id: _id })
+        .populate({
+            path: 'positions.position', model: 'Position', select: 'name ascription canSign',
+            populate: { path: 'ascription', model: 'Department', select: 'name shortName' }})
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
@@ -90,10 +94,29 @@ const searchRfc = (req, res) => {
     const query = {
         rfc: rfc
     };
-    _employee.find(query, null, {
-        skip: +start,
-        limit: +limit
-    }).exec(handler.handleMany.bind(null, 'employees', res));
+    _employee
+        .findOne(query)
+        .populate({
+            path: 'positions.position',
+            model: 'Position',
+            select: 'name ascription -_id',
+            populate: {path: 'ascription', model: 'Department', select: 'name shortName -_id'}
+        })
+        .exec((err, employee) => {
+            if (!err && employee) {
+                const positions = employee.positions.filter(pos => pos.status === 'ACTIVE');
+                employee.positions = positions.slice();
+                res
+                    .status(status.OK)
+                    .json(employee);
+            } else {
+                res
+                    .status(err ? status.INTERNAL_SERVER_ERROR : status.NOT_FOUND)
+                    .json({
+                        error: err ? err.toString() : 'Empleado no encontrado'
+                    });
+            }
+        });
 };
 
 const create = (req, res, next) => {
@@ -262,8 +285,128 @@ const updateEmployeGrade = (req, res) => {
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
-module.exports = (Employee) => {
+const updateEmployeePositions = (req, res) => {
+    const {_id} = req.params;
+    const _positions = req.body;
+
+    _employee.updateOne({_id: _id}, {positions: _positions}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    error: err.toString()
+                });
+        }
+    });
+};
+
+const updateEmployeeGrades = (req, res) => {
+    const {_id} = req.params;
+    const _grades = req.body;
+
+    _employee.updateOne({_id: _id}, {grade: _grades}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR).json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: err.toString()
+            });
+        }
+    });
+};
+
+const updateEmployeeGradesAndPositions = (req, res) => {
+    const {_id} = req.params;
+    const {positions, grades} = req.body;
+
+    _employee.updateOne({_id: _id}, {positions: positions, grade: grades}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    error: err.toString()
+                });
+        }
+    });
+};
+
+const uploadEmployeePositionsByCsv = (req, res) => {
+    const {_employeeId} = req.params;
+    const _positions = req.body;
+    const findPosition = (position) => {
+        const query = {
+            name: { $regex: new RegExp(`^${position.name}$`, 'i') }
+        };
+        return _position.find(query)
+            .populate('ascription')
+            .then(data => {
+                if (data) {
+                    const pos = data.filter(({ascription}) => ascription.name === position.ascription)[0];
+                    position._id = pos._id;
+                    return position;
+                }
+            });
+    };
+    const addPositions = (position) => {
+        const doc = {
+            $addToSet: {
+                positions: {
+                    position: position._id,
+                    activateDate: position.activateDate,
+                    deactivateDate: position.deactivateDate ? position.deactivateDate : null,
+                    status: position.deactivateDate ? 'INACTIVE' : 'ACTIVE'
+                }
+            }
+        };
+        return _employee.updateOne({_id: _employeeId}, doc);
+    };
+    const actions = _positions.map(findPosition);
+    const results = Promise.all(actions);
+
+    results
+        .then(data => {
+            return Promise.all(data.map(addPositions));
+        });
+    results
+        .then(data => res.status(status.OK).json(data))
+        .catch(err => res.status(status.INTERNAL_SERVER_ERROR).json(err));
+};
+
+const uploadEmployeeGradesByCsv = (req, res) => {
+    const {_employeeId} = req.params;
+    const _grades = req.body;
+    const addGrade = (grade) => {
+        const doc = {
+            $addToSet: {
+                grade: {
+                    title: grade.title,
+                    cedula: grade.cedula,
+                    abbreviation: grade.abbreviation,
+                    level: grade.level
+                }
+            }
+        };
+        return _employee.updateOne({_id: _employeeId}, doc);
+    };
+    const actions = _grades.map(addGrade);
+    const results = Promise.all(actions);
+
+    results
+        .then(data => res.status(status.OK).json(data))
+        .catch(err => res.status(status.INTERNAL_SERVER_ERROR).json(err));
+};
+
+module.exports = (Employee, Position) => {
     _employee = Employee;
+    _position = Position;
     return ({
         create,
         getOne,
@@ -279,6 +422,11 @@ module.exports = (Employee) => {
         csvDegree,
         searchGrade,
         updateEmployeGrade,
-        getEmployeeByArea
+        getEmployeeByArea,
+        updateEmployeePositions,
+        updateEmployeeGrades,
+        updateEmployeeGradesAndPositions,
+        uploadEmployeePositionsByCsv,
+        uploadEmployeeGradesByCsv,
     });
 };
