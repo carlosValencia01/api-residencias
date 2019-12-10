@@ -4,8 +4,8 @@ const expressJWT = require('express-jwt');
 const morgan = require('morgan');
 const wagner = require('wagner-core');
 const config = require('./_config');
-// const URL = `/escolares`;
-const URL = `/api`;
+const URL = `/escolares`;
+// const URL = `/api`;
 const fileUpload = require('express-fileupload');
 // MODELS
 require('./models/shared/models')(wagner);
@@ -53,8 +53,8 @@ app.use(function (req, res, next) {
 });
 
 // ROUTERS
-// const v = 'credenciales';
-const v = 'v1';
+const v = 'credenciales';
+// const v = 'v1';
 const uri = `${URL}/${v}/`;
 
 const jwtOptions = {
