@@ -588,11 +588,16 @@ const getRoleId = (roleName) => {
 
  const studentLogin = (req,res)=>{
     const {nc,nip} = req.body;
-    _student.findOne({controlNumber: nc},{documents:0,folderId:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0})
+    _student.findOne({controlNumber: nc},{documents:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0,inscriptionStatus:0})
         .populate({
             path: 'careerId', model: 'Career',
             select: {
                 fullName:1,shortName:1,acronym:1,_id:1
+            }
+        }).populate({
+            path: 'folderId', model: 'Folder',
+            select: {
+                idFolderInDrive: 1
             }
         }).exec(async (error, oneUser) => {                                          
                 if (oneUser) {
