@@ -10,7 +10,6 @@ const URL = `/escolares`;
 require('./models/shared/models')(wagner);
 
 // App
-const department = require('./routers/app/department.router')(wagner);
 const role = require('./routers/app/role.router')(wagner);
 const user = require('./routers/app/user.router')(wagner);
 
@@ -25,6 +24,7 @@ const request = require('./routers/reception-act/request.router')(wagner);
 const graduation = require('./routers/graduation/graduation.router')(wagner);
 
 // Shared
+const department = require('./routers/shared/department.router')(wagner);
 const document = require('./routers/shared/document.router')(wagner);
 const employee = require('./routers/shared/employee.router')(wagner);
 const position = require('./routers/shared/position.router')(wagner);
@@ -71,7 +71,6 @@ app.use(expressJWT({
 }).unless(jwtOptions));
 
 // App
-app.use(uri + 'department', department);
 app.use(uri + 'role', role);
 app.use(uri + 'user', user);
 // Inscriptions
@@ -82,6 +81,7 @@ app.use(uri + 'request', request);
 // Graduations
 app.use(uri + 'graduationmail', graduation);
 // Shared
+app.use(uri + 'department', department);
 app.use(uri + 'document', document);
 app.use(uri + 'employee', employee);
 app.use(uri + 'position', position);

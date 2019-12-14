@@ -259,6 +259,7 @@ const searchGrade = (req, res) => {
         .exec(handler.handleMany.bind(null, 'employees', res));
 };
 
+// Deprecated
 const getEmployeeByArea = (req, res) => {
     let query =
         [

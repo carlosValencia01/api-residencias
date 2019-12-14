@@ -38,7 +38,7 @@ const updatePosition = (req, res) => {
 
 const removePosition = (req, res) => {
     const { _id } = req.params;
-    _employee.find({ positions: _id }, (err, position) => {
+    _employee.find({ 'positions.position': _id }, (err, position) => {
         if (!err && !position.length) {
             _position.deleteOne({ _id: _id }, (err, deleted) => {
                 if (!err && deleted) {
@@ -46,14 +46,14 @@ const removePosition = (req, res) => {
                 } else {
                     res.json({
                         status: status.INTERNAL_SERVER_ERROR,
-                        error: err ? err.toString() : 'No se pudo borrar la posición'
+                        error: err ? err.toString() : 'No se pudo borrar el puesto'
                     });
                 }
             });
         } else {
             res.json({
                 status: status.INTERNAL_SERVER_ERROR,
-                error: err ? err.toString() : 'La posición está asignada'
+                error: err ? err.toString() : 'El puesto está asignado'
             });
         }
     });
