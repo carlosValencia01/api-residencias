@@ -10,12 +10,15 @@
   "author": "CIDETI",
   "license": "ISC",
   "dependencies": {
+    "base64-to-uint8array": "^1.0.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.3",
     "del": "^3.0.0",
     "express": "^4.16.3",
+    "express-fileupload": "^1.1.6-alpha.5",
     "express-jwt": "^5.3.1",
     "fs": "0.0.1-security",
+    "googleapis": "^39.2.0",
     "http-status": "^1.2.0",
     "jsonwebtoken": "^8.3.0",
     "moment": "^2.24.0",
@@ -24,9 +27,11 @@
     "mv": "^2.1.1",
     "path": "^0.12.7",
     "sendgrid": "^5.2.3",
+    "stream-buffers": "^3.0.2",
     "superagent": "^4.0.0-beta.5",
     "underscore": "^1.9.1",
-    "wagner-core": "^0.2.0"
+    "wagner-core": "^0.2.0",
+    "webpack": "^3.12.0"
   },
   "devDependencies": {
     "morgan": "^1.9.1",

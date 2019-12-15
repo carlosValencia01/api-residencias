@@ -3,19 +3,19 @@ const multer = require('multer');
 let UPLOAD_PATH = 'images';
 
 var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOAD_PATH)
-    },
+    destination: UPLOAD_PATH,
     filename: function (req, file, cb) {
-        console.log(req.params);
+        console.log(req.params,'filenameeeee');
         cb(null, file.fieldname + '-' + req.params._id)
     }
 });
 let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
-    const studentCtrl = wagner.invoke((Student, Request) =>
-        require('../../controllers/shared/student.controller')(Student, Request));
+
+    const studentCtrl = wagner.invoke((Student, Request, Role) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role));
+
 
     router.get('/', (req, res) =>
         studentCtrl.getAll(req, res));
@@ -40,6 +40,19 @@ module.exports = (wagner) => {
 
     router.get('/:resource/:_id', (req, res) =>
         studentCtrl.getResource(req, res));
+    
+    router.get('/get/documents/drive/:_id', (req, res) =>
+        studentCtrl.getDocumentsDrive(req, res));
+
+    router.get('/get/folderid/:_id', (req, res) =>
+        studentCtrl.getFolderId(req, res));
+    router.get('/get/periodinscription/:_id', (req, res) =>
+        studentCtrl.getPeriodInscription(req, res));
+
+    router.get('/get/career/:_id', (req, res) =>
+        studentCtrl.getCareerDetail(req, res));
+
+
 
     router.post('/', upload.single('image'), (req, res) => {
         console.log('Creando Student con image!');
@@ -60,6 +73,12 @@ module.exports = (wagner) => {
 
     router.put('/document/:_id', (req, res) =>
         studentCtrl.assignDocument(req, res));
+
+    router.put('/document/drive/:_id', (req, res) =>
+        studentCtrl.assignDocumentDrive(req, res));
+
+    router.put('/document/status/:_id', (req, res) =>
+        studentCtrl.updateDocumentLog(req, res));
 
     router.post('/csv', (req, res) =>
         studentCtrl.csvIngles(req, res));
