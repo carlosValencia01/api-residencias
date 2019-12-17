@@ -64,6 +64,7 @@ const _getEmployeesByDepartment = (department) => {
 
 const getAllDepartments = (req, res) => {
   _department.find({})
+      .populate('careers')
       .exec(handler.handleMany.bind(null, 'departments', res));
 };
 
