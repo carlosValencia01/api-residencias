@@ -7,6 +7,7 @@ let _position;
 
 const getAll = (req, res) => {
   _department.find({ "careers.0": { "$exists": true } })
+      .populate('careers')
       .exec(async (err, data) => {
         if (!err && data) {
           const departments = [];
