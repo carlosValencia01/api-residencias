@@ -4,6 +4,7 @@ const config = require('../../_config');
 const status = require('http-status');
 const superagent = require('superagent');
 
+
 let _user;
 let _student;
 let _employee;
@@ -15,27 +16,32 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'users', res));
 };
 
-const getSecretaries = (req,res)=>{
-    _user.find({role:1},{'password':0,idRole:0,email:0,role:0})
-    .populate({
-        path: 'employeeId', model: 'Employee',
-        select: {
-            name: 1,_id:0
-        }
-    }).populate({
-        path: 'careers.careerId', model: 'Career',
-        select: {
-            fullName: 1,shortName:1,acronym:1
-        }
-    }).then(
-        users=>{
-            if(users){
-                res.status(status.OK).json({users:users});
-            }else{
-                res.status(status.NOT_FOUND).json({msg:"Not found"});
+const getSecretaries = async (req,res)=>{
+    const idRole = await getRoleId('Secretaria escolares');
+
+    if(idRole){                
+        _user.find({idRole:idRole},{password:0,idRole:0,email:0,role:0})
+        .populate({
+            path: 'employeeId', model: 'Employee',
+            select: {
+                name: 1,_id:0
             }
-        }
-    )
+        }).populate({
+            path: 'careers.careerId', model: 'Career',
+            select: {
+                fullName: 1,shortName:1,acronym:1
+            }
+        }).then(
+            users=>{
+                if(users){
+                    res.status(status.OK).json({users:users});
+                }else{
+                    res.status(status.NOT_FOUND).json({msg:"Not found"});
+                }
+            }
+        );
+    }
+    
 };
 
 const register = (req, res) => {
@@ -572,7 +578,11 @@ const validateGraduateStatus = (controlNumber) => {
     });
 };
 
+
+
 const getRoleId = (roleName) => {
+    
+    
     return new Promise(async (resolve) => {
         await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
             if (!err && role) {
