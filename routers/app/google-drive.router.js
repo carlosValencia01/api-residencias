@@ -19,7 +19,7 @@ module.exports = (wagner) => {
     router.get('/get/folders/all', (req, res) =>
         driveCtrl.getAllFolders(req, res));
 
-    router.get('/get/folders/period/:period', (req, res) =>
+    router.get('/get/folders/period/:period/:type', (req, res) =>
         driveCtrl.getFoldersByPeriod(req, res));
         
     router.post('/get/file', (req, res) =>

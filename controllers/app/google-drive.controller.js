@@ -85,7 +85,7 @@ function getAccessToken(oAuth2Client) {
  */
 const createFolder = (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
-    const { folderName, period } = req.body;
+    const { folderName, period, type } = req.body;
 
     var fileMetadata = {
         'name': folderName,
@@ -102,7 +102,7 @@ const createFolder = (req, res) => {
             });
         }
         else {
-            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id }).then(
+            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id, type:type }).then(
                 created => {
 
                     res.status(status.OK).json({
@@ -122,8 +122,9 @@ const createFolder = (req, res) => {
 };
 const createFolderIntoFolder = (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
-    const { folderName, period, parentFolderId } = req.body;
-
+    const { folderName, period, parentFolderId, type } = req.body;
+    // console.log(folderName, period, parentFolderId );
+    
     var fileMetadata = {
         'name': folderName,
         'mimeType': 'application/vnd.google-apps.folder',
@@ -134,13 +135,15 @@ const createFolderIntoFolder = (req, res) => {
         fields: 'id'
     }, function (err, folder) {
         if (err) {
+            console.log(err);
+            
             res.status(status.BAD_REQUEST).json({
                 error: err,
                 action: 'create folder'
             });
         }
         else {
-            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id }).then(
+            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id,type: type }).then(
                 created => {
 
                     res.status(status.OK).json({
@@ -271,7 +274,8 @@ const getAllFolders = (req, res) => {
 };
 const getFoldersByPeriod = (req, res) => {
     const query = {
-        idPeriod: req.params.period
+        idPeriod: req.params.period,
+        type: req.params.type
     };
 
     _folder.find(query).populate({
