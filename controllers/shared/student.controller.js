@@ -150,8 +150,8 @@ const createWithoutImage = async (req, res) => {
 
 const updateStudent = (req, res) => {
     const { _id } = req.params;
-    const student = req.body;
-
+    let student = req.body;
+    student.fullName = student.fullName ? student.fullName : `${student.firstName} ${student.fatherLastName} ${student.motherLastName}`;
     const query = { _id: _id };
     _student.findOneAndUpdate(query, student, { new: true })
         .exec(handler.handleOne.bind(null, 'student', res));
