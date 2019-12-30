@@ -150,8 +150,8 @@ const createWithoutImage = async (req, res) => {
 
 const updateStudent = (req, res) => {
     const { _id } = req.params;
-    const student = req.body;
-
+    let student = req.body;
+    student.fullName = student.fullName ? student.fullName : `${student.firstName} ${student.fatherLastName} ${student.motherLastName}`;
     const query = { _id: _id };
     _student.findOneAndUpdate(query, student, { new: true })
         .exec(handler.handleOne.bind(null, 'student', res));
@@ -262,12 +262,64 @@ async function updateDocumentStatus(_id,docName,status){
     const docid = await getActiveStatus(_id,docName);
     if(docid){
         
-        const result = docid[0];
-        console.log('3', result.documents[0].status.length);
+        const result = docid[0];        
         const doc_id = result.documents[0]._id;
-        if(( result.documents[0].status.length) === 0) {//no hay estatus activo   
-            console.log('3.1',doc_id,_id);
+        if(( result.documents[0].status)) {  
+            if( result.documents[0].status.length === 0){//no hay estatus activo 
+                return await _student.findOneAndUpdate(
+                    {
+                        _id: _id,
+                        'documents._id':doc_id
+                    },
+                    { $push: { 'documents.$.status':status } },
+                    { new: true }
+                )
+                .then(
+                    doc=>{
+                        return true;
+                    }
+                ).catch(err=>{ return false;});
+            }else{
+                return await _student.findOneAndUpdate( //cambiar active = false
+                    {
+                        _id:_id,
+                        documents:{
+                            "$elemMatch":{_id:doc_id,"status.active":true}
+                            }
+                    },
+                    {
+                         "$set": { 
+                        "documents.$[outer].status.$[inner].active": false,}
+                    },
+                    { "arrayFilters": [
+                        { "outer._id": doc_id },
+                        { "inner.active": true }
+                    ] }
+                )
+                .then(
+                    async doc=>{
+                        console.log(doc,'4');
+                        
+                        return await _student.findOneAndUpdate(
+                            {
+                                '_id':_id,
+                                'documents._id':doc_id
+                            },
+                            { $push: { 'documents.$.status':status } },
+                            { new: true }
+                        )
+                        .then(
+                            doc=>{
+                                return true;
+                            }
+                        ).catch(err=>{ return false;});
+                    }
+                ).catch(err=>{return false;});
+            }
                      
+            
+        }else{ //no existe estatus
+            
             return await _student.findOneAndUpdate(
                 {
                     _id: _id,
@@ -281,44 +333,6 @@ async function updateDocumentStatus(_id,docName,status){
                     return true;
                 }
             ).catch(err=>{ return false;});
-        }else{ //ya hay un estatus activado
-            console.log('3.2');
-            
-            return await _student.findOneAndUpdate( //cambiar active = false
-                {
-                    _id:_id,
-                    documents:{
-                        "$elemMatch":{_id:doc_id,"status.active":true}
-                        }
-                },
-                {
-                     "$set": { 
-                    "documents.$[outer].status.$[inner].active": false,}
-                },
-                { "arrayFilters": [
-                    { "outer._id": doc_id },
-                    { "inner.active": true }
-                ] }
-            )
-            .then(
-                async doc=>{
-                    console.log(doc,'4');
-                    
-                    return await _student.findOneAndUpdate(
-                        {
-                            '_id':_id,
-                            'documents._id':doc_id
-                        },
-                        { $push: { 'documents.$.status':status } },
-                        { new: true }
-                    )
-                    .then(
-                        doc=>{
-                            return true;
-                        }
-                    ).catch(err=>{ return false;});
-                }
-            ).catch(err=>{return false;});
         }    
     }
     
