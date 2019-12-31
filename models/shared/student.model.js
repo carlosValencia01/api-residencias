@@ -60,7 +60,7 @@ const studentSchema = new mongoose.Schema({
     acceptedTerms:{type:Boolean},
     dateAcceptedTerms:{type:Date},
     stepWizard: {type:Number},
-    semestre: {type: String},
+    semester: {type: String},
     inscriptionStatus: {type: String},
     observationsAnalysis: {type: String},
     warningAnalysis: {type: Boolean},

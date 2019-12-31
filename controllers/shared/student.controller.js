@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 let _student;
 let _request;
 let _role;
+let _period;
 
 const getAll = (req, res) => {
     _student.find({})
@@ -27,10 +28,10 @@ const getById = (req, res) => {
         .exec(handler.handleOne.bind(null, 'student', res));
 };
 
-const verifyStatus = (req, res) => {
+const verifyStatus = async (req, res) => {
     const { nc } = req.params;
-
-    const req3 = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/alumnoSeleccionMaterias/${nc}/${config.period}`);
+    const period = await getPeriod();
+    const req3 = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/alumnoSeleccionMaterias/${nc}/${period}`);
 
     req3.end();
 
@@ -54,6 +55,16 @@ const verifyStatus = (req, res) => {
         }
     });
 };
+
+function getPeriod(){
+    return new Promise(async (resolve) => {
+        await _period.findOne({active:true}, (err, period) => {
+            if (!err && period) {
+                resolve(period.code);
+            }
+        });
+    });
+}
 
 const getByControlNumber = (req, res) => {
     const { controlNumber } = req.body;
@@ -603,10 +614,11 @@ const getStudentRoleId = () => {
 };
 
 
-module.exports = (Student, Request, Role) => {
+module.exports = (Student, Request, Role, Period) => {
     _student = Student;
     _request = Request;
     _role = Role;
+    _period = Period;
     return ({
         create,
         getOne,

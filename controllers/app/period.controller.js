@@ -23,7 +23,10 @@ const getActivePeriod = (req,res)=>{
 
 const createPeriod = (req,res)=> {
        
-    const period = req.body;
+    let period = req.body;
+    // console.log(period);
+    
+    period.code =  period.periodName === 'ENERO-JUNIO' ? period.year+'1' : period.year+'3';
     _period.create(period).then(created => {
         res.status(status.OK).json({
             period: created,
