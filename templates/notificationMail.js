@@ -1,4 +1,4 @@
-module.exports = (ID,NOMBRE) => {
+module.exports = (TITULO,NOMBRE,MENSAJE,REMITENTE,TEL_REMITENTE) => {
   const template = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//ES" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
   <html xmlns="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml"> 
     <head> 
@@ -36,7 +36,7 @@ module.exports = (ID,NOMBRE) => {
           <div style="margin: 20px; padding:10px; background: #F7F7F7; border-radius:20px;">
               <div style="font-size:30px; text-align:center">
                   <b>
-                      <p>"CEREMONIA DE GRADUACIÓN"</p>
+                      <p>${TITULO}</p>
                   </b>
               </div>
               <hr style="height:2px; background:black">
@@ -44,24 +44,8 @@ module.exports = (ID,NOMBRE) => {
                   <p>Estimado(a)<br><b>${NOMBRE}</b></p>
               </div>
               <div style="font-size:15px;">
-                  <p>Te felicitamos por llegar a esta etapa tan importante para tu vida. TE RECORDAMOS QUE PARTICIPES EL DIA <b>3 DE OCTUBRE A LAS 8:00 A.M. EN LA FOTO OFICIAL DE GENERACIÓN OCTUBRE 2019</b>, ASÍ MISMO INVITARTE A PARTICIPAR EN EL ENSAYO GENERAL QUE SE LLEVARÁ A CABO EN LAS INSTALACIONES DEL TEATRO DEL PUEBLO EL DÍA <b>4 DE OCTUBRE A LAS 9:00 A.M.</b> Este evento es trascendental. Asimismo, te invitamos a CONTINUAR cerrando el ciclo académico con el proceso de Titulación y te conviertas en LICENCIADO, ARQUITECTO O INGENIERO.</p>
-              </div>
-              <hr style="height:2px; background:black">
-              <div style="font-size:20px;">
-                  <p>A continuación se anexa el <b>Código QR</b> para registrar tu asistencia:</p>
-              </div>
-
-              <div style="text-align:center">
-                <img src="https://chart.googleapis.com/chart?chs=450x450&cht=qr&chl=${ID}&choe=UTF-8">
-              </div>
-              <div style="font-size:19px; text-align:center">
-                <p><b>Hora de ingreso al Teatro del Pueblo 5:00 p.m - 5:30 p.m.</b></p>
-              </div>
-              <hr style="height:2px; background:black">
-
-              <div style="text-align:center">
-                <p><i>Atentamente:</i><br>
-                <i><b>Departamento de Comunicación y Difusión</b></i><br>Tel: (311) 211-94-00 Ext: 327</p>
+                  <p><b>¡ATENCIÓN!</b></p>
+                  <p>${MENSAJE}</p>
               </div>
           </div>
           <div style="text-align:center; font-size:15px"><img

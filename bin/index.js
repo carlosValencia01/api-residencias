@@ -12,6 +12,15 @@ try {
     else {console.log('ERROR: ', err);}
 }
 
+try {
+    fs.mkdirSync('documents');
+    fs.mkdirSync('documents/tmpFile');
+    console.log('Folder documents created');
+} catch(err) {
+    if (err.code == 'EEXIST') { console.log('Folder documents exits'); }
+    else {console.log('ERROR: ', err);}
+}
+
 const port = normalizePort(process.env.PORT | config.port);
 
 server.listen(port);
