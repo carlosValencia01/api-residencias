@@ -259,6 +259,7 @@ const searchGrade = (req, res) => {
         .exec(handler.handleMany.bind(null, 'employees', res));
 };
 
+// Deprecated
 const getEmployeeByArea = (req, res) => {
     let query =
         [
@@ -356,9 +357,10 @@ const getEmployeePositions = (req, res) => {
     });
 };
 
-const uploadEmployeePositionsByCsv = (req, res) => {
+const uploadEmployeePositionsByCsv = async (req, res) => {
     const {_employeeId} = req.params;
     const _positions = req.body;
+    const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
     const findPosition = (position) => {
         const query = {
             name: { $regex: new RegExp(`^${position.name}$`, 'i') }
@@ -373,18 +375,21 @@ const uploadEmployeePositionsByCsv = (req, res) => {
                 }
             });
     };
-    const addPositions = (position) => {
-        const doc = {
-            $addToSet: {
-                positions: {
-                    position: position._id,
-                    activateDate: position.activateDate,
-                    deactivateDate: position.deactivateDate ? position.deactivateDate : null,
-                    status: position.deactivateDate ? 'INACTIVE' : 'ACTIVE'
+    const addPositions = async (position) => {
+        if (!await _isActivePosition(activePositionsEmployee, position)) {
+            const doc = {
+                $addToSet: {
+                    positions: {
+                        position: position._id,
+                        activateDate: position.activateDate,
+                        deactivateDate: position.deactivateDate ? position.deactivateDate : null,
+                        status: position.deactivateDate ? 'INACTIVE' : 'ACTIVE'
+                    }
                 }
-            }
-        };
-        return _employee.updateOne({_id: _employeeId}, doc);
+            };
+            return _employee.updateOne({_id: _employeeId}, doc);
+        }
+        return null;
     };
     const actions = _positions.map(findPosition);
     const results = Promise.all(actions);
@@ -420,6 +425,28 @@ const uploadEmployeeGradesByCsv = (req, res) => {
     results
         .then(data => res.status(status.OK).json(data))
         .catch(err => res.status(status.INTERNAL_SERVER_ERROR).json(err));
+};
+
+const _isActivePosition = (activePositionsEmployee, position) => {
+    return new Promise(resolve => {
+        const index = activePositionsEmployee.findIndex(
+            _position => _position._id === position._id || _position.name.toUpperCase() === position.name.toUpperCase());
+        resolve(!position.deactivateDate && index !== -1);
+    });
+};
+
+const _getActivePositionsByEmployee = (employeeId) => {
+    return new Promise(resolve => {
+        _employee.findOne({_id: employeeId}, {positions:1})
+            .populate('positions.position')
+            .then((data) => {
+                const activePositions = data.positions
+                    .filter(pos => pos.status === 'ACTIVE')
+                    .map(pos => pos.position);
+                resolve(activePositions);
+            })
+            .catch(_ => resolve([]));
+    });
 };
 
 module.exports = (Employee, Position) => {

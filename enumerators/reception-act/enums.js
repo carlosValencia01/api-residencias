@@ -1,7 +1,22 @@
-const eFiles = {
-    CURP: 'CURP',
+const eFile = {
     PROYECTO: 'PROYECTO',
-    ACTA_NACIMIENTO: 'ACTA_NACIMIENTO'
+    SOLICITUD: 'SOLICITUD',
+    REGISTRO: 'REGISTRO',
+    CURP: 'CURP',
+    ACTA_NACIMIENTO: 'ACTA_NACIMIENTO',
+    CERTIFICADO_B: 'CERTIFICADO_BACHILLERATO',
+    CEDULA: 'CEDULA_TECNICA',
+    CERTIFICADO_L: 'CERTIFICADO_LICENCIATURA',
+    SERVICIO: 'SERVICIO_SOCIAL',
+    INGLES: 'LIBERACION_INGLES',
+    PAGO: 'RECIBO',
+    CERTIFICADO_R: 'REVALIDACION',
+    RELEASED: 'LIBERACION',
+    INCONVENIENCE: 'NO_INCONVENIENCIA',
+    PHOTOS: 'FOTOS',
+    INE: 'INE',
+    CED_PROFESIONAL: 'CEDULA_PROFESIONAL',
+    XML: 'XML'
 };
 
 const eCareer = {
@@ -32,13 +47,16 @@ const eRequest = {
     VALIDATED: 'Validado',
     ASSIGNED: 'Asignado',
     REALIZED: 'Realizado',
-    GENERATED: 'Generado'
+    GENERATED: 'Generado',
+    TITLED: 'Titulado'
 };
 
 const eRole = {
     eSECRETARY: 'secretaria',
     eCOORDINATION: 'coordinacion',
-    eCHIEFACADEMIC: 'jefe'
+    eCHIEFACADEMIC: 'jefe',
+    eSTUDENTSERVICES: 'servicios',
+    eHEADSCHOOLSERVICE:'escolares'
 };
 
 const eStatusRequest = {
@@ -46,13 +64,17 @@ const eStatusRequest = {
     PROCESS: 'Process',
     ERROR: 'Error',
     ACCEPT: 'Accept',
-    REJECT: 'Reject'
+    REJECT: 'Reject',
+    WAIT: 'Wait',
+    CANCELLED: 'Cancelled',
+    ASSIGN: 'Assign',
+    FINALIZED: 'Finalized'
 };
 
 module.exports = {
-        eCareer,
-        eFiles,
-        eRequest,
-        eRole,
-        eStatusRequest,
+    eCareer,
+    eFile,
+    eRequest,
+    eRole,
+    eStatusRequest,
 };

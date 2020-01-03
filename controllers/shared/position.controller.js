@@ -38,7 +38,7 @@ const updatePosition = (req, res) => {
 
 const removePosition = (req, res) => {
     const { _id } = req.params;
-    _employee.find({ positions: _id }, (err, position) => {
+    _employee.find({ 'positions.position': _id }, (err, position) => {
         if (!err && !position.length) {
             _position.deleteOne({ _id: _id }, (err, deleted) => {
                 if (!err && deleted) {
@@ -46,14 +46,14 @@ const removePosition = (req, res) => {
                 } else {
                     res.json({
                         status: status.INTERNAL_SERVER_ERROR,
-                        error: err ? err.toString() : 'No se pudo borrar la posición'
+                        error: err ? err.toString() : 'No se pudo borrar el puesto'
                     });
                 }
             });
         } else {
             res.json({
                 status: status.INTERNAL_SERVER_ERROR,
-                error: err ? err.toString() : 'La posición está asignada'
+                error: err ? err.toString() : 'El puesto está asignado'
             });
         }
     });
@@ -86,13 +86,13 @@ const getAvailablePositionsByDepartment = async (req, res) => {
     const { _departmentId, _employeeId } = req.params;
     const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
     const departmentBoss = await _getDeparmentBoss(_departmentId);
-    const occupiedPositions = (departmentBoss ? activePositionsEmployee.concat([departmentBoss]) : activePositionsEmployee).map(({name}) => name);
+    const occupiedPositions = (departmentBoss ? activePositionsEmployee.concat([departmentBoss]) : activePositionsEmployee).map(({name}) => name.toUpperCase());
     _position.find({ascription: _departmentId})
         .populate({path: 'ascription', model: 'Department', select: '-careers'})
         .select('name ascription canSign')
         .exec((err, data) => {
            if (!err && data) {
-               const availablePositions = data.filter(pos => !occupiedPositions.includes(pos.name));
+               const availablePositions = data.filter(pos => !occupiedPositions.includes(pos.name.toUpperCase()));
                 res.status(status.OK)
                     .json(availablePositions);
            } else {
@@ -126,7 +126,7 @@ const _getDeparmentBoss = (departmentId) => {
         const query = {
             $and: [
                 {ascription: departmentId},
-                {name: 'JEFE DE DEPARTAMENTO'}
+                {name: {$regex: new RegExp('^JEFE DE DEPARTAMENTO$', 'i') }}
             ]
         };
         _position.findOne(query)
@@ -140,7 +140,8 @@ const _getDeparmentBoss = (departmentId) => {
                         .populate({path: 'positions.position', model: 'Position', select: 'name ascription'})
                         .exec((err, data) => {
                             if (!err && data) {
-                                const position = data.positions.filter(({status}) => status === 'ACTIVE')[0].position;
+                                const position = data.positions
+                                    .filter(({status, position}) => status === 'ACTIVE' && position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0].position;
                                 resolve(position);
                             } else {
                                 resolve(null);

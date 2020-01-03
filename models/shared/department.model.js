@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 let departmentSchema = new mongoose.Schema({
     name: { type: String },
     shortName: { type: String },
-    careers: [{ type: String }]
+    careers: [{type: mongoose.Schema.Types.ObjectId, ref: 'Career'}]
 });
 
 const deparmentModel = mongoose.model('Department', departmentSchema, 'departments');
