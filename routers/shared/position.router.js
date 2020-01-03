@@ -25,5 +25,9 @@ module.exports = (wagner) => {
     router.get('/getAvailablePositions/:_employeeId/:_departmentId', (req, res) =>
         positionCtrl.getAvailablePositionsByDepartment(req, res));
 
+    router.get('/getPosition/:positionId', (req, res) => {
+        positionCtrl.getPositionById(req, res)
+    })
+
     return router;
 };
