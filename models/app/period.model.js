@@ -12,7 +12,8 @@ const periodSchema = new mongoose.Schema({
     arecPerEndDate:{type: Date},
     arecInitShed:{type: Number}, // inicio horario agenda acto recepcional
     arecEndShed:{type: Number}, // fin horario agenda acto recepcional
-    certificateDeliveryDate: {type: Date} //fecha de entrega del certificado
+    certificateDeliveryDate: {type: Date}, //fecha de entrega del certificado,
+    code:{type:String} // clave del periodo año+(1 || 3) 1===enero-junio, 3===agosto-diciembre, ej. 20201
 });
 
 const periodModel = mongoose.model('Period', periodSchema, 'periods');
