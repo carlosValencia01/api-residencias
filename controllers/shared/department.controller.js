@@ -11,11 +11,8 @@ const getAll = (req, res) => {
       .exec(async (err, data) => {
         if (!err && data) {
           const departments = [];
-          for await (let department of data) {
-            const depto = department.toObject();
-            const employeesDepto = await _getEmployeesByDepartment(depto);
-            depto.Employees = employeesDepto.employees;
-            depto.boss = employeesDepto.boss;
+          for (let department of data) {
+            const depto = await _getDepartmentWithEmployees(department.toObject());
             departments.push(depto);
           }
           res.status(status.OK)
@@ -25,6 +22,15 @@ const getAll = (req, res) => {
               .json({error: err ? err.toString() : 'Ocurrió un error'});
         }
       });
+};
+
+const _getDepartmentWithEmployees = depto => {
+  return new Promise(async resolve => {
+    const employeesDepto = await _getEmployeesByDepartment(depto);
+    depto.Employees = employeesDepto.employees;
+    depto.boss = employeesDepto.boss;
+    resolve(depto);
+  })
 };
 
 const _getEmployeesByDepartment = (department) => {
