@@ -287,26 +287,31 @@ const getDataEmployee = (req, res) => {
         .populate({
             path: 'employeeId', model: 'Employee',
             select: {
-                rfc: 1, name: 1, area: 1, position: 1, _id: 1
+                grade: 0, birthdate: 0, gender: 0, curp: 0
+            },
+            populate: {
+                path: 'positions.position', model: 'Position',
+                select: '-documents',
+                populate: {
+                    path: 'ascription', model: 'Department',
+                    select: '-careers',
+                }
             }
         })
-        .exec((err, employee) => {
-            if (!err && employee) {
-                const employeeData = {
-                    _id: employee.employeeId._id,
-                    rfc: employee.employeeId.rfc,
-                    email: employee.email,
-                    name: employee.employeeId.name,
-                    area: employee.employeeId.area,
-                    position: employee.employeeId.position
-                };
-                res.json({
+        .exec((err, user) => {
+            if (!err && user) {
+                const employeeData = user.employeeId.toObject();
+                const activePositions = employeeData.positions
+                    .filter(({status}) => status === 'ACTIVE')
+                    .map(({position}) => position);
+                employeeData.positions = activePositions.slice();
+                res.status(status.OK).json({
                     employee: employeeData
                 });
             } else {
-                res.json({
+                res.status(status.NOT_FOUND).json({
                     status: status.NOT_FOUND,
-                    error: err.toString()
+                    error: err ? err.toString() : 'No lo encontró'
                 });
             }
         });
@@ -318,12 +323,12 @@ const updateUserData = (req, res) => {
     const query = { _id: _id };
 
     new Promise((resolve, reject) => {
-        _user.findOne({ employeeId: _id }, async (err, userData) => {
+        _user.findOne(query, async (err, userData) => {
             if (!err && userData) {
                 userData.validatePasswd(user.oldPassword, userData.password, async invalid => {
                     if (!invalid) {
                         const changedPassword = user.newPassword ? await changePassword(userData) : false;
-                        const changedEmployee = employee ? await changeEmployee() : false;
+                        const changedEmployee = employee ? await changeEmployee(userData.employeeId) : false;
                         resolve({
                             password: changedPassword,
                             employee: changedEmployee
@@ -360,7 +365,7 @@ const updateUserData = (req, res) => {
     const changePassword = (userData) => new Promise((resolve) => {
         userData.encrypt(user.newPassword, async (pass) => {
             if (pass) {
-                await _user.updateOne({ employeeId: _id }, {
+                await _user.updateOne({ _id: userData._id }, {
                     $set: { password: pass }}, (err, _) => {
                         resolve(!err);
                     });
@@ -370,9 +375,9 @@ const updateUserData = (req, res) => {
         });
     });
 
-    const changeEmployee = () => new Promise((resolve) => {
+    const changeEmployee = (employeeId) => new Promise((resolve) => {
         if (employee.name) {
-             _employee.updateOne(query, {
+             _employee.updateOne({_id: employeeId}, {
                 $set: {
                     name: employee.name
                 }
