@@ -152,6 +152,19 @@ const _getDeparmentBoss = (departmentId) => {
     });
 };
 
+const getPositionById = (req, res) => {
+    const {positionId} = req.params;
+    _position.findOne({_id: positionId})
+    .populate({
+        path: 'ascription',
+        model: 'Department'
+    }).then(position =>
+        res.status(status.OK).json(position)
+    ).catch(err =>
+        res.status(status.INTERNAL_SERVER_ERROR).json({error:err.toString()})
+    )
+};
+
 module.exports = (Position, Employee) => {
     _position = Position;
     _employee = Employee;
@@ -163,5 +176,6 @@ module.exports = (Position, Employee) => {
         updateDocumentAssign,
         getPositionsForDepartment,
         getAvailablePositionsByDepartment,
+        getPositionById,
     });
 };

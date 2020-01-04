@@ -339,6 +339,24 @@ const updateEmployeeGradesAndPositions = (req, res) => {
     });
 };
 
+const getEmployeePositions = (req, res) => {
+    const {rfc} = req.params;
+
+    _employee.findOne({rfc: rfc}, {_id: 0, 'positions.status': 1})
+        .populate(
+            {path:'positions.position', model:'Position', select: 'name'})
+            .exec(
+            (err, data)=> {
+                    if(err) {
+                        res.json(err);
+                    }
+                    const activePositions = data.positions
+                        .filter(({status}) => status === 'ACTIVE')
+                        .map(({position}) => position);
+                    res.json(activePositions);
+    });
+};
+
 const uploadEmployeePositionsByCsv = async (req, res) => {
     const {_employeeId} = req.params;
     const _positions = req.body;
@@ -453,6 +471,7 @@ module.exports = (Employee, Position) => {
         updateEmployeePositions,
         updateEmployeeGrades,
         updateEmployeeGradesAndPositions,
+        getEmployeePositions,
         uploadEmployeePositionsByCsv,
         uploadEmployeeGradesByCsv,
     });

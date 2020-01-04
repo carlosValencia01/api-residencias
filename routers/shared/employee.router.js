@@ -70,6 +70,9 @@ module.exports = (wagner) => {
     router.put('/gradesPositions/:_id', (req, res) =>
         employeeCtrl.updateEmployeeGradesAndPositions(req, res));
 
+    router.get('/positions/:rfc', (req, res) =>
+        employeeCtrl.getEmployeePositions(req, res));
+
     router.post('/uploadCsvPositions/:_employeeId', (req, res) =>
         employeeCtrl.uploadEmployeePositionsByCsv(req, res));
 
