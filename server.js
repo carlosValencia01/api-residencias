@@ -5,7 +5,6 @@ const morgan = require('morgan');
 const wagner = require('wagner-core');
 const config = require('./_config');
 const URL = `/escolares`;
-const https = require('https').globalAgent.options.ca = require('ssl-root-cas/latest').create();
 // const URL = `/api`;
 const fileUpload = require('express-fileupload');
 // MODELS

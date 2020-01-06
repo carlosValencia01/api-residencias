@@ -67,6 +67,8 @@ module.exports = (wagner) => {
 
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
+    router.put('/data/:_id', (req, res) =>
+        studentCtrl.updateStudentApp(req, res));
 
     router.put('/image/:_id', upload.single('image'), (req, res) =>
         studentCtrl.uploadImage(req, res));
