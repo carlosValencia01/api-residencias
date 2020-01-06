@@ -162,6 +162,13 @@ const createWithoutImage = async (req, res) => {
 const updateStudent = (req, res) => {
     const { _id } = req.params;
     let student = req.body;
+    const query = { _id: _id };
+    _student.findOneAndUpdate(query, student, { new: true })
+        .exec(handler.handleOne.bind(null, 'student', res));
+};
+const updateStudentApp = (req, res) => {
+    const { _id } = req.params;
+    let student = req.body;
     student.fullName = student.fullName ? student.fullName : `${student.firstName} ${student.fatherLastName} ${student.motherLastName}`;
     const query = { _id: _id };
     _student.findOneAndUpdate(query, student, { new: true })
@@ -224,7 +231,7 @@ const getOne = (req, res) => {
 const assignDocument = (req, res) => {
     const { _id } = req.params;
     const _doc = req.body;
-    const query = { _id: _id, documents: { $elemMatch: { type: _doc.type } } };
+    const query = { _id: _id, documents: { $elemMatch: { type: _doc.doc.type } } };
     const push = { $push: { documents: _doc } };
     _student.findOne(query, (e, student) => {
         if (e)
@@ -268,7 +275,7 @@ const assignDocumentDrive = (req, res) => {
 };
 async function updateDocumentStatus(_id,docName,status){
     
-    console.log('1',status);
+    // console.log('1',status);
     
     const docid = await getActiveStatus(_id,docName);
     if(docid){
@@ -643,5 +650,6 @@ module.exports = (Student, Request, Role, Period) => {
         updateDocumentLog,
         getStudentsInscription,
         getCareerDetail,
+        updateStudentApp,
     });
 };

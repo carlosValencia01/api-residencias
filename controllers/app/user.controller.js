@@ -505,12 +505,11 @@ const login = (req, res) => {
                                             }
                                         }).exec(async (error, oneUser) => {
                                             // Hubo un error en la consulta
-                                            console.log(oneUser,'============');
-                                            console.log(error,'-------------------');
+                                           
                                             
                                             if (error) {
                                                 return res.status(status.NOT_FOUND).json({
-                                                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta1'
+                                                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                                 });
                                             } else {
                                                 // Se verifica si tiene aprobado el inglés
@@ -540,7 +539,7 @@ const login = (req, res) => {
                                                          studentInfo = JSON.parse(studentInfo);                                  
                                                          if(studentInfo.semester > oneUser.semester){
                                                              oneUser.semester = studentInfo.semester;
-                                                              _student.findOneAndUpdate({_id:oneUser._id},{semester:studentInfo.semester});
+                                                              _student.findOneAndUpdate({_id:oneUser._id},{semester:studentInfo.semester}, { new: true });
                                                          }                                               
                                                         });
                                                 });  
@@ -701,14 +700,14 @@ const login = (req, res) => {
                                                                   console.log(err);
                                                                   
                                                                   return res.status(status.NOT_FOUND).json({
-                                                                      error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta2'
+                                                                      error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                                                   });
                                                               });
                                                             });
                                                           });
                                                           request.on('error', (error) => {
                                                             return res.status(status.NOT_FOUND).json({
-                                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta3'
+                                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                                             });
                                                           });
                                                           
@@ -719,7 +718,7 @@ const login = (req, res) => {
                                                         });
                                                         apiInfo.on('error', function(e) {
                                                             return res.status(status.NOT_FOUND).json({
-                                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta4'
+                                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                                             });
                                                         });
                                                 });                                                    
@@ -749,6 +748,55 @@ const login = (req, res) => {
                     });
             }
     });
+};
+
+const updateFullName = (req,res)=>{
+    const {nc} = req.params;
+    const options = {        
+        "rejectUnauthorized": false, 
+        host: 'wsescolares.tepic.tecnm.mx',    
+        port: 443,     
+        path: `/alumnos/info/${nc}`,    
+        // authentication headers     
+        headers: {     
+           'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }     
+    };
+
+    var studentNew = "";                                                                                                       
+    https.get(options, function(apiInfo){
+        
+        apiInfo.on('data', function(data) {
+            studentNew += data;
+        });
+        apiInfo.on('end', ()=> {
+            //json con los datos del alumno
+            studentNew = JSON.parse(studentNew);
+            studentNew.firstName = studentNew.firstname;
+            studentNew.fatherLastName = studentNew.fatherlastname;
+            studentNew.motherLastName = studentNew.motherlastname;
+            studentNew.birthPlace = studentNew.birthplace;
+            studentNew.dateBirth = studentNew.datebirth;
+            studentNew.civilStatus = studentNew.civilstatus;
+            studentNew.originSchool = studentNew.originschool;
+            studentNew.nameOriginSchool = studentNew.nameoriginschool;
+            studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
+            
+            _student.findOneAndUpdate({controlNumber:nc},studentNew, { new: true }).then(
+                stu=>{
+                    if(stu) res.status(status.OK).json({'action':'update fullname',stu});
+                    else res.status(status.BAD_REQUEST).json({'err':'student not found'})
+                }
+            ).catch(err=>res.status(status.BAD_REQUEST).json({err:err}));           
+
+            
+        });
+        apiInfo.on('error', function(e) {
+            return res.status(status.NOT_FOUND).json({
+                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta4'
+            });
+        });
+}); 
 };
 
 
@@ -1022,6 +1070,7 @@ module.exports = (User, Student, Employee, Role,Career) => {
         updateUserData,
         getSecretaries,
         updateCareersUser,
-        studentLogin,        
+        studentLogin,
+        updateFullName,        
     });
 };

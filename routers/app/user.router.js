@@ -25,6 +25,8 @@ module.exports = (wagner) => {
 
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
+    router.put('/update/fullName/:nc', (req, res) =>
+        userCtrl.updateFullName(req, res));
     router.put('/:action/career/user/:_id', (req, res) =>
         userCtrl.updateCareersUser(req, res));
 
