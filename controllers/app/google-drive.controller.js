@@ -493,6 +493,7 @@ const createFolderFromServer = (req,res)=>{
                 if(folderId1){
                     
                     const fileId = await createFile(folderName+'.jpg','image/jpg',folderId1.idFolderInDrive,'images/'+student.filename);
+                    console.log(fileId);
                     const documentInfo = {
     
                         doc: {
@@ -506,7 +507,7 @@ const createFolderFromServer = (req,res)=>{
                           message: 'Actualizado desde el servidor'
                         }
                       };
-                    const result = await updateStudentDocuments(student._id,documentInfo,folderId.folderId);
+                    const result = await updateStudentDocuments(student._id,documentInfo,folderId1._id);
                     if(result){
                         res.status(status.OK).json({st:student})              
                       }else{
@@ -518,8 +519,10 @@ const createFolderFromServer = (req,res)=>{
                     
                     if(period){
                         const folderId = await getFolderByPeriod(period,student.career,folderName);
+                        console.log(folderId);
                         const fileId = await createFile(folderName+'.jpg','image/jpg',folderId.folderDrive,'images/'+student.filename);
-    
+                        console.log(fileId);
+                        
                         const documentInfo = {
     
                             doc: {
@@ -554,8 +557,14 @@ const createFolderFromServer = (req,res)=>{
                          
 };
 
-const updateStudentDocuments = (_id,_doc,folderId)=>{
-    // console.log(_doc.type);
+const updateStudentDocuments = (_id,doc,folderId)=>{
+    const _doc = {
+        filename : doc.doc.filename,
+        type:'DRIVE',
+        fileIdInDrive:doc.doc.fileIdInDrive,
+        status: doc.status
+    };
+    console.log(_doc);
         
     const push = { $push: { documents: _doc },$set:{folderId:folderId} };
     return new Promise (async resolve=>{
