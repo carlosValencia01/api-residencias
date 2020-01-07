@@ -594,7 +594,10 @@ const login = (req, res) => {
                                                          studentNew.nameOriginSchool = studentNew.nameoriginschool;
                                                          studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
                                                          studentNew.nip = password;    
-                                                        studentNew.controlNumber = email;                                                        
+                                                        studentNew.controlNumber = email; 
+                                                        if(studentNew.semester == 1){
+                                                            studentNew.stepWizard = 0;
+                                                        }                                     
                                                         const request = https.request(optionsPost, (apiLogin) => {
                                                             var careerN="";                                                  
                                                             apiLogin.on('data', async (d) => {

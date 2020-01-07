@@ -321,7 +321,7 @@ const downloadFile = (req, res) => {
                             fs.unlinkSync(path);
                             res.status(status.OK).json({
                                 action: 'get file',
-                                file: fileName.indexOf('FOTO') !== -1 ? data.toString('base64') : data
+                                file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 ? data.toString('base64') : data
                             });
                         });
                     }).on('error', (err) => {
@@ -381,7 +381,7 @@ const downloadPhoto = (req,res)=>{
                                     fs.unlinkSync(path);
                                     res.status(status.OK).json({
                                         action: 'get file',
-                                        file: fileName.indexOf('FOTO') !== -1 ? data.toString('base64') : data
+                                        file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 ? data.toString('base64') : data
                                     });
                                 });
                             }).on('error', (err) => {
@@ -408,6 +408,7 @@ const downloadPhoto = (req,res)=>{
             });
         }
 };
+
 
 const createFile2 = async (req, res) => {    
     const drive = google.drive({ version: 'v3', auth });
@@ -705,6 +706,11 @@ const getFolderId = (_id) => {
             }
         });
     });     
+};
+
+const updatePhotoName = (req,res)=>{
+    const {_id} = req.params;
+
 };
 
 module.exports = (Folder, Student, Period) => {
