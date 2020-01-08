@@ -537,9 +537,12 @@ const login = (req, res) => {
                                                          console.log('2');
                                                          
                                                          studentInfo = JSON.parse(studentInfo);                                  
+                                                        //  console.log(studentInfo);
+                                                        //  console.log(oneUser);
+                                                         
                                                          if(studentInfo.semester > oneUser.semester){
-                                                             oneUser.semester = studentInfo.semester;
-                                                              _student.findOneAndUpdate({_id:oneUser._id},{semester:studentInfo.semester}, { new: true });
+                                                             oneUser.semester = studentInfo.semester;                            
+                                                              _student.findOneAndUpdate({_id:oneUser._id},{$set:{semester:studentInfo.semester}}).then(ok=>{},err=>{});
                                                          }                                               
                                                         });
                                                 });  
