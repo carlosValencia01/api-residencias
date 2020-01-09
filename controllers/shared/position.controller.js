@@ -86,7 +86,10 @@ const getAvailablePositionsByDepartment = async (req, res) => {
     const { _departmentId, _employeeId } = req.params;
     const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
     const departmentBoss = await _getDeparmentBoss(_departmentId);
-    const occupiedPositions = (departmentBoss ? activePositionsEmployee.concat([departmentBoss]) : activePositionsEmployee).map(({name}) => name.toUpperCase());
+    const director = await _getDirector(_departmentId);
+    let occupiedPositions = [];
+    occupiedPositions = (departmentBoss ? activePositionsEmployee.concat([departmentBoss]) : activePositionsEmployee);
+    occupiedPositions = (director ? occupiedPositions.concat([director]) : occupiedPositions).map(({name}) => name.toUpperCase());;
     _position.find({ascription: _departmentId})
         .populate({path: 'ascription', model: 'Department', select: '-careers'})
         .select('name ascription canSign')
@@ -147,6 +150,41 @@ const _getDeparmentBoss = (departmentId) => {
                                 resolve(null);
                             }
                         });
+                } else {
+                    resolve(null);
+                }
+            });
+    });
+};
+
+const _getDirector = (departmentId) => {
+    return new Promise(resolve => {
+        const query = {
+            $and: [
+                {ascription: departmentId},
+                {name: {$regex: new RegExp('^DIRECTOR$', 'i') }}
+            ]
+        };
+        _position.findOne(query)
+            .select('name ascription')
+            .exec((err, data) => {
+                if (!err && data) {
+                    const query = {
+                        positions: {$elemMatch: {$and: [{position: data._id}, {status: 'ACTIVE'}]}}
+                    };
+                    _employee.findOne(query)
+                        .populate({path: 'positions.position', model: 'Position', select: 'name ascription'})
+                        .exec((err, data) => {
+                            if (!err && data) {
+                                const position = data.positions
+                                    .filter(({status, position}) => status === 'ACTIVE' && position.name.toUpperCase() === 'DIRECTOR')[0].position;
+                                resolve(position);
+                            } else {
+                                resolve(null);
+                            }
+                        });
+                } else {
+                    resolve(null);
                 }
             });
     });
