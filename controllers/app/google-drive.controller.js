@@ -321,7 +321,7 @@ const downloadFile = (req, res) => {
                             fs.unlinkSync(path);
                             res.status(status.OK).json({
                                 action: 'get file',
-                                file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 ? data.toString('base64') : data
+                                file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                             });
                         });
                     }).on('error', (err) => {
@@ -381,7 +381,7 @@ const downloadPhoto = (req,res)=>{
                                     fs.unlinkSync(path);
                                     res.status(status.OK).json({
                                         action: 'get file',
-                                        file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 ? data.toString('base64') : data
+                                        file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                                     });
                                 });
                             }).on('error', (err) => {

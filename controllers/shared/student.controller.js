@@ -22,6 +22,11 @@ const getStudentsInscription = (req, res) => {
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
+const getStudentsInscriptionLogged = (req, res) => {
+    _student.find({"stepWizard":0})
+        .exec(handler.handleMany.bind(null, 'students', res));
+};
+
 const getById = (req, res) => {
     const { _id } = req.params;
     _student.find({ _id: _id })
@@ -651,5 +656,6 @@ module.exports = (Student, Request, Role, Period) => {
         getStudentsInscription,
         getCareerDetail,
         updateStudentApp,
+        getStudentsInscriptionLogged,
     });
 };
