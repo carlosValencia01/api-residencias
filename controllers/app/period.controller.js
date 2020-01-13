@@ -35,6 +35,7 @@ const createPeriod = (req,res)=> {
         });
 
     }).catch(err =>{            
+        console.log("Error", err);
         res.status(status.BAD_REQUEST).json({
             model:'period',action:'create', error: err.toString()
         });

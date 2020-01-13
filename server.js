@@ -77,7 +77,7 @@ const jwtOptions = {
 };
 // files
 app.use(fileUpload({
-    limits: { fileSize: "50mb" }
+  limits: { fileSize: "50mb" }
 }));
 app.use(expressJWT({
   secret: config.secret

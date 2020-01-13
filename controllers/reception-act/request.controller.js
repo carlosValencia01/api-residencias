@@ -2,11 +2,11 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
-const { eRequest, eStatusRequest, eRole, eFile } = require('../../enumerators/reception-act/enums');
-
+const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
+let _Drive;
 let _request;
 let _ranges;
-const create = (req, res) => {
+const create = async (req, res) => {
     let request = req.body;
     request.lastModified = new Date();
     request.applicationDate = new Date();
@@ -16,19 +16,29 @@ const create = (req, res) => {
     request.status = eStatusRequest.PROCESS;
     //Add
     request.department = { name: request.department, boss: request.boss };
-    let tmpFile = [];
-    tmpFile.push(
-        {
-            type: request.Document, dateRegister: new Date(), nameFile: request.Career + '/' + (request.ControlNumber + '-' + request.FullName) + '/' + request.Document + path.extname(req.file.originalname), status: 'Accept'
-        });
-    request.documents = tmpFile;
-    _request.create(request).then(created => {
-        res.json({ request: created });
-    }).catch(err => {
-        res.status(status.INTERNAL_SERVER_ERROR).json({
-            error: err.toString()
+    let result = await _Drive.uploadFile(req, eOperation.NEW);
+    if (typeof (result) !== 'undefined' && result.isCorrect) {
+        let tmpFile = [];
+        tmpFile.push(
+            {
+                // type: request.Document, dateRegister: new Date(), nameFile: request.Career + '/' + (request.ControlNumber + '-' + request.FullName) + '/' + request.Document + path.extname(req.file.originalname), status: 'Accept'            
+                type: request.Document, dateRegister: new Date(), nameFile: eFile.PROYECTO, status: 'Accept', driveId: result.fileId
+            });
+        request.documents = tmpFile;
+        _request.create(request).then(created => {
+            res.json({ request: created });
+        }).catch(err => {
+            res.status(status.INTERNAL_SERVER_ERROR).json({
+                error: err.toString()
+            })
         })
-    })
+    }
+    else {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: 'Error al subir el archivo'
+        });
+    }
+
 };
 
 const getAllRequest = (req, res) => {
@@ -164,26 +174,32 @@ const correctRequestWithoutFile = (req, res) => {
     })
 };
 
-const correctRequest = (req, res) => {
+const correctRequest = async (req, res) => {
     const { _id } = req.params;
     let request = req.body;
     request.lastModified = new Date();
-    let tmpFile = [];
-    tmpFile.push(
-        {
-            type: request.Document, dateRegister: new Date(), nameFile: request.Career + '/' + (request.ControlNumber + '-' + request.FullName) + '/' + request.Document + path.extname(req.file.originalname), status: 'Process'
-        });
     request.phase = eRequest.CAPTURED;
     request.status = eStatusRequest.PROCESS;
-    request.documents = tmpFile;
-    request.observation = '';  //Observaciones    
-    _request.findOneAndUpdate({ studentId: _id }, request).then(update => {
-        res.json({ request: update });
-    }).catch(err => {
-        res.status(status.INTERNAL_SERVER_ERROR).json({
-            error: err.toString()
+    request.observation = '';
+    let result = { isCorrect: true };//Valor por defecto
+    if (typeof (req.files) !== 'undefined' && req.files !== null)
+        result = await _Drive.uploadFile(req, eOperation.EDIT);
+    if (typeof (result) !== 'undefined' && result.isCorrect) {
+        _request.findOneAndUpdate({ studentId: _id }, request).then(update => {
+            res.json({ request: update });
+        }).catch(err => {
+            res.status(status.INTERNAL_SERVER_ERROR).json({
+                error: err.toString()
+            })
         })
-    })
+    }
+    else {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: 'Archivo no cargado'
+        })
+    }
+
+
 };
 
 const addIntegrants = (req, res) => {
@@ -238,36 +254,95 @@ const omitFile = (req, res) => {
         });
 }
 
+// const uploadFile = (req, res) => {
+//     const { _id } = req.params;
+//     let data = req.body;
+//     const files = req.files;
+//     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
+//         async (error, request) => {
+//             if (error) {
+//                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
+//             }
+//             const docName = data.Document + path.extname(files.file.name);
+//             if (!request) {
+//                 let result = await _Drive.uploadFile(req, eOperation.NEW);
+//                 if (typeof (result) !== 'undefined' && result.isCorrect) {
+//                     _request.update({ _id: _id }, {
+//                         $set: {
+//                             status: eStatusRequest.PROCESS
+//                         },
+//                         $addToSet: {
+//                             documents:
+//                             {
+//                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
+//                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process'),
+//                                 driveId: result.fileId
+//                             }
+//                         }
+//                     }).exec(handler.handleOne.bind(null, 'request', res));
+//                 }
+
+//             } else {
+//                 const tmpDocument = request.documents.filter(doc => doc.type === data.Document);
+//                 req.body.fileId = tmpDocument[0].driveId;
+//                 let result = await _Drive.uploadFile(req, eOperation.EDIT);
+//                 if (typeof (result) !== 'undefined' && result.isCorrect) {
+//                     _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+//                         $set: {
+//                             'documents.$': {
+//                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
+//                                 driveId: tmpDocument[0].driveId,
+//                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
+//                             }
+//                         }
+//                     }).exec(handler.handleOne.bind(null, 'request', res));
+//                 }
+//             }
+//         });
+// }
+
 const uploadFile = (req, res) => {
     const { _id } = req.params;
-    let data = req.body;
+    const data = req.body;
+    const files = req.files;
     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
-        (error, request) => {
+        async (error, request) => {
             if (error) {
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
             }
+            const docName = data.Document + path.extname(files.file.name);
             if (!request) {
-                _request.update({ _id: _id }, {
-                    $set: {
-                        status: eStatusRequest.PROCESS
-                    },
-                    $addToSet: {
-                        documents:
-                        {
-                            type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: 'Process'
+                let result = await _Drive.uploadFile(req, eOperation.NEW);
+                if (typeof (result) !== 'undefined' && result.isCorrect) {
+                    _request.update({ _id: _id }, {
+                        $set: {
+                            status: eStatusRequest.PROCESS
+                        },
+                        $addToSet: {
+                            documents:
+                            {
+                                type: data.Document, dateRegister: new Date(), nameFile: docName,
+                                status: (data.IsEdit === 'true' ? 'Accept' : 'Process'),
+                                driveId: result.fileId
+                            }
                         }
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                    }).exec(handler.handleOne.bind(null, 'request', res));
+                }
             } else {
-
-                // console.log("dd", (data.IsEdit === 'true' ? 'Accept' : 'Process'));
-                _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
-                    $set: {
-                        'documents.$': {
-                            type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
+                const tmpDocument = request.documents.filter(doc => doc.type === data.Document);
+                req.body.fileId = tmpDocument[0].driveId;
+                let result = await _Drive.uploadFile(req, eOperation.EDIT);
+                if (typeof (result) !== 'undefined' && result.isCorrect) {
+                    _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+                        $set: {
+                            'documents.$': {
+                                type: data.Document, dateRegister: new Date(), nameFile: docName,
+                                driveId: tmpDocument[0].driveId,
+                                status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
+                            }
                         }
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                    }).exec(handler.handleOne.bind(null, 'request', res));
+                }
             }
         });
 }
@@ -275,7 +350,7 @@ const uploadFile = (req, res) => {
 const getResource = (req, res) => {
     const { _id } = req.params;
     const { resource } = req.params;
-    _request.findOne({ _id: _id }, (errorRequest, request) => {
+    _request.findOne({ _id: _id }, async (errorRequest, request) => {
         if (errorRequest)
             return handler.handleError(res, status.NOT_FOUND, { message: 'Solicitud no encontrada' });
         if (!request.documents)
@@ -283,8 +358,18 @@ const getResource = (req, res) => {
         var fileInformation = request.documents.find(f => f.nameFile.includes(resource.toUpperCase()));
         if (!fileInformation)
             return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
-        res.set('Content-Type', 'application/pdf');
-        fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
+
+        const tmpName = resource.toUpperCase() + "_" + _id + ".pdf";
+        let result = await _Drive.downloadToLocal(fileInformation.driveId, tmpName);
+
+        if (typeof (result) !== 'undefined' && result) {
+            const fullPath = path.join(__dirname, '\\..\\..', 'documents', 'tmpFile', tmpName);
+            res.set('Content-Type', 'application/pdf');
+            fs.createReadStream(fullPath).pipe(res);
+        }
+        else {
+            return res.status(status.BAD_REQUEST).json({ message: 'Documento no encontrado' });
+        }
     });
 };
 
@@ -354,67 +439,27 @@ const fileCheck = (req, res) => {
 const releasedRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    let panel = [
-        data.President,
-        data.Secretary,
-        data.Vocal,
-        data.Substitute
-    ];
-
-    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
-        (error, request) => {
-            if (error) {
-                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
-            }
-
-            if (!request) {
-                _request.update({ _id: _id }, {
-                    $set: {
-                        phase: eRequest.RELEASED,
-                        // status: eStatusRequest.PROCESS, 17/11
-                        status: eStatusRequest.NONE,
-                        proposedHour: data.proposedHour,
-                        lastModified: new Date(),
-                        jury: panel
-                    },
-                    $addToSet: {
-                        documents:
-                        {
-                            type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: 'Accept'
-                        },
-                        history: {
-                            phase: eRequest.REGISTERED,
-                            achievementDate: new Date(),
-                            doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                            observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                            status: eStatusRequest.ACCEPT
-                        }
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
-            } else {
-                _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
-                    $set: {
-                        'documents.$': { type: data.Document, dateRegister: new Date(), nameFile: data.Career + '/' + (data.ControlNumber + '-' + data.FullName) + '/' + data.Document + path.extname(req.file.originalname), status: 'Accept' },
-                        phase: eRequest.RELEASED,
-                        // status: eStatusRequest.PROCESS, 17/11
-                        status: eStatusRequest.NONE,
-                        lastModified: new Date(),
-                        proposedHour: data.proposedHour,
-                        jury: panel
-                    },
-                    $addToSet: {
-                        history: {
-                            phase: eRequest.REGISTERED,
-                            achievementDate: new Date(),
-                            doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                            observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                            status: eStatusRequest.ACCEPT
-                        }
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+    let panel = data.jury;
+    _request.update({ _id: _id }, {
+        $set: {
+            phase: eRequest.RELEASED,
+            status: eStatusRequest.NONE,
+            proposedHour: data.proposedHour,
+            duration: data.duration,
+            lastModified: new Date(),
+            jury: panel
+        },
+        $addToSet: {
+            history: {
+                phase: eRequest.REGISTERED,
+                achievementDate: new Date(),
+                doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                status: eStatusRequest.ACCEPT
             }
         }
-    );
+    }).exec(handler.handleOne.bind(null, 'request', res));
+
 };
 
 const updateRequest = (req, res) => {
@@ -631,6 +676,13 @@ const updateRequest = (req, res) => {
                 switch (data.operation) {
                     //Fue generada el acta
                     case eStatusRequest.PROCESS: {
+                        request.status = eStatusRequest.PRINTED;
+                        item.phase = 'Generado';
+                        item.status = eStatusRequest.PROCESS;
+                        break;
+                    }
+                    //Fue impresa el acta
+                    case eStatusRequest.PRINTED: {
                         request.status = eStatusRequest.ACCEPT;
                         item.phase = 'Generado';
                         item.status = eStatusRequest.PROCESS;
@@ -725,7 +777,7 @@ const groupDiary = (req, res) => {
                     {
                         $push: {
                             id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
-                            jury: '$jury', place: '$place'
+                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration'
                         }
                     }
                 }
@@ -759,13 +811,13 @@ const groupRequest = (req, res) => {
     // StartDate.setMonth(data.month);
     // StartDate.setHours(0, 0, 0, 0);
     let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
-    console.log("Start", StartDate, "End", EndDate);
+    // console.log("Start", StartDate, "End", EndDate);
     let query =
         [
             {
                 $match: {
                     "proposedDate": { $gte: StartDate, $lte: EndDate }, $or: [
-                        { "phase": "Asignado", "status": "Process" },
+                        // { "phase": "Asignado", "status": "Process" },
                         { "phase": "Realizado", "status": "Process" }]
                 }
 
@@ -839,9 +891,10 @@ const StudentsToSchedule = (req, res) => {
 }
 
 
-module.exports = (Request, Range) => {
+module.exports = (Request, Range, Folder) => {
     _request = Request;
     _ranges = Range;
+    _Drive = require('../app/google-drive.controller')(Folder);
     return ({
         create,
         getById,
