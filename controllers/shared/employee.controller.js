@@ -286,9 +286,19 @@ const updateEmployeGrade = (req, res) => {
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
-const updateEmployeePositions = (req, res) => {
+const updateEmployeePositions = async (req, res) => {
     const {_id} = req.params;
     const _positions = req.body;
+
+    for (let index in _positions) {
+        const item = _positions[index];
+        const position = item.position;
+        if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
+            if (await _isAssignedDepartmentBoss(position._id) && item.status === 'ACTIVE') {
+                _positions.splice(index, 1);
+            }
+        }
+    }
 
     _employee.updateOne({_id: _id}, {positions: _positions}, (err, updated) => {
         if (!err && updated) {
@@ -371,12 +381,18 @@ const uploadEmployeePositionsByCsv = async (req, res) => {
                 if (data) {
                     const pos = data.filter(({ascription}) => ascription.name === position.ascription)[0];
                     position._id = pos._id;
+                    position.ascriptionId = pos.ascription._id;
                     return position;
                 }
             });
     };
     const addPositions = async (position) => {
         if (!await _isActivePosition(activePositionsEmployee, position)) {
+            if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
+                if (await _isAssignedDepartmentBoss(position._id) && !position.deactivateDate) {
+                    return null;
+                }
+            }
             const doc = {
                 $addToSet: {
                     positions: {
@@ -427,6 +443,16 @@ const uploadEmployeeGradesByCsv = (req, res) => {
         .catch(err => res.status(status.INTERNAL_SERVER_ERROR).json(err));
 };
 
+const canReallocateBossOrDirector = async (req, res) => {
+    const {_positionId} = req.params;
+
+    if (!await _isAssignedDepartmentBoss(_positionId)) {
+        res.status(status.OK).json({message: 'Puesto disponible'});
+    } else {
+        res.status(status.BAD_REQUEST).json({message: 'Puesto no disponible'});
+    }
+};
+
 const _isActivePosition = (activePositionsEmployee, position) => {
     return new Promise(resolve => {
         const index = activePositionsEmployee.findIndex(
@@ -446,6 +472,20 @@ const _getActivePositionsByEmployee = (employeeId) => {
                 resolve(activePositions);
             })
             .catch(_ => resolve([]));
+    });
+};
+
+const _isAssignedDepartmentBoss = (positionId) => {
+    return new Promise(resolve => {
+        const query = {
+            positions: {$elemMatch: {$and: [{position: positionId}, {status: 'ACTIVE'}]}}
+        };
+        _employee.findOne(query)
+            .populate('positions.position')
+            .then(employee => {
+                resolve(!!employee);
+            })
+            .catch(_ => resolve(false));
     });
 };
 
@@ -474,5 +514,6 @@ module.exports = (Employee, Position) => {
         getEmployeePositions,
         uploadEmployeePositionsByCsv,
         uploadEmployeeGradesByCsv,
+        canReallocateBossOrDirector,
     });
 };
