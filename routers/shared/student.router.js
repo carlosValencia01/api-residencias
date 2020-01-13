@@ -43,6 +43,9 @@ module.exports = (wagner) => {
     
     router.get('/get/documents/drive/:_id', (req, res) =>
         studentCtrl.getDocumentsDrive(req, res));
+    
+    router.get('/get/documents/status/:_id', (req, res) =>
+        studentCtrl.getDocumentsStatus(req, res));
 
     router.get('/get/folderid/:_id', (req, res) =>
         studentCtrl.getFolderId(req, res));
