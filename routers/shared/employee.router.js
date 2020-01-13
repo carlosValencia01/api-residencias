@@ -79,5 +79,8 @@ module.exports = (wagner) => {
     router.post('/uploadCsvGrades/:_employeeId', (req, res) =>
         employeeCtrl.uploadEmployeeGradesByCsv(req, res));
 
+    router.get('/reallocate/:_positionId', (req, res) =>
+        employeeCtrl.canReallocateBossOrDirector(req, res));
+
     return router;
 };
