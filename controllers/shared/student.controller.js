@@ -435,41 +435,58 @@ const getPeriodInscription = (req, res) => {
 };
 
 
-const getDocumentsDrive = (req,res)=>{
+const getDocumentsDrive = async (req,res)=>{
     const { _id } = req.params;
-    let id = mongoose.Types.ObjectId(_id);        
-    _student.aggregate([
-        { 
-            "$match": {
-                "_id" :id                
-            }
-        },
-        {
-            "$project": {
-                "documents": {
-                    "$filter": {
-                        "input": "$documents",
-                        "as": "document",
-                        "cond": { 
-                            "$eq": [ "$$document.type", "DRIVE" ]
+    let id = mongoose.Types.ObjectId(_id);       
+    const documents = await queryDocuments(id);    
+    
+    if(documents.error){
+        res.status(status.BAD_REQUEST).json({
+            error: documents.error,        
+            action: 'get documents'
+        });
+    }else{
+        res.status(status.OK).json({
+            documents:documents,
+            action: 'get documents'
+        });
+    }
+};
+
+const queryDocuments = (id)=>{
+    
+    
+    return new Promise (async resolve =>{
+        await _student.aggregate([
+            { 
+                "$match": {
+                    "_id" :id                
+                }
+            },
+            {
+                "$project": {
+                    "documents": {
+                        "$filter": {
+                            "input": "$documents",
+                            "as": "document",
+                            "cond": { 
+                                "$eq": [ "$$document.type", "DRIVE" ]
+                            }
                         }
                     }
                 }
+            }]
+        ).exec((err,documents)=>{                  
+            
+            if(err){
+               resolve({error:err});
+            }else{
+                resolve(documents[0].documents);                
             }
-        }]
-    ).exec((err,documents)=>{      
-        
-        if(err){
-            res.status(status.BAD_REQUEST).json({
-                error: err,        
-                action: 'get documents'
-            });
-        }
-        res.status(status.OK).json({
-            documents:documents[0].documents,
-            action: 'get documents'
+            
         });
-    })
+    });
+    
 };
 
 const getCareerDetail = (req,res)=>{
@@ -602,6 +619,24 @@ const getStudentRoleId = () => {
     });
 };
 
+const getDocumentsStatus = async (req,res)=>{
+    const { _id } = req.params;
+    let id = mongoose.Types.ObjectId(_id);       
+    const documents = await queryDocuments(id);    
+    
+    if(documents.error){
+        res.status(status.BAD_REQUEST).json({
+            error: documents.error,        
+            action: 'get documents status'
+        });
+    }else{
+        res.status(status.OK).json({
+            documents:documents.map( doc=> ({filename:doc.filename,statusName:doc.status.filter(st=> st.active == true)[0].name})).filter(docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0),
+            action: 'get documents status'
+        });
+    }
+};
+
 
 module.exports = (Student, Request, Role) => {
     _student = Student;
@@ -631,5 +666,6 @@ module.exports = (Student, Request, Role) => {
         updateDocumentLog,
         getStudentsInscription,
         getCareerDetail,
+        getDocumentsStatus,
     });
 };
