@@ -11,7 +11,6 @@ const fileUpload = require('express-fileupload');
 require('./models/shared/models')(wagner);
 
 // App
-const department = require('./routers/app/department.router')(wagner);
 const role = require('./routers/app/role.router')(wagner);
 const user = require('./routers/app/user.router')(wagner);
 const period = require('./routers/app/period.router')(wagner);
@@ -23,12 +22,15 @@ const inscription = require('./routers/inscriptions/inscription.router')(wagner)
 // Reception act
 const english = require('./routers/reception-act/english.router')(wagner);
 const request = require('./routers/reception-act/request.router')(wagner);
-
+const range = require('./routers/reception-act/range.router')(wagner);
 // Graduation
 const graduation = require('./routers/graduation/graduation.router')(wagner);
 
 // Shared
+const department = require('./routers/shared/department.router')(wagner);
+const document = require('./routers/shared/document.router')(wagner);
 const employee = require('./routers/shared/employee.router')(wagner);
+const position = require('./routers/shared/position.router')(wagner);
 const student = require('./routers/shared/student.router')(wagner);
 const career = require('./routers/shared/career.router')(wagner);
 
@@ -61,25 +63,27 @@ const jwtOptions = {
   path: [
     `${uri}user/login`, `${uri}user/register`,`${uri}user/student/login` ,`${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}inscription/updateStudent`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
-    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}department`, `${uri}period/create` ,`${uri}drive/upload`,`${uri}drive/upload/file`,
+    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}period/create` ,`${uri}drive/upload`,`${uri}drive/upload/file`,
+    `${uri}department/employees`, `${uri}document`, `${uri}position`, `${uri}department/all`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/student\/document\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/request\/.*/,
-    /^\/escolares\/credenciales\/user\/.*/,    
+    /^\/escolares\/credenciales\/user\/.*/,
+    /^\/escolares\/credenciales\/document\/.*/,
+    /^\/escolares\/credenciales\/position\/.*/,
   ]
 };
-//files
+// files
 app.use(fileUpload({
-    limits: { fileSize: 1000000 }
+  limits: { fileSize: "50mb" }
 }));
 app.use(expressJWT({
   secret: config.secret
 }).unless(jwtOptions));
 
 // App
-app.use(uri + 'department', department);
 app.use(uri + 'role', role);
 app.use(uri + 'user', user);
 app.use(uri + 'period', period);
@@ -92,12 +96,17 @@ app.use(uri + 'student', student);
 
 // Inscriptions
 app.use(uri + 'inscription', inscription);
-
 // Reception act
 app.use(uri + 'english', english);
 app.use(uri + 'request', request);
-
+app.use(uri + 'range', range);
 // Graduations
 app.use(uri + 'graduationmail', graduation);
+// Shared
+app.use(uri + 'department', department);
+app.use(uri + 'document', document);
+app.use(uri + 'employee', employee);
+app.use(uri + 'position', position);
+app.use(uri + 'student', student);
 
 module.exports = app;

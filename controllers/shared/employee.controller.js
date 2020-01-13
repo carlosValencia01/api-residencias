@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 
 let _employee;
+let _position;
 
 const getAll = (req, res) => {
     _employee.find({})
@@ -14,7 +15,10 @@ const getAll = (req, res) => {
 
 const getById = (req, res) => {
     const { _id } = req.params;
-    _employee.find({ _id: _id })
+    _employee.findOne({ _id: _id })
+        .populate({
+            path: 'positions.position', model: 'Position', select: 'name ascription canSign',
+            populate: { path: 'ascription', model: 'Department', select: 'name shortName' }})
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
@@ -90,10 +94,29 @@ const searchRfc = (req, res) => {
     const query = {
         rfc: rfc
     };
-    _employee.find(query, null, {
-        skip: +start,
-        limit: +limit
-    }).exec(handler.handleMany.bind(null, 'employees', res));
+    _employee
+        .findOne(query)
+        .populate({
+            path: 'positions.position',
+            model: 'Position',
+            select: 'name ascription -_id',
+            populate: {path: 'ascription', model: 'Department', select: 'name shortName -_id'}
+        })
+        .exec((err, employee) => {
+            if (!err && employee) {
+                const positions = employee.positions.filter(pos => pos.status === 'ACTIVE');
+                employee.positions = positions.slice();
+                res
+                    .status(status.OK)
+                    .json(employee);
+            } else {
+                res
+                    .status(err ? status.INTERNAL_SERVER_ERROR : status.NOT_FOUND)
+                    .json({
+                        error: err ? err.toString() : 'Empleado no encontrado'
+                    });
+            }
+        });
 };
 
 const create = (req, res, next) => {
@@ -236,6 +259,7 @@ const searchGrade = (req, res) => {
         .exec(handler.handleMany.bind(null, 'employees', res));
 };
 
+// Deprecated
 const getEmployeeByArea = (req, res) => {
     let query =
         [
@@ -262,8 +286,212 @@ const updateEmployeGrade = (req, res) => {
         .exec(handler.handleOne.bind(null, 'employee', res));
 };
 
-module.exports = (Employee) => {
+const updateEmployeePositions = async (req, res) => {
+    const {_id} = req.params;
+    const _positions = req.body;
+
+    for (let index in _positions) {
+        const item = _positions[index];
+        const position = item.position;
+        if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
+            if (await _isAssignedDepartmentBoss(position._id) && item.status === 'ACTIVE') {
+                _positions.splice(index, 1);
+            }
+        }
+    }
+
+    _employee.updateOne({_id: _id}, {positions: _positions}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    error: err.toString()
+                });
+        }
+    });
+};
+
+const updateEmployeeGrades = (req, res) => {
+    const {_id} = req.params;
+    const _grades = req.body;
+
+    _employee.updateOne({_id: _id}, {grade: _grades}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR).json({
+                status: status.INTERNAL_SERVER_ERROR,
+                error: err.toString()
+            });
+        }
+    });
+};
+
+const updateEmployeeGradesAndPositions = (req, res) => {
+    const {_id} = req.params;
+    const {positions, grades} = req.body;
+
+    _employee.updateOne({_id: _id}, {positions: positions, grade: grades}, (err, updated) => {
+        if (!err && updated) {
+            res.status(status.OK)
+                .json({status: updated.n ? status.OK : status.NOT_FOUND});
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    error: err.toString()
+                });
+        }
+    });
+};
+
+const getEmployeePositions = (req, res) => {
+    const {rfc} = req.params;
+
+    _employee.findOne({rfc: rfc}, {_id: 0, 'positions.status': 1})
+        .populate(
+            {path:'positions.position', model:'Position', select: 'name'})
+            .exec(
+            (err, data)=> {
+                    if(err) {
+                        res.json(err);
+                    }
+                    const activePositions = data.positions
+                        .filter(({status}) => status === 'ACTIVE')
+                        .map(({position}) => position);
+                    res.json(activePositions);
+    });
+};
+
+const uploadEmployeePositionsByCsv = async (req, res) => {
+    const {_employeeId} = req.params;
+    const _positions = req.body;
+    const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
+    const findPosition = (position) => {
+        const query = {
+            name: { $regex: new RegExp(`^${position.name}$`, 'i') }
+        };
+        return _position.find(query)
+            .populate('ascription')
+            .then(data => {
+                if (data) {
+                    const pos = data.filter(({ascription}) => ascription.name === position.ascription)[0];
+                    position._id = pos._id;
+                    position.ascriptionId = pos.ascription._id;
+                    return position;
+                }
+            });
+    };
+    const addPositions = async (position) => {
+        if (!await _isActivePosition(activePositionsEmployee, position)) {
+            if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
+                if (await _isAssignedDepartmentBoss(position._id) && !position.deactivateDate) {
+                    return null;
+                }
+            }
+            const doc = {
+                $addToSet: {
+                    positions: {
+                        position: position._id,
+                        activateDate: position.activateDate,
+                        deactivateDate: position.deactivateDate ? position.deactivateDate : null,
+                        status: position.deactivateDate ? 'INACTIVE' : 'ACTIVE'
+                    }
+                }
+            };
+            return _employee.updateOne({_id: _employeeId}, doc);
+        }
+        return null;
+    };
+    const actions = _positions.map(findPosition);
+    const results = Promise.all(actions);
+
+    results
+        .then(data => {
+            return Promise.all(data.map(addPositions));
+        });
+    results
+        .then(data => res.status(status.OK).json(data))
+        .catch(err => res.status(status.INTERNAL_SERVER_ERROR).json(err));
+};
+
+const uploadEmployeeGradesByCsv = (req, res) => {
+    const {_employeeId} = req.params;
+    const _grades = req.body;
+    const addGrade = (grade) => {
+        const doc = {
+            $addToSet: {
+                grade: {
+                    title: grade.title,
+                    cedula: grade.cedula,
+                    abbreviation: grade.abbreviation,
+                    level: grade.level
+                }
+            }
+        };
+        return _employee.updateOne({_id: _employeeId}, doc);
+    };
+    const actions = _grades.map(addGrade);
+    const results = Promise.all(actions);
+
+    results
+        .then(data => res.status(status.OK).json(data))
+        .catch(err => res.status(status.INTERNAL_SERVER_ERROR).json(err));
+};
+
+const canReallocateBossOrDirector = async (req, res) => {
+    const {_positionId} = req.params;
+
+    if (!await _isAssignedDepartmentBoss(_positionId)) {
+        res.status(status.OK).json({message: 'Puesto disponible'});
+    } else {
+        res.status(status.BAD_REQUEST).json({message: 'Puesto no disponible'});
+    }
+};
+
+const _isActivePosition = (activePositionsEmployee, position) => {
+    return new Promise(resolve => {
+        const index = activePositionsEmployee.findIndex(
+            _position => _position._id === position._id || _position.name.toUpperCase() === position.name.toUpperCase());
+        resolve(!position.deactivateDate && index !== -1);
+    });
+};
+
+const _getActivePositionsByEmployee = (employeeId) => {
+    return new Promise(resolve => {
+        _employee.findOne({_id: employeeId}, {positions:1})
+            .populate('positions.position')
+            .then((data) => {
+                const activePositions = data.positions
+                    .filter(pos => pos.status === 'ACTIVE')
+                    .map(pos => pos.position);
+                resolve(activePositions);
+            })
+            .catch(_ => resolve([]));
+    });
+};
+
+const _isAssignedDepartmentBoss = (positionId) => {
+    return new Promise(resolve => {
+        const query = {
+            positions: {$elemMatch: {$and: [{position: positionId}, {status: 'ACTIVE'}]}}
+        };
+        _employee.findOne(query)
+            .populate('positions.position')
+            .then(employee => {
+                resolve(!!employee);
+            })
+            .catch(_ => resolve(false));
+    });
+};
+
+module.exports = (Employee, Position) => {
     _employee = Employee;
+    _position = Position;
     return ({
         create,
         getOne,
@@ -279,6 +507,13 @@ module.exports = (Employee) => {
         csvDegree,
         searchGrade,
         updateEmployeGrade,
-        getEmployeeByArea
+        getEmployeeByArea,
+        updateEmployeePositions,
+        updateEmployeeGrades,
+        updateEmployeeGradesAndPositions,
+        getEmployeePositions,
+        uploadEmployeePositionsByCsv,
+        uploadEmployeeGradesByCsv,
+        canReallocateBossOrDirector,
     });
 };

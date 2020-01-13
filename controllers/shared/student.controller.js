@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 let _student;
 let _request;
 let _role;
+let _period;
 
 const getAll = (req, res) => {
     _student.find({})
@@ -21,16 +22,21 @@ const getStudentsInscription = (req, res) => {
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
+const getStudentsInscriptionLogged = (req, res) => {
+    _student.find({"stepWizard":0})
+        .exec(handler.handleMany.bind(null, 'students', res));
+};
+
 const getById = (req, res) => {
     const { _id } = req.params;
     _student.find({ _id: _id })
         .exec(handler.handleOne.bind(null, 'student', res));
 };
 
-const verifyStatus = (req, res) => {
+const verifyStatus = async (req, res) => {
     const { nc } = req.params;
-
-    const req3 = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/alumnoSeleccionMaterias/${nc}/${config.period}`);
+    const period = await getPeriod();
+    const req3 = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/alumnoSeleccionMaterias/${nc}/${period}`);
 
     req3.end();
 
@@ -54,6 +60,16 @@ const verifyStatus = (req, res) => {
         }
     });
 };
+
+function getPeriod(){
+    return new Promise(async (resolve) => {
+        await _period.findOne({active:true}, (err, period) => {
+            if (!err && period) {
+                resolve(period.code);
+            }
+        });
+    });
+}
 
 const getByControlNumber = (req, res) => {
     const { controlNumber } = req.body;
@@ -151,6 +167,13 @@ const createWithoutImage = async (req, res) => {
 const updateStudent = (req, res) => {
     const { _id } = req.params;
     let student = req.body;
+    const query = { _id: _id };
+    _student.findOneAndUpdate(query, student, { new: true })
+        .exec(handler.handleOne.bind(null, 'student', res));
+};
+const updateStudentApp = (req, res) => {
+    const { _id } = req.params;
+    let student = req.body;
     student.fullName = student.fullName ? student.fullName : `${student.firstName} ${student.fatherLastName} ${student.motherLastName}`;
     const query = { _id: _id };
     _student.findOneAndUpdate(query, student, { new: true })
@@ -213,7 +236,7 @@ const getOne = (req, res) => {
 const assignDocument = (req, res) => {
     const { _id } = req.params;
     const _doc = req.body;
-    const query = { _id: _id, documents: { $elemMatch: { type: _doc.type } } };
+    const query = { _id: _id, documents: { $elemMatch: { type: _doc.doc.type } } };
     const push = { $push: { documents: _doc } };
     _student.findOne(query, (e, student) => {
         if (e)
@@ -257,7 +280,7 @@ const assignDocumentDrive = (req, res) => {
 };
 async function updateDocumentStatus(_id,docName,status){
     
-    console.log('1',status);
+    // console.log('1',status);
     
     const docid = await getActiveStatus(_id,docName);
     if(docid){
@@ -638,10 +661,11 @@ const getDocumentsStatus = async (req,res)=>{
 };
 
 
-module.exports = (Student, Request, Role) => {
+module.exports = (Student, Request, Role, Period) => {
     _student = Student;
     _request = Request;
     _role = Role;
+    _period = Period;
     return ({
         create,
         getOne,
@@ -667,5 +691,7 @@ module.exports = (Student, Request, Role) => {
         getStudentsInscription,
         getCareerDetail,
         getDocumentsStatus,
+        updateStudentApp,
+        getStudentsInscriptionLogged,
     });
 };

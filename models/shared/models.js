@@ -10,42 +10,48 @@ module.exports = (wagner) => {
     });
 
     wagner.factory('db', () => mongoose);
-    
+
     // App
-    const Department = require('../app/department.model');
     const Folder = require('../app/google-drive-folder.model');
     const Period = require('../app/period.model');
     const Role = require('../app/role.model');
     const User = require('../app/user.model');
-    
+
     // Inscriptions
     const Inscription = require('../inscriptions/inscription.model');
-    
+
     // Reception act
     const Request = require('../reception-act/request.model');
-    
+    const Range = require('../reception-act/ranges.models');
     // Shared
+    const Department = require('./department.model');
+    const Document = require('./document.model');
     const Employee = require('./employee.model');
+    const Position = require('./position.model');
     const Student = require('./student.model');
     const Career = require('./career.model');
     
     const models = {
         // App
-        Department,
         Period,
         Role,
         User,
         Folder,
+
         // Inscriptions
         Inscription,
-        
+
         // Reception act
         Request,
 
         // Shared
+        Department,
+        Document,
         Employee,
+        Position,
         Student,
         Career,
+        Range,
     };
 
     _.each(models, (v, k) => {

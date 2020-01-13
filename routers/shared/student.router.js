@@ -13,8 +13,8 @@ let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
 
-    const studentCtrl = wagner.invoke((Student, Request, Role) =>
-        require('../../controllers/shared/student.controller')(Student, Request, Role));
+    const studentCtrl = wagner.invoke((Student, Request, Role, Period) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role, Period));
 
 
     router.get('/', (req, res) =>
@@ -70,6 +70,8 @@ module.exports = (wagner) => {
 
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
+    router.put('/data/:_id', (req, res) =>
+        studentCtrl.updateStudentApp(req, res));
 
     router.put('/image/:_id', upload.single('image'), (req, res) =>
         studentCtrl.uploadImage(req, res));
