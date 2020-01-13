@@ -56,7 +56,7 @@ const eRole = {
     eCOORDINATION: 'coordinacion',
     eCHIEFACADEMIC: 'jefe',
     eSTUDENTSERVICES: 'servicios',
-    eHEADSCHOOLSERVICE:'escolares'
+    eHEADSCHOOLSERVICE: 'escolares'
 };
 
 const eStatusRequest = {
@@ -68,8 +68,15 @@ const eStatusRequest = {
     WAIT: 'Wait',
     CANCELLED: 'Cancelled',
     ASSIGN: 'Assign',
+    PRINTED: 'Printed',
     FINALIZED: 'Finalized'
 };
+
+const eOperation = {
+    NEW: 'New',
+    EDIT: 'Edit',
+    DELETE: 'Delete'
+}
 
 module.exports = {
     eCareer,
@@ -77,4 +84,5 @@ module.exports = {
     eRequest,
     eRole,
     eStatusRequest,
+    eOperation
 };

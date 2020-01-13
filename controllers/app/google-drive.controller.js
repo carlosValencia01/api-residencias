@@ -4,6 +4,8 @@ const stream = require('stream');
 const readline = require('readline');
 const { google } = require('googleapis');
 const fs = require('fs');
+const path = require('path');
+const { eOperation } = require('../../enumerators/reception-act/enums');
 var toUint8Array = require('base64-to-uint8array');
 let _folder;
 let _student;
@@ -713,6 +715,91 @@ const updatePhotoName = (req,res)=>{
 
 };
 
+//Subir archivo para Acto_Recepcional
+const uploadFile = async (req, operation = eOperation.NEW) => {
+    const drive = google.drive({ version: 'v3', auth });
+    const content = req.body;
+    const files = req.files;    
+    const bodyMedia = files.file.data;
+    const mimeType = files.file.mimetype;
+    //create bufferStream of document to save into google drive
+    const buffer = Uint8Array.from(bodyMedia);
+    let bufferStream = new stream.PassThrough();
+    bufferStream.end(buffer);
+
+    let media = {
+        mimeType: mimeType,
+        body: bufferStream
+    };
+    const nameInDrive = content.Document + path.extname(files.file.name);
+    let response;
+    switch (operation) {
+        case eOperation.NEW: {
+            const folderId = content.folderId;
+            let fileMetadata = {
+                name: nameInDrive,
+                mimeType: mimeType,
+                parents: [folderId]
+            };
+
+            response = await new Promise(resolve => {
+                drive.files.create({ requestBody: fileMetadata, media: media, fields: 'id' },
+                    (err, file) => {
+                        if (err) {
+                            console.log("Error New", err);
+                            resolve({ isCorrect: false });
+                        } else {                            
+                            resolve({ isCorrect: true, fileId: file.data.id });
+                            // return { isCorrect: true, fileId: file.data.id };
+                        }
+                    });
+            });
+            break;
+        }
+        case eOperation.EDIT: {
+            response = await new Promise(resolve => {
+                drive.files.update({ fileId: content.fileId, media: media },
+                    (err, file) => {
+                        if (err) {
+                            console.log("Error Edit", err);
+                            resolve({ isCorrect: false });
+                        }
+                        else {                            
+                            resolve({ isCorrect: true });
+                        }
+                    });
+            });
+            break;
+        }
+    }
+    return response;
+};
+
+const downloadToLocal = async (fileId, tmpName) => {
+    const drive = google.drive({ version: 'v3', auth });    
+    var dest = fs.createWriteStream(`documents/tmpFile/${tmpName}`);
+    response = await new Promise(resolve => {
+        drive.files.get({
+            fileId: fileId,
+            alt: 'media'
+        },
+            { responseType: 'stream' },
+            (err, file) => {
+                if (err)
+                    resolve(false);
+                file.data.on('end', function () {                    
+                    resolve(true);
+                }).on('error', function (err) {
+                    console.log('Error during download', err);
+                    resolve(false);
+                }).pipe(dest);
+                
+            }
+        );
+    });
+    return response;
+}
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -727,7 +814,9 @@ module.exports = (Folder, Student, Period) => {
         downloadFile,
         createFile2,       
         downloadPhoto,
-        createFolderFromServer
+        createFolderFromServer,
+        uploadFile,
+        downloadToLocal
     });
 };
 
