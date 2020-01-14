@@ -18,8 +18,74 @@ const getAll = (req, res) => {
 };
 
 const getStudentsInscription = (req, res) => {
-    _student.find({"inscriptionStatus":{$exists:true}})
-        .exec(handler.handleMany.bind(null, 'students', res));
+    _student.find({"inscriptionStatus":{$exists:true}}).then(
+        students=>{
+            const newStudents = students.map(student=>({     
+                "_id": student._id,
+                "fullName": student.fullName,
+                "controlNumber": student.controlNumber,
+                "nip": student.nip,
+                "career": student.career,
+                "careerId": student.careerId,
+                "idRole": student.idRole,
+                "averageOriginSchool": student.averageOriginSchool,
+                "birthPlace": student.birthPlace,
+                "city":student.city,
+                "civilStatus": student.civilStatus,
+                "cp": student.cp,
+                "curp": student.curp,
+                "disability": student.disability,
+                "email": student.email,
+                "etnia": student.etnia,
+                "fatherLastName": student.fatherLastName,
+                "firstName": student.firstName,
+                "motherLastName": student.motherLastName,
+                "nameOriginSchool": student.nameOriginSchool,
+                "nss": student.nss,
+                "originSchool": student.originSchool,
+                "otherSchool": student.otherSchool,
+                "phone": student.phone,
+                "state": student.state,
+                "street": student.street,
+                "suburb": student.suburb,
+                "typeDisability": student.typeDisability,
+                "typeEtnia": student.typeEtnia,
+                "dateBirth": student.dateBirth,
+                "semester": student.semester,
+                "sex": student.sex,
+                "idPeriodInscription": student.idPeriodInscription,
+                "folderId": student.folderId,
+                "documents": student.documents,
+                "inscriptionStatus": student.inscriptionStatus,
+                "stepWizard": student.stepWizard,
+                "acceptedTerms": student.acceptedTerms,
+                "dateAcceptedTerms": student.dateAcceptedTerms,
+                "printCredential": student.printCredential,
+                "warningAnalysis": student.warningAnalysis, 
+                totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter( doc=>doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents)        
+            }));        
+            res.status(status.OK).json({students:newStudents});
+        }
+    );
+};
+
+const mapDocuments = (documents)=>{
+   return documents.map( 
+        doc=> 
+            {
+                const stat = doc.status.filter(
+                    st=> st.active == true)[0];
+                return {
+                filename:doc.filename,
+                statusName: stat ? stat.name : null}
+            }
+        
+        
+        ).filter(
+            docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+            );
 };
 
 const getStudentsInscriptionLogged = (req, res) => {
