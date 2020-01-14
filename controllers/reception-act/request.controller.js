@@ -583,6 +583,9 @@ const updateRequest = (req, res) => {
                     item.status = eStatusRequest.REJECT;
                 }
                 else {
+                    if (typeof (data.duration) !== 'undefined') {
+                        request.duration = data.duration;
+                    }
                     request.phase = eRequest.ASSIGNED;
                     request.documents.push(
                         {
@@ -609,6 +612,9 @@ const updateRequest = (req, res) => {
 
                     }
                     case eStatusRequest.ASSIGN: {
+                        if (typeof (data.duration) !== 'undefined') {
+                            request.duration = data.duration;
+                        }
                         request.phase = eRequest.REALIZED;
                         request.proposedDate = data.appointment;
                         request.proposedHour = data.minutes;
