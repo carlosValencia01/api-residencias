@@ -18,8 +18,36 @@ const getAll = (req, res) => {
 };
 
 const getStudentsInscription = (req, res) => {
-    _student.find({"inscriptionStatus":{$exists:true}})
-        .exec(handler.handleMany.bind(null, 'students', res));
+    _student.find({"inscriptionStatus":{$exists:true}}).then(
+        students=>{
+            const newStudents = students.map(student=>({     
+                allInfo:student, 
+                documentsInfo:{
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter( doc=>doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents)
+                }          
+            }));        
+            res.status(status.OK).json({students:newStudents});
+        }
+    );
+};
+
+const mapDocuments = (documents)=>{
+   return documents.map( 
+        doc=> 
+            {
+                const stat = doc.status.filter(
+                    st=> st.active == true)[0];
+                return {
+                filename:doc.filename,
+                statusName: stat ? stat.name : null}
+            }
+        
+        
+        ).filter(
+            docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+            );
 };
 
 const getStudentsInscriptionLogged = (req, res) => {
@@ -645,16 +673,34 @@ const getStudentRoleId = () => {
 const getDocumentsStatus = async (req,res)=>{
     const { _id } = req.params;
     let id = mongoose.Types.ObjectId(_id);       
-    const documents = await queryDocuments(id);    
+    const documents = await queryDocuments(id);        
     
-    if(documents.error){
+    if(documents == null){
+        res.status(status.BAD_REQUEST).json({
+            error: 'No tiene documentos',        
+            action: 'get documents status'
+        });
+    }else if(documents.error){
         res.status(status.BAD_REQUEST).json({
             error: documents.error,        
             action: 'get documents status'
         });
     }else{
         res.status(status.OK).json({
-            documents:documents.map( doc=> ({filename:doc.filename,statusName:doc.status.filter(st=> st.active == true)[0].name})).filter(docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0),
+            documents:documents.map( 
+                doc=> 
+                    {
+                        const stat = doc.status.filter(
+                            st=> st.active == true)[0];
+                        return {
+                        filename:doc.filename,
+                        statusName: stat ? stat.name : null}
+                    }
+                
+                
+                ).filter(
+                    docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+                    ),
             action: 'get documents status'
         });
     }
