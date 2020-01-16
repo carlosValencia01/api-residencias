@@ -195,7 +195,8 @@ const getPositionById = (req, res) => {
     _position.findOne({_id: positionId})
     .populate({
         path: 'ascription',
-        model: 'Department'
+        model: 'Department',
+        populate: { path:'careers', model: 'Career' }
     }).then(position =>
         res.status(status.OK).json(position)
     ).catch(err =>
