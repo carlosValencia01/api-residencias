@@ -821,7 +821,7 @@ const getDataEmployee = (req, res) => {
                 select: '-documents',
                 populate: {
                     path: 'ascription', model: 'Department',
-                    select: '-careers',
+                    populate: { path: 'careers', model: 'Career' }
                 }
             }
         })
