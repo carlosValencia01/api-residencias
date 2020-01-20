@@ -442,7 +442,7 @@ const releasedRequest = (req, res) => {
     let panel = data.jury;
     _request.update({ _id: _id }, {
         $set: {
-            phase: eRequest.RELEASED,
+            phase: data.upload ? eRequest.RELEASED : eRequest.REGISTERED,
             status: eStatusRequest.NONE,
             proposedHour: data.proposedHour,
             duration: data.duration,
