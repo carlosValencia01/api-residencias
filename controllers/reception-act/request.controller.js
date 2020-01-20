@@ -6,6 +6,8 @@ const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../en
 let _Drive;
 let _request;
 let _ranges;
+let _student;
+
 const create = async (req, res) => {
     let request = req.body;
     request.lastModified = new Date();
@@ -16,6 +18,12 @@ const create = async (req, res) => {
     request.status = eStatusRequest.PROCESS;
     //Add
     request.department = { name: request.department, boss: request.boss };
+    request.adviser = { name: request.adviserName, title: request.adviserTitle, cedula: request.adviserCedula };
+    request.grade = await _getGradeName(request.studentId);
+    if (!request.grade) {
+        return res.status(status.INTERNAL_SERVER_ERROR)
+            .json({error: 'Error al recuperar grado'});
+    }
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -222,7 +230,7 @@ const addIntegrants = (req, res) => {
             return res.status(status.OK).json(json);
         });
     });
-}
+};
 
 const omitFile = (req, res) => {
     const { _id } = req.params;
@@ -252,7 +260,7 @@ const omitFile = (req, res) => {
                 }).exec(handler.handleOne.bind(null, 'request', res));
             }
         });
-}
+};
 
 // const uploadFile = (req, res) => {
 //     const { _id } = req.params;
@@ -345,7 +353,7 @@ const uploadFile = (req, res) => {
                 }
             }
         });
-}
+};
 
 const getResource = (req, res) => {
     const { _id } = req.params;
@@ -810,7 +818,8 @@ const groupDiary = (req, res) => {
     });
 
     //.exec(handler.handleMany.bind(null, 'Diary', res));
-}
+};
+
 const groupRequest = (req, res) => {
     let data = req.body;
     let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
@@ -868,7 +877,7 @@ const groupRequest = (req, res) => {
                 });
         });
     //.exec(handler.handleMany.bind(null, 'Schedule', res));
-}
+};
 
 const StudentsToSchedule = (req, res) => {
     let query =
@@ -895,13 +904,23 @@ const StudentsToSchedule = (req, res) => {
             }
         ];
     _request.aggregate(query).exec(handler.handleMany.bind(null, 'Students', res));
-}
+};
 
+const _getGradeName = (studentId) => {
+    return new Promise(resolve => {
+        _student.findOne({_id: studentId})
+            .populate('careerId')
+            .then(student =>
+                resolve(student.sex === 'F' ? student.careerId.grade.female : student.careerId.grade.male))
+            .catch(_ => resolve(null));
+    });
+};
 
-module.exports = (Request, Range, Folder) => {
+module.exports = (Request, Range, Folder, Student) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
+    _student = Student;
     return ({
         create,
         getById,
