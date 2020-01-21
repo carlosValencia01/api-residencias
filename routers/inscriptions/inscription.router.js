@@ -25,6 +25,15 @@ module.exports = (wagner) => {
     
     router.get('/getStudentsLogged', (req, res) =>
         studentCtrl.getStudentsInscriptionLogged(req, res));
+    
+    router.get('/getStudentsProcess', (req, res) =>
+        studentCtrl.getStudentsInscriptionProcess(req, res));
+    
+    router.get('/getStudentsAcept', (req, res) =>
+        studentCtrl.getStudentsInscriptionAcept(req, res));
+
+    router.get('/getStudentsPendant', (req, res) =>
+        studentCtrl.getStudentsInscriptionPendant(req, res));
 
     router.post('/notificationMail', (req, res) =>
         notificationCtrl.sendNotification(req, res));
