@@ -49,7 +49,7 @@ module.exports = (wagner) => {
     router.put('/:_id', (req, res) =>
         employeeCtrl.updateEmployee(req, res));
 
-    router.put('/image/:_id', upload.single('image'), (req, res) =>
+    router.put('/image/:_id', (req, res) =>
         employeeCtrl.uploadImage(req, res));
 
     router.post('/csv', (req, res) =>
