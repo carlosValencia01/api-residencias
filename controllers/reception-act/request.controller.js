@@ -24,6 +24,7 @@ const create = async (req, res) => {
         return res.status(status.INTERNAL_SERVER_ERROR)
             .json({error: 'Error al recuperar grado'});
     }
+    request.verificationCode = _generateVerificationCode(6);
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -906,6 +907,25 @@ const StudentsToSchedule = (req, res) => {
     _request.aggregate(query).exec(handler.handleMany.bind(null, 'Students', res));
 };
 
+const verifyCode = (req, res) => {
+    const { _requestId, _code } = req.params;
+    _request.findOne({_id: _requestId})
+        .then(request => {
+            if (request.verificationCode === _code) {
+                _request.updateOne({_id: _requestId}, {$set: { verificationStatus: true }})
+                    .then(_ => res.status(status.OK).json({message: 'Correo verificado'}))
+                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al verificar código'}))
+            } else {
+                res.status(status.INTERNAL_SERVER_ERROR)
+                    .json({error: 'Código incorrecto'});
+            }
+        })
+        .catch(_ => {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({error: 'Error al verificar código'});
+        });
+};
+
 const _getGradeName = (studentId) => {
     return new Promise(resolve => {
         _student.findOne({_id: studentId})
@@ -914,6 +934,14 @@ const _getGradeName = (studentId) => {
                 resolve(student.sex === 'F' ? student.careerId.grade.female : student.careerId.grade.male))
             .catch(_ => resolve(null));
     });
+};
+
+const _generateVerificationCode = (length) => {
+    let number = '';
+    while(number.length < length) {
+        number += Math.floor(Math.random() * 10);
+    }
+    return number;
 };
 
 module.exports = (Request, Range, Folder, Student) => {
@@ -938,6 +966,7 @@ module.exports = (Request, Range, Folder, Student) => {
         groupDiary,
         fileCheck,
         groupRequest,
-        StudentsToSchedule
+        StudentsToSchedule,
+        verifyCode,
     });
 };
