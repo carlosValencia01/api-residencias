@@ -452,7 +452,7 @@ const releasedRequest = (req, res) => {
     let panel = data.jury;
     _request.update({ _id: _id }, {
         $set: {
-            phase: eRequest.RELEASED,
+            phase: data.upload ? eRequest.RELEASED : eRequest.REGISTERED,
             status: eStatusRequest.NONE,
             proposedHour: data.proposedHour,
             duration: data.duration,
@@ -769,12 +769,12 @@ const groupDiary = (req, res) => {
     // StartDate.setDate(1);
     // StartDate.setMonth(data.month);
     let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0,23,59,59,0);    
     let query =
         [
             {
                 $match: {
-                    "proposedDate": { $gte: StartDate, $lte: new Date(StartDate.getFullYear(), data.month + 1, 0) },
+                    "proposedDate": { $gte: StartDate, $lte: EndDate },
                     $or: [{ "phase": "Asignado", "status": "Process" }, { "phase": "Realizado" }]
                 }
             },
@@ -801,7 +801,7 @@ const groupDiary = (req, res) => {
         ];
     _request.aggregate(query, (error, diary) => {
         if (error)
-            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });        
         _ranges.find(
             {
                 $or: [{ start: { $gte: StartDate, $lte: EndDate } },
@@ -827,7 +827,8 @@ const groupRequest = (req, res) => {
     // StartDate.setFullYear(data.year);        
     // StartDate.setMonth(data.month);
     // StartDate.setHours(0, 0, 0, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    // let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0,23,59,59,0);
     // console.log("Start", StartDate, "End", EndDate);
     let query =
         [
