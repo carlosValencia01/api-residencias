@@ -156,13 +156,25 @@ const updateEmployee = (req, res) => {
 
 const uploadImage = (req, res) => {
     const { _id } = req.params;
-    const image = req.file;
+
+    if (!req.files || Object.keys(req.files).length === 0) {
+        res.status(status.BAD_REQUEST).json({error:'No se encontró la imagen'});
+        return;
+    }
+    const image = req.files.image;
+    const filename = `image-${_id}`;
+    const uploadPath = path.normalize(`${__dirname}/../../images/${filename}`);;
 
     const query = { _id: _id };
-    const updated = { filename: image.filename };
+    const updated = { filename: filename };
 
-    _employee.findOneAndUpdate(query, updated, { new: true })
-        .exec(handler.handleOne.bind(null, 'employee', res));
+    image.mv(uploadPath, (err) => {
+        if (err) {
+            return res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al guardar imagen'});
+        }
+        _employee.findOneAndUpdate(query, updated, { new: true })
+            .exec(handler.handleOne.bind(null, 'employee', res));
+    });
 };
 
 const updateOne = (req, res, imgId) => {
