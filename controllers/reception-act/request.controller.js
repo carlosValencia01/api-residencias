@@ -26,7 +26,7 @@ const create = async (req, res) => {
     request.grade = await _getGradeName(request.studentId);
     if (!request.grade) {
         return res.status(status.INTERNAL_SERVER_ERROR)
-            .json({error: 'Error al recuperar grado'});
+            .json({ error: 'Error al recuperar grado' });
     }
     request.verificationCode = _generateVerificationCode(6);
     let result = await _Drive.uploadFile(req, eOperation.NEW);
@@ -62,6 +62,7 @@ const create = async (req, res) => {
                     }
                 });
         }).catch(err => {
+            console.log("errr",err);
             res.status(status.INTERNAL_SERVER_ERROR).json({
                 error: err.toString()
             })
@@ -85,7 +86,7 @@ const getAllRequest = (req, res) => {
                 controlNumber: 1,
                 career: 1
             }
-        })
+        }).sort({ applicationDate: 1 })
         .exec(handler.handleMany.bind(null, 'request', res));
 };
 
@@ -102,7 +103,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -116,7 +117,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -130,7 +131,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -144,7 +145,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -158,7 +159,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -823,7 +824,7 @@ const groupDiary = (req, res) => {
     // StartDate.setDate(1);
     // StartDate.setMonth(data.month);
     let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0,23,59,59,0);    
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
     let query =
         [
             {
@@ -847,7 +848,7 @@ const groupDiary = (req, res) => {
                     {
                         $push: {
                             id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
-                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration'
+                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$product'
                         }
                     }
                 }
@@ -855,7 +856,7 @@ const groupDiary = (req, res) => {
         ];
     _request.aggregate(query, (error, diary) => {
         if (error)
-            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });        
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
         _ranges.find(
             {
                 $or: [{ start: { $gte: StartDate, $lte: EndDate } },
@@ -882,7 +883,7 @@ const groupRequest = (req, res) => {
     // StartDate.setMonth(data.month);
     // StartDate.setHours(0, 0, 0, 0);
     // let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0,23,59,59,0);
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
     // console.log("Start", StartDate, "End", EndDate);
     let query =
         [
@@ -964,26 +965,26 @@ const StudentsToSchedule = (req, res) => {
 
 const verifyCode = (req, res) => {
     const { _requestId, _code } = req.params;
-    _request.findOne({_id: _requestId})
+    _request.findOne({ _id: _requestId })
         .then(request => {
             if (request.verificationCode === _code) {
-                _request.updateOne({_id: _requestId}, {$set: { verificationStatus: true }})
-                    .then(_ => res.status(status.OK).json({message: 'Correo verificado'}))
-                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al verificar código'}))
+                _request.updateOne({ _id: _requestId }, { $set: { verificationStatus: true } })
+                    .then(_ => res.status(status.OK).json({ message: 'Correo verificado' }))
+                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ error: 'Error al verificar código' }))
             } else {
                 res.status(status.INTERNAL_SERVER_ERROR)
-                    .json({error: 'Código incorrecto'});
+                    .json({ error: 'Código incorrecto' });
             }
         })
         .catch(_ => {
             res.status(status.INTERNAL_SERVER_ERROR)
-                .json({error: 'Error al verificar código'});
+                .json({ error: 'Error al verificar código' });
         });
 };
 
 const sendVerificationCode = (req, res) => {
-    const {_requestId} = req.params;
-    _request.findOne({_id: _requestId})
+    const { _requestId } = req.params;
+    _request.findOne({ _id: _requestId })
         .then(request => {
             if (request.verificationCode) {
                 const emailData = {
@@ -999,17 +1000,17 @@ const sendVerificationCode = (req, res) => {
                             res.status(status.OK).json({ message: 'Correo envíado con éxito' })
                         } else {
                             await _updateSentVerificationCode(request._id, false);
-                            res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al envíar el correo'});
+                            res.status(status.INTERNAL_SERVER_ERROR).json({ error: 'Error al envíar el correo' });
                         }
                     })
             }
         })
-        .catch(_ => res.status(status.BAD_REQUEST).json({error: 'Error, solicitud no encontrada'}));
+        .catch(_ => res.status(status.BAD_REQUEST).json({ error: 'Error, solicitud no encontrada' }));
 };
 
 const _getGradeName = (studentId) => {
     return new Promise(resolve => {
-        _student.findOne({_id: studentId})
+        _student.findOne({ _id: studentId })
             .populate('careerId')
             .then(student =>
                 resolve(student.sex === 'F' ? student.careerId.grade.female : student.careerId.grade.male))
@@ -1019,13 +1020,13 @@ const _getGradeName = (studentId) => {
 
 const _generateVerificationCode = (length) => {
     let number = '';
-    while(number.length < length) {
+    while (number.length < length) {
         number += Math.floor(Math.random() * 10);
     }
     return number;
 };
 
-const _sendEmail = ({email, subject, sender, message}) => {
+const _sendEmail = ({ email, subject, sender, message }) => {
     return new Promise(resolve => {
         const emailData = {
             to_email: [email],
@@ -1033,14 +1034,14 @@ const _sendEmail = ({email, subject, sender, message}) => {
             sender: sender,
             message: message
         };
-        sendMail({body: emailData})
+        sendMail({ body: emailData })
             .then(data => resolve(data));
     });
 };
 
 const _updateSentVerificationCode = (requestId, status) => {
     return new Promise(resolve => {
-        _request.updateOne({_id: requestId}, {$set: { sentVerificationCode: status }})
+        _request.updateOne({ _id: requestId }, { $set: { sentVerificationCode: status } })
             .then(_ => resolve(true))
             .catch(_ => resolve(false));
     });
