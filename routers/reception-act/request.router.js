@@ -67,5 +67,8 @@ module.exports = (wagner) => {
     router.get('/verify/:_requestId/:_code', (req, res) =>
         requestCtrl.verifyCode(req, res));
 
+    router.get('/sendCode/:_requestId', (req, res) =>
+        requestCtrl.sendVerificationCode(req, res));
+
     return router;
 };

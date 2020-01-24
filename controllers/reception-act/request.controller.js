@@ -2,7 +2,11 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
+
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
+const sendMail = require('../shared/mail.controller');
+const verifyCodeTemplate = require('../../templates/verifyCode');
+
 let _Drive;
 let _request;
 let _ranges;
@@ -35,7 +39,28 @@ const create = async (req, res) => {
             });
         request.documents = tmpFile;
         _request.create(request).then(created => {
-            res.json({ request: created });
+            // Send email with verification code
+            const emailData = {
+                email: request.email,
+                subject: 'Acto recepcional - Verificación de correo electrónico',
+                sender: 'Servicios escolares <escolares_05@ittepic.edu.mx>',
+                message: verifyCodeTemplate(request.verificationCode)
+            };
+            _sendEmail(emailData)
+                .then(async data => {
+                    if (data.code === 202) {
+                        await _updateSentVerificationCode(created._id, true);
+                        res.status(status.OK).json({ request: created })
+                    } else {
+                        await _updateSentVerificationCode(created._id, false);
+                        res.status(status.OK)
+                            .json({
+                                code: status.INTERNAL_SERVER_ERROR,
+                                request: created,
+                                error: 'Error al envíar el correo'
+                            });
+                    }
+                });
         }).catch(err => {
             res.status(status.INTERNAL_SERVER_ERROR).json({
                 error: err.toString()
@@ -190,17 +215,46 @@ const correctRequest = async (req, res) => {
     request.phase = eRequest.CAPTURED;
     request.status = eStatusRequest.PROCESS;
     request.observation = '';
+    if (request.verificationCode === '000000') {
+        request.verificationCode = _generateVerificationCode(6);
+    }
     let result = { isCorrect: true };//Valor por defecto
     if (typeof (req.files) !== 'undefined' && req.files !== null)
         result = await _Drive.uploadFile(req, eOperation.EDIT);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
-        _request.findOneAndUpdate({ studentId: _id }, request).then(update => {
-            res.json({ request: update });
-        }).catch(err => {
-            res.status(status.INTERNAL_SERVER_ERROR).json({
-                error: err.toString()
+        _request.findOneAndUpdate({ studentId: _id }, request)
+            .then(update => {
+                // Send email with verification code
+                if (request.verificationCode) {
+                    const emailData = {
+                        email: request.email,
+                        subject: 'Acto recepcional - Verificación de correo electrónico',
+                        sender: 'Servicios escolares <escolares_05@ittepic.edu.mx>',
+                        message: verifyCodeTemplate(request.verificationCode)
+                    };
+                    _sendEmail(emailData)
+                        .then(async data => {
+                            if (data.code === 202) {
+                                await _updateSentVerificationCode(update._id, true);
+                                res.status(status.OK).json({ request: update })
+                            } else {
+                                await _updateSentVerificationCode(update._id, false);
+                                res.status(status.OK)
+                                    .json({
+                                        code: status.INTERNAL_SERVER_ERROR,
+                                        request: update,
+                                        error: 'Error al envíar el correo'
+                                    });
+                            }
+                        });
+                } else {
+                    res.status(status.OK).json({ request: update })
+                }
+            }).catch(err => {
+                res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                })
             })
-        })
     }
     else {
         res.status(status.INTERNAL_SERVER_ERROR).json({
@@ -927,6 +981,32 @@ const verifyCode = (req, res) => {
         });
 };
 
+const sendVerificationCode = (req, res) => {
+    const {_requestId} = req.params;
+    _request.findOne({_id: _requestId})
+        .then(request => {
+            if (request.verificationCode) {
+                const emailData = {
+                    email: request.email,
+                    subject: 'Acto recepcional - Verificación de correo electrónico',
+                    sender: 'Servicios escolares <escolares_05@ittepic.edu.mx>',
+                    message: verifyCodeTemplate(request.verificationCode)
+                };
+                _sendEmail(emailData)
+                    .then(async data => {
+                        if (data.code === 202) {
+                            await _updateSentVerificationCode(request._id, true);
+                            res.status(status.OK).json({ message: 'Correo envíado con éxito' })
+                        } else {
+                            await _updateSentVerificationCode(request._id, false);
+                            res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al envíar el correo'});
+                        }
+                    })
+            }
+        })
+        .catch(_ => res.status(status.BAD_REQUEST).json({error: 'Error, solicitud no encontrada'}));
+};
+
 const _getGradeName = (studentId) => {
     return new Promise(resolve => {
         _student.findOne({_id: studentId})
@@ -943,6 +1023,27 @@ const _generateVerificationCode = (length) => {
         number += Math.floor(Math.random() * 10);
     }
     return number;
+};
+
+const _sendEmail = ({email, subject, sender, message}) => {
+    return new Promise(resolve => {
+        const emailData = {
+            to_email: [email],
+            subject: subject,
+            sender: sender,
+            message: message
+        };
+        sendMail({body: emailData})
+            .then(data => resolve(data));
+    });
+};
+
+const _updateSentVerificationCode = (requestId, status) => {
+    return new Promise(resolve => {
+        _request.updateOne({_id: requestId}, {$set: { sentVerificationCode: status }})
+            .then(_ => resolve(true))
+            .catch(_ => resolve(false));
+    });
 };
 
 module.exports = (Request, Range, Folder, Student) => {
@@ -969,5 +1070,6 @@ module.exports = (Request, Range, Folder, Student) => {
         groupRequest,
         StudentsToSchedule,
         verifyCode,
+        sendVerificationCode,
     });
 };

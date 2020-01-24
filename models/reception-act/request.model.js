@@ -49,7 +49,8 @@ const requestSchema = new mongoose.Schema({
     grade: { type: String, uppercase: true, trim: true },
     titulationOption: { type: String, unique: true, trim: true },
     verificationCode: { type: String, uppercase: true, trim: true },
-    verificationStatus: { type: Boolean, default: false }
+    verificationStatus: { type: Boolean, default: false },
+    sentVerificationCode: { type: Boolean }
 });
 
 const requestModel = mongoose.model('Request', requestSchema, 'requests');
