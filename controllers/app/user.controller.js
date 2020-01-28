@@ -413,24 +413,6 @@ const login = (req, res) => {
            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
         }     
     };
-    const dataStudent = JSON.stringify({
-        nc: email,
-        nip:password
-    });
-    var optionsPost = {        
-        "rejectUnauthorized": false, 
-        host: 'wsescolares.tepic.tecnm.mx',    
-        port: 443,     
-        path: `/alumnos/login`,    
-        // authentication headers     
-        method: 'POST',
-        headers: {     
-           'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
-           'Content-Type': 'application/json',
-           'Content-Length': dataStudent.length        
-        }        
-
-    };
     _user.findOne(query)
         .populate({
             path: 'idRole', model: 'Role',
@@ -577,157 +559,61 @@ const login = (req, res) => {
                                                     
                                                 } else {
                                                     // No se encontró el registro en la base de datos local buscar en el sii
-                                                   
-                                                    var studentNew = "";                                                                                                       
-                                                    https.get(options, function(apiInfo){
-                                                       
-                                                        apiInfo.on('data', function(data) {
-                                                           studentNew += data;
-                                                        });
-                                                        apiInfo.on('end', ()=> {
-                                                         //json con los datos del alumno
-                                                         studentNew = JSON.parse(studentNew);
-                                                         studentNew.firstName = studentNew.firstname;
-                                                         studentNew.fatherLastName = studentNew.fatherlastname;
-                                                         studentNew.motherLastName = studentNew.motherlastname;
-                                                         studentNew.birthPlace = studentNew.birthplace;
-                                                         studentNew.dateBirth = studentNew.datebirth;
-                                                         studentNew.civilStatus = studentNew.civilstatus;
-                                                         studentNew.originSchool = studentNew.originschool;
-                                                         studentNew.nameOriginSchool = studentNew.nameoriginschool;
-                                                         studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
-                                                         studentNew.nip = password;    
-                                                        studentNew.controlNumber = email; 
-                                                        if(studentNew.semester == 1){
-                                                            studentNew.stepWizard = 0;
-                                                        }                                     
-                                                        const request = https.request(optionsPost, (apiLogin) => {
-                                                            var careerN="";                                                  
-                                                            apiLogin.on('data', async (d) => {
-                                                              careerN+=d;
-                                                              
-                                                             
-                                                          });
-                                                          apiLogin.on('end',async ()=>{
-                                                            careerN = JSON.parse(careerN);
-                                                            
-                                                            switch (careerN.carrera) {
-                                                                case 'L01':
-                                                                    studentNew.career = 'ARQUITECTURA';
-                                                                    break;
-                                                                case 'L02':
-                                                                    studentNew.career = 'INGENIERÍA CIVIL';
-                                                                    break;
-                                                                case 'L03':
-                                                                    studentNew.career = 'INGENIERÍA ELÉCTRICA';
-                                                                    break;
-                                                                case 'L04':
-                                                                    studentNew.career = 'INGENIERÍA INDUSTRIAL';
-                                                                    break;
-                                                                case 'L05':
-                                                                    studentNew.career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
-                                                                    break;
-                                                                case 'L06':
-                                                                    studentNew.career = 'INGENIERÍA BIOQUÍMICA';
-                                                                    break;
-                                                                case 'L07':
-                                                                    studentNew.career = 'INGENIERÍA QUÍMICA';
-                                                                    break;
-                                                                case 'L08':
-                                                                    studentNew.career = 'LICENCIATURA EN ADMINISTRACIÓN';
-                                                                    break;
-                                                                case 'L12':
-                                                                    studentNew.career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
-                                                                    break;
-                                                                case 'L11':
-                                                                    studentNew.career = 'INGENIERÍA MECATRÓNICA';
-                                                                    break;
-                                                                case 'ITI':
-                                                                    studentNew.career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
-                                                                    break;
-                                                                case 'MTI':
-                                                                    studentNew.career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
-                                                                    break;
-                                                                case 'P01':
-                                                                    studentNew.career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
-                                                                    break;
-                                                                case 'DCA':
-                                                                    studentNew.career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
-                                                                    break;
-                                                                default:
-                                                                    break;
-                                                            }
-                                                            // Obtener id del rol para estudiente
-                                                            const studentId = await getRoleId('Estudiante');
-                                                            studentNew.idRole = studentId;
-                                                            studentNew.careerId = await getCareerId(studentNew.career);
+                                                   const studentNew = await getStudentData(email,password);
+                                                   if(studentNew){
 
-
-                                                              _student.create(studentNew)
-                                                              .then(created => {
-                                                                  console.log('Estudiant creado');
-                                                                  _student.findOne({_id: created._id})
-                                                                      .populate({
-                                                                          path: 'idRole', model: 'Role',
-                                                                          select: {
-                                                                              permissions: 1, name: 1, _id: 0
-                                                                          }
-                                                                      })
-                                                                      .exec((err, user) => {
-                                                                          // Se contruye el token
-                                                                          console.log();
-                                                                          
-                                                                          const token = jwt.sign({ email: user.controlNumber }, config.secret);
-                                                                          let formatUser = {
-                                                                              _id: user._id,
-                                                                              name: {
-                                                                                firstName: user.firstName,
-                                                                                lastName: `${user.fatherLastName} ${user.motherLastName}`,
-                                                                                fullName: user.fullName
-                                                                              },
-                                                                              email: user.controlNumber,
-                                                                              career: user.career,
-                                                                              rol: {
-                                                                                  name: user.idRole.name,
-                                                                                  permissions: user.idRole.permissions
-                                                                              },
-                                                                              english: englishApproved,
-                                                                              graduate: isGraduate,
-                                                                              semester: user.semester
-                                                                          };
-                                                                          // Se retorna el usuario y token
-                                                                          return res.json({
-                                                                              user: formatUser,
-                                                                              token: token,
-                                                                              action: 'signin'
-                                                                          });
-                                                                      });
-                                                              }).catch(err => {
-                                                                  console.log(err);
-                                                                  
-                                                                  return res.status(status.NOT_FOUND).json({
-                                                                      error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                                                                  });
-                                                              });
-                                                            });
-                                                          });
-                                                          request.on('error', (error) => {
-                                                            return res.status(status.NOT_FOUND).json({
-                                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                                                            });
-                                                          });
-                                                          
-                                                          request.write(dataStudent);
-                                                          request.end();
-
-                                                          
+                                                       _student.create(studentNew)
+                                                       .then(created => {
+                                                           console.log('Estudiant creado');
+                                                           _student.findOne({_id: created._id})
+                                                               .populate({
+                                                                   path: 'idRole', model: 'Role',
+                                                                   select: {
+                                                                       permissions: 1, name: 1, _id: 0
+                                                                   }
+                                                               })
+                                                               .exec((err, user) => {
+                                                                   // Se contruye el token
+                                                                   console.log();
+                                                                   
+                                                                   const token = jwt.sign({ email: user.controlNumber }, config.secret);
+                                                                   let formatUser = {
+                                                                       _id: user._id,
+                                                                       name: {
+                                                                         firstName: user.firstName,
+                                                                         lastName: `${user.fatherLastName} ${user.motherLastName}`,
+                                                                         fullName: user.fullName
+                                                                       },
+                                                                       email: user.controlNumber,
+                                                                       career: user.career,
+                                                                       rol: {
+                                                                           name: user.idRole.name,
+                                                                           permissions: user.idRole.permissions
+                                                                       },
+                                                                       english: englishApproved,
+                                                                       graduate: isGraduate,
+                                                                       semester: user.semester
+                                                                   };
+                                                                   // Se retorna el usuario y token
+                                                                   return res.json({
+                                                                       user: formatUser,
+                                                                       token: token,
+                                                                       action: 'signin'
+                                                                   });
+                                                               });
+                                                       }).catch(err => {
+                                                           console.log(err);
+                                                           
+                                                           return res.status(status.NOT_FOUND).json({
+                                                               error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                                                           });
+                                                       });
+                                                    }else{
+                                                        return res.status(status.NOT_FOUND).json({
+                                                            error: 'No se encuentra registrado en la base de datos del SII. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                                         });
-                                                        apiInfo.on('error', function(e) {
-                                                            return res.status(status.NOT_FOUND).json({
-                                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                                                            });
-                                                        });
-                                                });                                                    
+                                                    }
+                                                                                                       
 
                                                     
                                                 }
@@ -753,6 +639,141 @@ const login = (req, res) => {
                         }
                     });
             }
+    });
+};
+
+const getStudentData = (email,password)=>{
+    const options = {        
+        "rejectUnauthorized": false, 
+        host: 'wsescolares.tepic.tecnm.mx',    
+        port: 443,     
+        path: `/alumnos/info/${email}`,    
+        // authentication headers     
+        headers: {     
+           'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }     
+    };
+    const dataStudent = JSON.stringify({
+        nc: email,
+        nip:password
+    });
+    var optionsPost = {        
+        "rejectUnauthorized": false, 
+        host: 'wsescolares.tepic.tecnm.mx',    
+        port: 443,     
+        path: `/alumnos/login`,    
+        // authentication headers     
+        method: 'POST',
+        headers: {     
+           'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
+           'Content-Type': 'application/json',
+           'Content-Length': dataStudent.length        
+        }        
+
+    };
+    return new Promise( async (resolve)=>{
+        var studentNew = "";                                                                                                     
+        
+        https.get(options, function(apiInfo){
+            
+            apiInfo.on('data', function(data) {
+                studentNew += data;
+            });
+            apiInfo.on('end', ()=> {
+                //json con los datos del alumno
+                studentNew = JSON.parse(studentNew);
+                studentNew.firstName = studentNew.firstname;
+                studentNew.fatherLastName = studentNew.fatherlastname;
+                studentNew.motherLastName = studentNew.motherlastname;
+                studentNew.birthPlace = studentNew.birthplace;
+                studentNew.dateBirth = studentNew.datebirth;
+                studentNew.civilStatus = studentNew.civilstatus;
+                studentNew.originSchool = studentNew.originschool;
+                studentNew.nameOriginSchool = studentNew.nameoriginschool;
+                studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
+                studentNew.nip = password;    
+            studentNew.controlNumber = email; 
+            if(studentNew.semester == 1){
+                studentNew.stepWizard = 0;
+            }                                     
+            const request = https.request(optionsPost, (apiLogin) => {
+                var careerN="";                                                  
+                apiLogin.on('data', async (d) => {
+                    careerN+=d;
+                    
+                    
+                });
+                apiLogin.on('end',async ()=>{
+                careerN = JSON.parse(careerN);
+                
+                switch (careerN.carrera) {
+                    case 'L01':
+                        studentNew.career = 'ARQUITECTURA';
+                        break;
+                    case 'L02':
+                        studentNew.career = 'INGENIERÍA CIVIL';
+                        break;
+                    case 'L03':
+                        studentNew.career = 'INGENIERÍA ELÉCTRICA';
+                        break;
+                    case 'L04':
+                        studentNew.career = 'INGENIERÍA INDUSTRIAL';
+                        break;
+                    case 'L05':
+                        studentNew.career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
+                        break;
+                    case 'L06':
+                        studentNew.career = 'INGENIERÍA BIOQUÍMICA';
+                        break;
+                    case 'L07':
+                        studentNew.career = 'INGENIERÍA QUÍMICA';
+                        break;
+                    case 'L08':
+                        studentNew.career = 'LICENCIATURA EN ADMINISTRACIÓN';
+                        break;
+                    case 'L12':
+                        studentNew.career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
+                        break;
+                    case 'L11':
+                        studentNew.career = 'INGENIERÍA MECATRÓNICA';
+                        break;
+                    case 'ITI':
+                        studentNew.career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
+                        break;
+                    case 'MTI':
+                        studentNew.career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
+                        break;
+                    case 'P01':
+                        studentNew.career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
+                        break;
+                    case 'DCA':
+                        studentNew.career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
+                        break;
+                    default:
+                        break;
+                }
+                // Obtener id del rol para estudiente
+                const studentId = await getRoleId('Estudiante');
+                studentNew.idRole = studentId;
+                studentNew.careerId = await getCareerId(studentNew.career);
+
+                resolve(studentNew);
+                    
+                });
+                });
+                request.on('error', (error) => {
+                    resolve(false);
+                });
+                
+                request.write(dataStudent);
+                request.end();
+
+                
+            });
+            apiInfo.on('error', function(e) {
+                resolve(false);
+            });
+    }); 
     });
 };
 
@@ -1011,7 +1032,7 @@ const getRoleId = (roleName) => {
 
  const studentLogin = (req,res)=>{
     const {nc,nip} = req.body;
-    _student.findOne({controlNumber: nc},{documents:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0,inscriptionStatus:0})
+    _student.findOne({controlNumber: nc},{documents:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0,inscriptionStatus:0,__v:0})
         .populate({
             path: 'careerId', model: 'Career',
             select: {
@@ -1024,7 +1045,9 @@ const getRoleId = (roleName) => {
             }
         }).exec(async (error, oneUser) => {                                          
                 if (oneUser) {
-                    // Se contruye el token
+                    // Se contruye el token                    
+                    
+                                       
                     if(oneUser.nip == nip){
                         const token = jwt.sign({ nc: oneUser.controlNumber }, config.secret);             
                         let {fullName,shortName,acronym,_id} = oneUser.careerId;
@@ -1032,6 +1055,7 @@ const getRoleId = (roleName) => {
                         let user = {student:oneUser,career};
                         // user.student.career = undefined;                    
                         user.student.careerId = undefined;                    
+                        user.student.nip = undefined;                    
                        
                         return res.status(status.OK).json({
                             user: user,
@@ -1044,9 +1068,55 @@ const getRoleId = (roleName) => {
                         });
                     }
                 }else{
-                    return res.status(status.NOT_FOUND).json({
-                        error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                    });
+                    const studentNew = await getStudentData(nc,nip);                    
+                    
+                    if(studentNew){
+                        _student.create(studentNew)
+                        .then(created => {
+                            console.log('Estudiant creado');
+                            _student.findOne({controlNumber: nc},{documents:0,idRole:0,fileName:0,acceptedTerms:0,dateAcceptedTerms:0,stepWizard:0,inscriptionStatus:0,__v:0})
+                            .populate({
+                                path: 'careerId', model: 'Career',
+                                select: {
+                                    fullName:1,shortName:1,acronym:1,_id:1
+                                }
+                            }).populate({
+                                path: 'folderId', model: 'Folder',
+                                select: {
+                                    idFolderInDrive: 1
+                                }
+                            }).exec((err, oneUser) => {
+                                    // Se contruye el token                                
+                                    
+                                    const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
+                                    let {fullName,shortName,acronym,_id} = oneUser.careerId;
+                                    let career ={fullName,shortName,acronym,_id};                    
+                                    let user = {student:oneUser,career};
+                                    // user.student.career = undefined;     
+                                    // console.log(user);
+                                                   
+                                    user.student.careerId = undefined;                    
+                                    user.student.nip = undefined;                    
+                                
+                                    return res.status(status.OK).json({
+                                        user,
+                                        token,
+                                        action: 'signin'
+                                    });
+                                });
+                        }).catch(err => {
+                            console.log(err);
+                            
+                            return res.status(status.NOT_FOUND).json({
+                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                            });
+                        });
+                    }else{
+                        return res.status(status.NOT_FOUND).json({
+                            error: 'No se encuentra registrado en la base de datos del SII. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                        });
+                    }
+                    
                 }            
         });
  };
