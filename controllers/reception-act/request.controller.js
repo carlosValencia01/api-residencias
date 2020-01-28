@@ -363,7 +363,8 @@ const getResource = (req, res) => {
         let result = await _Drive.downloadToLocal(fileInformation.driveId, tmpName);
 
         if (typeof (result) !== 'undefined' && result) {
-            const fullPath = path.join(__dirname, '\\..\\..', 'documents', 'tmpFile', tmpName);
+            console.log(`${__dirname}/../../documents/tmpFile/${tmpName}`);
+            const fullPath = path.normalize(`${__dirname}/../../documents/tmpFile/${tmpName}`);
             res.set('Content-Type', 'application/pdf');
             fs.createReadStream(fullPath).pipe(res);
         }
@@ -583,6 +584,9 @@ const updateRequest = (req, res) => {
                     item.status = eStatusRequest.REJECT;
                 }
                 else {
+                    if (typeof (data.duration) !== 'undefined') {
+                        request.duration = data.duration;
+                    }
                     request.phase = eRequest.ASSIGNED;
                     request.documents.push(
                         {
@@ -609,6 +613,9 @@ const updateRequest = (req, res) => {
 
                     }
                     case eStatusRequest.ASSIGN: {
+                        if (typeof (data.duration) !== 'undefined') {
+                            request.duration = data.duration;
+                        }
                         request.phase = eRequest.REALIZED;
                         request.proposedDate = data.appointment;
                         request.proposedHour = data.minutes;
