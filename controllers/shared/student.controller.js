@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 const superagent = require('superagent');
 const mongoose = require('mongoose');
+var FCM = require('fcm-node');
+var fcm = new FCM(config.FCM_SERVERKEY);
 
 let _student;
 let _request;
@@ -942,6 +944,43 @@ const documentsChanged = (req,res)=>{
         });
 };
 
+// NOTIFICATIONS FOR APP =========================
+const sendNotification = (req,res)=>{
+    const {token,title,body} = req.body;
+
+    const message = { 
+        registration_ids: token, 
+        collapse_key: 'soytigretectepic',        
+        notification: {
+            title, 
+            body 
+        },
+        sound:'default',
+        click_action:'FCM_PLUGIN_ACTIVITY'        
+        // data: {  //you can send only notification or only data(or include both)
+        //     my_key: 'my value',
+        //     my_another_key: 'my another value'
+        // }
+    };    
+    fcm.send(message, (err, response)=>{
+        if (err) {
+            const error = JSON.parse(err);
+            if(error.success>0){
+                console.log("Successfully sent ");
+                res.status(status.OK).json({msg:"Notificación enviada"});
+            }else{
+                console.log("Something has gone wrong!",error);
+                res.status(status.BAD_REQUEST).json({err:"No se pudo enviar la notificación."});
+
+            }
+        } else {
+            console.log("Successfully sent");
+            res.status(status.OK).json({msg:"Notificación enviada"});
+        }
+    });
+};
+
+///===================     =======================
 
 module.exports = (Student, Request, Role, Period) => {
     _student = Student;
@@ -978,5 +1017,6 @@ module.exports = (Student, Request, Role, Period) => {
         getStudentsInscriptionProcess,
         getStudentsInscriptionPendant,
         getStudentsInscriptionAcept,
+        sendNotification,
     });
 };

@@ -72,6 +72,6 @@ sendgrid.env
 token.json
 token_ric.json
 token_ser.json
-./utils/credentials-google-driveAPI.json
-./utils/credentials-google-driveAPI_ric.json
-./utils/credentials-google-driveAPI_ser.json
+utils/credentials-google-driveAPI.json
+utils/credentials-google-driveAPI_ric.json
+utils/credentials-google-driveAPI_ser.json

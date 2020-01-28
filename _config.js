@@ -12,5 +12,11 @@ module.exports = {
   // urlAPI: '148.208.195.120',
   SENDGRID_APIKEY: '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',
   sender_email: 'cideti@ittepic.edu.mx',
-  period: '20193'
+  period: '20193',
+
+  // testing server key
+  FCM_SERVERKEY:'AAAAaVpMrNs:APA91bFxHz9CWlgL5fvyY61xnJKwvooPslk6UmTwtICt1erAv069Yp42iadTjZUuD0Dk9J8BiJ2zoZrMtMwTBi1Bq2m3hxfmxvmpADDrmVz0r3v2QZYxEx0Tx1i6q1815yuZDSaKtdmB',
+
+  // prod server key
+  // FCM_SERVERKEY:'AAAAaVpMrNs:APA91bFxHz9CWlgL5fvyY61xnJKwvooPslk6UmTwtICt1erAv069Yp42iadTjZUuD0Dk9J8BiJ2zoZrMtMwTBi1Bq2m3hxfmxvmpADDrmVz0r3v2QZYxEx0Tx1i6q1815yuZDSaKtdmB'
 };

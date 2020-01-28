@@ -64,7 +64,7 @@ const jwtOptions = {
     `${uri}user/login`, `${uri}user/register`,`${uri}user/student/login` ,`${uri}student/login`, `/favicon.ico`,
     `${uri}student/create`, `${uri}inscription/updateStudent`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
     `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}period/create` ,`${uri}drive/upload`,`${uri}drive/upload/file`,
-    `${uri}department/employees`, `${uri}document`, `${uri}position`, `${uri}department/all`,
+    `${uri}department/employees`, `${uri}document`, `${uri}position`, `${uri}department/all`, `${uri}student/notify`,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/student\/document\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,

@@ -17,6 +17,7 @@
     "express": "^4.16.3",
     "express-fileupload": "^1.1.6-alpha.5",
     "express-jwt": "^5.3.1",
+    "fcm-node": "^1.5.2",
     "fs": "0.0.1-security",
     "googleapis": "^39.2.0",
     "http-status": "^1.2.0",

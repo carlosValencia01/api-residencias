@@ -74,6 +74,9 @@ module.exports = (wagner) => {
     router.post('/login', (req, res) =>
         studentCtrl.getByControlNumber(req, res));
 
+    router.post('/notify', (req, res) =>
+        studentCtrl.sendNotification(req, res));
+
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
     router.put('/data/:_id', (req, res) =>
