@@ -7,21 +7,21 @@ let _position;
 
 const getAll = (req, res) => {
   _department.find({ "careers.0": { "$exists": true } })
-      .populate('careers')
-      .exec(async (err, data) => {
-        if (!err && data) {
-          const departments = [];
-          for (let department of data) {
-            const depto = await _getDepartmentWithEmployees(department.toObject());
-            departments.push(depto);
-          }
-          res.status(status.OK)
-              .json({departments: departments});
-        } else {
-          res.status(status.INTERNAL_SERVER_ERROR)
-              .json({error: err ? err.toString() : 'Ocurrió un error'});
+    .populate('careers')
+    .exec(async (err, data) => {
+      if (!err && data) {
+        const departments = [];
+        for (let department of data) {
+          const depto = await _getDepartmentWithEmployees(department.toObject());
+          departments.push(depto);
         }
-      });
+        res.status(status.OK)
+          .json({ departments: departments });
+      } else {
+        res.status(status.INTERNAL_SERVER_ERROR)
+          .json({ error: err ? err.toString() : 'Ocurrió un error' });
+      }
+    });
 };
 
 const _getDepartmentWithEmployees = depto => {
@@ -36,81 +36,138 @@ const _getDepartmentWithEmployees = depto => {
 const _getEmployeesByDepartment = (department) => {
   return new Promise(resolve => {
     _employee.find()
-        .populate({
-          path: 'positions.position', model: 'Position', select: 'name ascription',
-          populate: { path: 'ascription', model: 'Department', select: 'name shortName' }})
-        .exec((err, data) => {
-          if (!err && data) {
-            const employees = [];
-            let departmentBoss = {};
-            data.forEach(data => {
-              if (data.positions.length) {
-                const employee = data.toObject();
-                const activePositions = employee.positions
-                    .filter(pos => pos.status === 'ACTIVE' && pos.position.ascription._id.toString() === department._id.toString());
-                const positions = activePositions.filter(pos => pos.position.name.toUpperCase() === 'DOCENTE');
-                const boss = activePositions.filter(pos => pos.position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0];
-                employee.positions = positions;
-                if (positions.length) {
-                  employees.push(employee);
-                }
-                if (boss) {
-                  employee.positions.push(boss);
-                  departmentBoss = employee;
-                }
+      .populate({
+        path: 'positions.position', model: 'Position', select: 'name ascription',
+        populate: { path: 'ascription', model: 'Department', select: 'name shortName' }
+      })
+      .exec((err, data) => {
+        if (!err && data) {
+          const employees = [];
+          let departmentBoss = {};
+          data.forEach(data => {
+            if (data.positions.length) {
+              const employee = data.toObject();
+              const activePositions = employee.positions
+                .filter(pos => pos.status === 'ACTIVE' && pos.position.ascription._id.toString() === department._id.toString());
+              const positions = activePositions.filter(pos => pos.position.name.toUpperCase() === 'DOCENTE');
+              const boss = activePositions.filter(pos => pos.position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0];
+              employee.positions = positions;
+              if (positions.length) {
+                employees.push(employee);
               }
-            });
-            resolve({
-              employees: employees,
-              boss: departmentBoss
-            });
-          }
-        });
+              if (boss) {
+                employee.positions.push(boss);
+                departmentBoss = employee;
+              }
+            }
+          });
+          resolve({
+            employees: employees,
+            boss: departmentBoss
+          });
+        }
+      });
   });
 };
 
 const getAllDepartments = (req, res) => {
   _department.find({})
-      .populate('careers')
-      .exec(handler.handleMany.bind(null, 'departments', res));
+    .populate('careers')
+    .exec(handler.handleMany.bind(null, 'departments', res));
 };
 
 const createDepartment = (req, res) => {
   const department = req.body;
   _department.create(department)
-      .then(created => res.status(status.OK).json(created))
-      .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({message: 'Error al crear departamento'}));
+    .then(created => res.status(status.OK).json(created))
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al crear departamento' }));
 };
 
 const updateDepartment = (req, res) => {
-  const {_id} = req.params;
+  const { _id } = req.params;
   const department = req.body;
-  _department.updateOne({_id: _id}, department)
-      .then(updated => res.status(status.OK).json(updated))
-      .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({message: 'Error al actualizar departamento'}));
+  _department.updateOne({ _id: _id }, department)
+    .then(updated => res.status(status.OK).json(updated))
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar departamento' }));
 };
 
 const removeDepartment = (req, res) => {
-  const {_id} = req.params;
-  _position.find({ascription: _id})
-      .then(positions => {
-        if (!positions.length) {
-          _department.deleteOne({_id: _id})
-              .then(deleted => res.status(status.OK).json(deleted))
-              .catch(_ => res
-                  .status(status.INTERNAL_SERVER_ERROR)
-                  .json({message: 'Error al borrar departamento'}));
-        } else {
-          res
-              .status(status.INTERNAL_SERVER_ERROR)
-              .json({message: 'El departamento tiene puestos asignados.'});
-        }
-      })
-      .catch(err => res
+  const { _id } = req.params;
+  _position.find({ ascription: _id })
+    .then(positions => {
+      if (!positions.length) {
+        _department.deleteOne({ _id: _id })
+          .then(deleted => res.status(status.OK).json(deleted))
+          .catch(_ => res
+            .status(status.INTERNAL_SERVER_ERROR)
+            .json({ message: 'Error al borrar departamento' }));
+      } else {
+        res
           .status(status.INTERNAL_SERVER_ERROR)
-          .json({message: (err || 'Ocurrió un error').toString()}));
+          .json({ message: 'El departamento tiene puestos asignados.' });
+      }
+    })
+    .catch(err => res
+      .status(status.INTERNAL_SERVER_ERROR)
+      .json({ message: (err || 'Ocurrió un error').toString() }));
 };
 
+const searchEmployeeByPosition = (req, res) => {
+  const data = req.body;  
+  let query = [
+    {
+      $lookup: {
+        from: "departments",
+        localField: "ascription",
+        foreignField: "_id",
+        as: "Department"
+      }
+    },
+    {
+      $match: {
+        "Department.name": data.Department
+      }
+    },
+    {
+      $group: {
+        _id: '$Department.name',
+        values: {
+          $push: {
+            id: '$_id', position: '$name'
+          }
+        }
+      }
+    }
+  ];
+
+  _position.aggregate(query, (error, department) => {
+    if (error) {      
+      return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+    }
+    if (!department || department.length == 0) {
+      return res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Departamento no encontrado' });
+    }
+    const position = department[0].values.find(x => x.position === data.Position);
+    _employee.findOne({ positions: { $elemMatch: { position: position.id, status: 'ACTIVE' } } }, (error, employee) => {
+      if (error) {        
+        return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+      }
+      if (!employee) {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Empleado no encontrado' });
+      }
+      res.status(status.OK);
+      res.json({
+        Employee: {
+          name: employee.name.fullName, gender: employee.gender, position: data.position,
+          department: data.department, grade: employee.grade
+        }
+      });
+    })
+
+
+
+  })
+}
 module.exports = (Deparment, Employee, Position) => {
   _department = Deparment;
   _employee = Employee;
@@ -121,5 +178,6 @@ module.exports = (Deparment, Employee, Position) => {
     createDepartment,
     updateDepartment,
     removeDepartment,
+    searchEmployeeByPosition
   });
 };

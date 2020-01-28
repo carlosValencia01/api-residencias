@@ -18,9 +18,9 @@ const getAll = (req, res) => {
 };
 
 const getStudentsInscription = (req, res) => {
-    _student.find({"inscriptionStatus":{$exists:true}}).then(
-        students=>{
-            const newStudents = students.map(student=>({     
+    _student.find({ "inscriptionStatus": { $exists: true } }).then(
+        students => {
+            const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
                 "controlNumber": student.controlNumber,
@@ -30,7 +30,7 @@ const getStudentsInscription = (req, res) => {
                 "idRole": student.idRole,
                 "averageOriginSchool": student.averageOriginSchool,
                 "birthPlace": student.birthPlace,
-                "city":student.city,
+                "city": student.city,
                 "civilStatus": student.civilStatus,
                 "cp": student.cp,
                 "curp": student.curp,
@@ -61,62 +61,62 @@ const getStudentsInscription = (req, res) => {
                 "acceptedTerms": student.acceptedTerms,
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis, 
-                documentsModified : documentsHaveChanges(student.documents,student.inscriptionStatus),
+                "warningAnalysis": student.warningAnalysis,
+                documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
                 totalDocumentsNumber: mapDocuments(student.documents).length,
-                    documentsReviewNumber: mapDocuments(student.documents).filter( doc=>doc.statusName !== 'EN PROCESO').length,
-                    documentsLastStatus: mapDocuments(student.documents)        
-            }));        
-            res.status(status.OK).json({students:newStudents});
+                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus: mapDocuments(student.documents)
+            }));
+            res.status(status.OK).json({ students: newStudents });
         }
     );
 };
 
-const mapDocuments = (documents)=>{
-   return documents.map( 
-        doc=> 
-            {
-                const stat = doc.status.filter(
-                    st=> st.active == true)[0];
-                return {
-                filename:doc.filename,
-                statusName: stat ? stat.name : null}
+const mapDocuments = (documents) => {
+    return documents.map(
+        doc => {
+            const stat = doc.status.filter(
+                st => st.active == true)[0];
+            return {
+                filename: doc.filename,
+                statusName: stat ? stat.name : null
             }
-        
-        
-        ).filter(
-            docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
-            );
+        }
+
+
+    ).filter(
+        docFiltered => docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+    );
 };
-const documentsHaveChanges = (documents, status)=>{
-    if(status == 'En Proceso'){
-        
-        const changes = documents.filter( doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
-            filteredDoc=>{
-                if(filteredDoc.status.length > 1){
-                    const prevStatus = filteredDoc.status[filteredDoc.status.length-2];
-                    const curStatus = filteredDoc.status[filteredDoc.status.length-1];
-                
-                    return prevStatus.name == 'RECHAZADO' ? curStatus.name == 'EN PROCESO' && curStatus.message == 'Se actualizo el documento' ? {filename:filteredDoc.filename, moified:true} : {filename:filteredDoc.filename, moified:false} :{filename:filteredDoc.filename, moified:false};
-                }else {return {err:false};}
+const documentsHaveChanges = (documents, status) => {
+    if (status == 'En Proceso') {
+
+        const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
+            filteredDoc => {
+                if (filteredDoc.status.length > 1) {
+                    const prevStatus = filteredDoc.status[filteredDoc.status.length - 2];
+                    const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
+
+                    return prevStatus.name == 'RECHAZADO' ? curStatus.name == 'EN PROCESO' && curStatus.message == 'Se actualizo el documento' ? { filename: filteredDoc.filename, moified: true } : { filename: filteredDoc.filename, moified: false } : { filename: filteredDoc.filename, moified: false };
+                } else { return { err: false }; }
             }
-        ).filter(mapedDocument=> mapedDocument.moified == true);          
+        ).filter(mapedDocument => mapedDocument.moified == true);
         return changes.length > 0 ? 'true' : 'false';
-    }else{
+    } else {
         return 'false';
     }
-            
+
 };
 
 const getStudentsInscriptionLogged = (req, res) => {
-    _student.find({"stepWizard":0})
+    _student.find({ "stepWizard": 0 })
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
 const getStudentsInscriptionProcess = (req, res) => {
-    _student.find({$and:[{"inscriptionStatus":{$exists:true}},{"inscriptionStatus":"En Proceso"}]}).then(
-        students=>{
-            const newStudents = students.map(student=>({     
+    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).then(
+        students => {
+            const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
                 "controlNumber": student.controlNumber,
@@ -126,7 +126,7 @@ const getStudentsInscriptionProcess = (req, res) => {
                 "idRole": student.idRole,
                 "averageOriginSchool": student.averageOriginSchool,
                 "birthPlace": student.birthPlace,
-                "city":student.city,
+                "city": student.city,
                 "civilStatus": student.civilStatus,
                 "cp": student.cp,
                 "curp": student.curp,
@@ -158,21 +158,21 @@ const getStudentsInscriptionProcess = (req, res) => {
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis
-                , 
-                documentsModified : documentsHaveChanges(student.documents,student.inscriptionStatus), 
+                ,
+                documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
                 totalDocumentsNumber: mapDocuments(student.documents).length,
-                    documentsReviewNumber: mapDocuments(student.documents).filter( doc=>doc.statusName !== 'EN PROCESO').length,
-                    documentsLastStatus: mapDocuments(student.documents)        
-            }));        
-            res.status(status.OK).json({students:newStudents});
+                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus: mapDocuments(student.documents)
+            }));
+            res.status(status.OK).json({ students: newStudents });
         }
     );
 };
 
 const getStudentsInscriptionPendant = (req, res) => {
-    _student.find({$or:[{$and:[{"inscriptionStatus":{$exists:true}},{"inscriptionStatus":"En Captura"}]},{$and:[{"inscriptionStatus":{$exists:true}},{"inscriptionStatus":"Enviado"}]}]}).then(
-        students=>{
-            const newStudents = students.map(student=>({     
+    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).then(
+        students => {
+            const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
                 "controlNumber": student.controlNumber,
@@ -182,7 +182,7 @@ const getStudentsInscriptionPendant = (req, res) => {
                 "idRole": student.idRole,
                 "averageOriginSchool": student.averageOriginSchool,
                 "birthPlace": student.birthPlace,
-                "city":student.city,
+                "city": student.city,
                 "civilStatus": student.civilStatus,
                 "cp": student.cp,
                 "curp": student.curp,
@@ -213,20 +213,20 @@ const getStudentsInscriptionPendant = (req, res) => {
                 "acceptedTerms": student.acceptedTerms,
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis, 
+                "warningAnalysis": student.warningAnalysis,
                 totalDocumentsNumber: mapDocuments(student.documents).length,
-                    documentsReviewNumber: mapDocuments(student.documents).filter( doc=>doc.statusName !== 'EN PROCESO').length,
-                    documentsLastStatus: mapDocuments(student.documents)        
-            }));        
-            res.status(status.OK).json({students:newStudents});
+                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus: mapDocuments(student.documents)
+            }));
+            res.status(status.OK).json({ students: newStudents });
         }
     );
 };
 
 const getStudentsInscriptionAcept = (req, res) => {
-    _student.find({$or:[{$and:[{"inscriptionStatus":{$exists:true}},{"inscriptionStatus":"Verificado"}]},{$and:[{"inscriptionStatus":{$exists:true}},{"inscriptionStatus":"Aceptado"}]}]}).then(
-        students=>{
-            const newStudents = students.map(student=>({     
+    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).then(
+        students => {
+            const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
                 "controlNumber": student.controlNumber,
@@ -236,7 +236,7 @@ const getStudentsInscriptionAcept = (req, res) => {
                 "idRole": student.idRole,
                 "averageOriginSchool": student.averageOriginSchool,
                 "birthPlace": student.birthPlace,
-                "city":student.city,
+                "city": student.city,
                 "civilStatus": student.civilStatus,
                 "cp": student.cp,
                 "curp": student.curp,
@@ -267,12 +267,12 @@ const getStudentsInscriptionAcept = (req, res) => {
                 "acceptedTerms": student.acceptedTerms,
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis, 
+                "warningAnalysis": student.warningAnalysis,
                 totalDocumentsNumber: mapDocuments(student.documents).length,
-                    documentsReviewNumber: mapDocuments(student.documents).filter( doc=>doc.statusName !== 'EN PROCESO').length,
-                    documentsLastStatus: mapDocuments(student.documents)        
-            }));        
-            res.status(status.OK).json({students:newStudents});
+                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus: mapDocuments(student.documents)
+            }));
+            res.status(status.OK).json({ students: newStudents });
         }
     );
 };
@@ -311,9 +311,9 @@ const verifyStatus = async (req, res) => {
     });
 };
 
-function getPeriod(){
+function getPeriod() {
     return new Promise(async (resolve) => {
-        await _period.findOne({active:true}, (err, period) => {
+        await _period.findOne({ active: true }, (err, period) => {
             if (!err && period) {
                 resolve(period.code);
             }
@@ -323,12 +323,12 @@ function getPeriod(){
 
 const getByControlNumber = (req, res) => {
     const { controlNumber } = req.body;
-    console.log('ControlNumer' + controlNumber);
     // Hacer la petición hacia API de NIP y número de control
     _student.find({ controlNumber: controlNumber })
         .exec(
             (err, students) => {
                 if (err) {
+                    console.log("errr", err);
                     return res.status(status.INTERNAL_SERVER_ERROR).json({
                         error: err.toString()
                     });
@@ -364,6 +364,10 @@ const getByControlNumber = (req, res) => {
         )
 };
 
+const getStudentByControlNumber = (req, res) => {
+    const { controlNumber } = req.body;
+    _student.find({ controlNumber: controlNumber }, { fullName: 1, career: 1, controlNumber: 1 }).exec(handler.handleOne.bind(null, 'student', res));
+};
 const search = (req, res) => {
     const { start = 0, limit = 10 } = req.query;
     const { search } = req.params;
@@ -378,7 +382,7 @@ const search = (req, res) => {
             $language: 'es'
         }
     };
-    console.log('query',query);
+    console.log('query', query);
     _student.find(query, null, {
         skip: +start,
         limit: +limit
@@ -435,8 +439,8 @@ const uploadImage = (req, res) => {
     const image = req.file;
     console.log(_id);
     console.log(image);
-    
-    
+
+
     // const query = { _id: _id };
     // const updated = { filename: image.filename };
 
@@ -506,234 +510,237 @@ const assignDocument = (req, res) => {
 /** Start functions for inscription */
 const assignDocumentDrive = (req, res) => {
     const { _id } = req.params;
-    const _doc = req.body.doc;    
-    const status = req.body.status;       
-        
+    const _doc = req.body.doc;
+    const status = req.body.status;
+
     const push = { $push: { documents: _doc } };
-    
+
     _student.findOneAndUpdate({ _id: _id }, push, { new: true })
-    .then(
-        async (doc)=>{
-            let statusChanged = await updateDocumentStatus(_id,_doc.filename,status);
-            if(statusChanged){
-                res.status(200).json({document:doc});
-            }else{
-                res.status(404).json({error:'Status without changes'});
+        .then(
+            async (doc) => {
+                let statusChanged = await updateDocumentStatus(_id, _doc.filename, status);
+                if (statusChanged) {
+                    res.status(200).json({ document: doc });
+                } else {
+                    res.status(404).json({ error: 'Status without changes' });
+                }
             }
-         }
-    ).catch(err=>{
-        res.status(404).json({
-            error:err,
-            action: 'get documents'
+        ).catch(err => {
+            res.status(404).json({
+                error: err,
+                action: 'get documents'
+            });
         });
-    });    
 };
-async function updateDocumentStatus(_id,docName,status){
-    
+async function updateDocumentStatus(_id, docName, status) {
+
     // console.log('1',status);
-    
-    const docid = await getActiveStatus(_id,docName);
-    if(docid){
-        
-        const result = docid[0];        
+
+    const docid = await getActiveStatus(_id, docName);
+    if (docid) {
+
+        const result = docid[0];
         const doc_id = result.documents[0]._id;
-        if(( result.documents[0].status)) {  
-            if( result.documents[0].status.length === 0){//no hay estatus activo 
+        if ((result.documents[0].status)) {
+            if (result.documents[0].status.length === 0) {//no hay estatus activo 
                 return await _student.findOneAndUpdate(
                     {
                         _id: _id,
-                        'documents._id':doc_id
+                        'documents._id': doc_id
                     },
-                    { $push: { 'documents.$.status':status } },
+                    { $push: { 'documents.$.status': status } },
                     { new: true }
                 )
-                .then(
-                    doc=>{
-                        return true;
-                    }
-                ).catch(err=>{ return false;});
-            }else{
+                    .then(
+                        doc => {
+                            return true;
+                        }
+                    ).catch(err => { return false; });
+            } else {
                 return await _student.findOneAndUpdate( //cambiar active = false
                     {
-                        _id:_id,
-                        documents:{
-                            "$elemMatch":{_id:doc_id,"status.active":true}
-                            }
+                        _id: _id,
+                        documents: {
+                            "$elemMatch": { _id: doc_id, "status.active": true }
+                        }
                     },
                     {
-                         "$set": { 
-                        "documents.$[outer].status.$[inner].active": false,}
+                        "$set": {
+                            "documents.$[outer].status.$[inner].active": false,
+                        }
                     },
-                    { "arrayFilters": [
-                        { "outer._id": doc_id },
-                        { "inner.active": true }
-                    ] }
-                )
-                .then(
-                    async doc=>{
-                        console.log(doc,'4');
-                        
-                        return await _student.findOneAndUpdate(
-                            {
-                                '_id':_id,
-                                'documents._id':doc_id
-                            },
-                            { $push: { 'documents.$.status':status } },
-                            { new: true }
-                        )
-                        .then(
-                            doc=>{
-                                return true;
-                            }
-                        ).catch(err=>{ return false;});
+                    {
+                        "arrayFilters": [
+                            { "outer._id": doc_id },
+                            { "inner.active": true }
+                        ]
                     }
-                ).catch(err=>{return false;});
+                )
+                    .then(
+                        async doc => {
+                            console.log(doc, '4');
+
+                            return await _student.findOneAndUpdate(
+                                {
+                                    '_id': _id,
+                                    'documents._id': doc_id
+                                },
+                                { $push: { 'documents.$.status': status } },
+                                { new: true }
+                            )
+                                .then(
+                                    doc => {
+                                        return true;
+                                    }
+                                ).catch(err => { return false; });
+                        }
+                    ).catch(err => { return false; });
             }
-                     
-            
-        }else{ //no existe estatus
-            
+
+
+        } else { //no existe estatus
+
             return await _student.findOneAndUpdate(
                 {
                     _id: _id,
-                    'documents._id':doc_id
+                    'documents._id': doc_id
                 },
-                { $push: { 'documents.$.status':status } },
+                { $push: { 'documents.$.status': status } },
                 { new: true }
             )
-            .then(
-                doc=>{
-                    return true;
-                }
-            ).catch(err=>{ return false;});
-        }    
+                .then(
+                    doc => {
+                        return true;
+                    }
+                ).catch(err => { return false; });
+        }
     }
-    
+
 }
 
-async function getActiveStatus(_id,filename){
-    console.log(filename,'===fole',_id);
+async function getActiveStatus(_id, filename) {
+    console.log(filename, '===fole', _id);
     let id = mongoose.Types.ObjectId(_id);
     return await _student.aggregate([
-        { 
+        {
             "$match": {
-                "_id" :id                           
+                "_id": id
             }
         },
         {
-           "$project": {
+            "$project": {
                 "documents": {
                     "$filter": {
                         "input": {
-                            "$map":{
-                                "input":"$documents",
-                                "as":"docs",
-                                "in":{
-                                   "$cond":[
-                                         {"$eq":["$$docs.filename",filename]},
-                                        {                                            
-                                            "filename":"$$docs.filename",
-                                            "_id":"$$docs._id",
-                                            "status":{
-                                                "$filter":{
-                                                    "input":"$$docs.status",
-                                                    "as":"status",
-                                                    "cond":{ "$eq": ["$$status.active",true] }
-                                                    }
+                            "$map": {
+                                "input": "$documents",
+                                "as": "docs",
+                                "in": {
+                                    "$cond": [
+                                        { "$eq": ["$$docs.filename", filename] },
+                                        {
+                                            "filename": "$$docs.filename",
+                                            "_id": "$$docs._id",
+                                            "status": {
+                                                "$filter": {
+                                                    "input": "$$docs.status",
+                                                    "as": "status",
+                                                    "cond": { "$eq": ["$$status.active", true] }
                                                 }
-                                            },                                           
-                                            false
-                                    ]      
-                                    }
+                                            }
+                                        },
+                                        false
+                                    ]
                                 }
-                            },
-                        "as": "cls",  
+                            }
+                        },
+                        "as": "cls",
                         "cond": "$$cls"
                     }
-                    
+
                 }
             }
-        }]).then( docm=>{
-            console.log('2',docm);
-            
+        }]).then(docm => {
+            console.log('2', docm);
+
             return docm;
 
-        }).catch(err=>{
+        }).catch(err => {
             return false;
         });
 }
 
 const getFolderId = (req, res) => {
-    const { _id } = req.params;                
-    _student.findOne({ _id: _id },{folderId:1,_id:0})
-    .populate({
-        path: 'folderId', model: 'Folder',
-        select: {
-            idFolderInDrive: 1
-        }
-    })
-    .then( folder=>{
-        
-        res.status(200).json({action:'get folderid',folder:folder.folderId});
-    }).catch(err=>{
-        console.log(err);
-        res.status(404).json({action:'get folderid',error:err});
-    });     
+    const { _id } = req.params;
+    _student.findOne({ _id: _id }, { folderId: 1, _id: 0 })
+        .populate({
+            path: 'folderId', model: 'Folder',
+            select: {
+                idFolderInDrive: 1
+            }
+        })
+        .then(folder => {
+
+            res.status(200).json({ action: 'get folderid', folder: folder.folderId });
+        }).catch(err => {
+            console.log(err);
+            res.status(404).json({ action: 'get folderid', error: err });
+        });
 };
 
-const updateDocumentLog = async (req,res)=>{
+const updateDocumentLog = async (req, res) => {
     const { _id } = req.params;
     const { filename, status } = req.body;
-    let statusChanged = await updateDocumentStatus(_id,filename,status);
+    let statusChanged = await updateDocumentStatus(_id, filename, status);
     console.log(statusChanged, req.body);
-    
-    if(statusChanged){
-        res.status(200).json({action:"Status updated"});
-    }else{
-        res.status(404).json({error:'Status without changes'});
+
+    if (statusChanged) {
+        res.status(200).json({ action: "Status updated" });
+    } else {
+        res.status(404).json({ error: 'Status without changes' });
     }
 };
 
 const getPeriodInscription = (req, res) => {
-    const { _id } = req.params;                
-    _student.findOne({ _id: _id },{idPeriodInscription:1,_id:0})
-    .populate({
-        path: 'idPeriodInscription', model: 'Period',
-        select: {
-            periodName: 1,
-            year:1
-        }
-    })
-    .exec(handler.handleOne.bind(null, 'student', res));     
+    const { _id } = req.params;
+    _student.findOne({ _id: _id }, { idPeriodInscription: 1, _id: 0 })
+        .populate({
+            path: 'idPeriodInscription', model: 'Period',
+            select: {
+                periodName: 1,
+                year: 1
+            }
+        })
+        .exec(handler.handleOne.bind(null, 'student', res));
 };
 
 
-const getDocumentsDrive = async (req,res)=>{
+const getDocumentsDrive = async (req, res) => {
     const { _id } = req.params;
-    let id = mongoose.Types.ObjectId(_id);       
-    const documents = await queryDocuments(id);    
-    
-    if(documents.error){
+    let id = mongoose.Types.ObjectId(_id);
+    const documents = await queryDocuments(id);
+
+    if (documents.error) {
         res.status(status.BAD_REQUEST).json({
-            error: documents.error,        
+            error: documents.error,
             action: 'get documents'
         });
-    }else{
+    } else {
         res.status(status.OK).json({
-            documents:documents,
+            documents: documents,
             action: 'get documents'
         });
     }
 };
 
-const queryDocuments = (id)=>{
-    
-    
-    return new Promise (async resolve =>{
+const queryDocuments = (id) => {
+
+
+    return new Promise(async resolve => {
         await _student.aggregate([
-            { 
+            {
                 "$match": {
-                    "_id" :id                
+                    "_id": id
                 }
             },
             {
@@ -742,38 +749,38 @@ const queryDocuments = (id)=>{
                         "$filter": {
                             "input": "$documents",
                             "as": "document",
-                            "cond": { 
-                                "$eq": [ "$$document.type", "DRIVE" ]
+                            "cond": {
+                                "$eq": ["$$document.type", "DRIVE"]
                             }
                         }
                     }
                 }
             }]
-        ).exec((err,documents)=>{                  
-            
-            if(err){
-               resolve({error:err});
-            }else{
-                resolve(documents[0].documents);                
+        ).exec((err, documents) => {
+
+            if (err) {
+                resolve({ error: err });
+            } else {
+                resolve(documents[0].documents);
             }
-            
+
         });
     });
-    
+
 };
 
-const getCareerDetail = (req,res)=>{
-    const {_id} = req.params;
-        
-    _student.findOne({_id:_id},{careerId:1}).populate('careerId').then(
-        student=>{
-            if(student){
-                res.status(status.OK).json({career:student.careerId});
-            }else{
-                res.status(status.NOT_FOUND).json({error:'No encontrado'})
+const getCareerDetail = (req, res) => {
+    const { _id } = req.params;
+
+    _student.findOne({ _id: _id }, { careerId: 1 }).populate('careerId').then(
+        student => {
+            if (student) {
+                res.status(status.OK).json({ career: student.careerId });
+            } else {
+                res.status(status.NOT_FOUND).json({ error: 'No encontrado' })
             }
         }
-    ).catch(err=>{res.status(status.BAD_REQUEST).json({error:err.toString()})});
+    ).catch(err => { res.status(status.BAD_REQUEST).json({ error: err.toString() }) });
 };
 
 /** End functions for inscription */
@@ -834,14 +841,14 @@ const csvIngles = (req, res) => {
     });
 };
 
-const getRequest = (req, res) => {    
-    const { _id } = req.params;    
+const getRequest = (req, res) => {
+    const { _id } = req.params;
     _request.find({ studentId: _id }).populate({
         path: 'studentId', model: 'Student',
         select: {
             fullName: 1,
-            controlNumber:1,
-            career:1
+            controlNumber: 1,
+            career: 1
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
 };
@@ -860,26 +867,26 @@ const getResource = (req, res) => {
             var fileInformation = request.documents.find(f => f.nameFile.includes(resource.toUpperCase()));
             if (!fileInformation)
                 return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
-            res.set('Content-Type', 'image/jpeg');            
+            res.set('Content-Type', 'image/jpeg');
             fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
         });
     });
 };
 
 const getFilePDF = (req, res) => {
-  const { resource, _id } = req.params;
-  _request.findOne({ _id: _id }, (err, request) => {
-      if (!err && request) {
-          const fileInformation = request.documents.find(file => file.nameFile.includes(resource.toUpperCase()));
-          if (!fileInformation) {
-              return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
-          }
-          res.set('Content-Type', 'application/pdf');
-          fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
-      } else {
-          return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
-      }
-  });
+    const { resource, _id } = req.params;
+    _request.findOne({ _id: _id }, (err, request) => {
+        if (!err && request) {
+            const fileInformation = request.documents.find(file => file.nameFile.includes(resource.toUpperCase()));
+            if (!fileInformation) {
+                return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
+            }
+            res.set('Content-Type', 'application/pdf');
+            fs.createReadStream(path.join('documents', fileInformation.nameFile)).pipe(res);
+        } else {
+            return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
+        }
+    });
 };
 
 const getStudentRoleId = () => {
@@ -892,54 +899,55 @@ const getStudentRoleId = () => {
     });
 };
 
-const getDocumentsStatus = async (req,res)=>{
+const getDocumentsStatus = async (req, res) => {
     const { _id } = req.params;
-    let id = mongoose.Types.ObjectId(_id);       
-    const documents = await queryDocuments(id);        
-    
-    if(documents == null){
+    let id = mongoose.Types.ObjectId(_id);
+    const documents = await queryDocuments(id);
+
+    if (documents == null) {
         res.status(status.BAD_REQUEST).json({
-            error: 'No tiene documentos',        
+            error: 'No tiene documentos',
             action: 'get documents status'
         });
-    }else if(documents.error){
+    } else if (documents.error) {
         res.status(status.BAD_REQUEST).json({
-            error: documents.error,        
+            error: documents.error,
             action: 'get documents status'
         });
-    }else{
+    } else {
         res.status(status.OK).json({
-            documents:documents.map( 
-                doc=> 
-                    {
-                        const stat = doc.status.filter(
-                            st=> st.active == true)[0];
-                        return {
-                        filename:doc.filename,
-                        statusName: stat ? stat.name : null}
+            documents: documents.map(
+                doc => {
+                    const stat = doc.status.filter(
+                        st => st.active == true)[0];
+                    return {
+                        filename: doc.filename,
+                        statusName: stat ? stat.name : null
                     }
-                
-                
-                ).filter(
-                    docFiltered=>docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
-                    ),
+                }
+
+
+            ).filter(
+                docFiltered => docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+            ),
             action: 'get documents status'
         });
     }
 };
 
-const documentsChanged = (req,res)=>{
+const documentsChanged = (req, res) => {
     _student.find({
-        "$or":[{"inscriptionStatus":"En Captura"},{"inscriptionStatus":"En Proceso"}]}).then( students=>{
-            if(students.length == 0){
-               return res.status(status.NOT_FOUND).json({err:'Not found'});
-            }else{
-                const sts = students.map( stu=>({
-                    _id:stu._id,
+        "$or": [{ "inscriptionStatus": "En Captura" }, { "inscriptionStatus": "En Proceso" }]
+    }).then(students => {
+        if (students.length == 0) {
+            return res.status(status.NOT_FOUND).json({ err: 'Not found' });
+        } else {
+            const sts = students.map(stu => ({
+                _id: stu._id,
 
-                }))
-            }
-        });
+            }))
+        }
+    });
 };
 
 
@@ -962,6 +970,7 @@ module.exports = (Student, Request, Role, Period) => {
         verifyStatus,
         createWithoutImage,
         assignDocument,
+        getStudentByControlNumber,
         getRequest,
         getResource,
         getFilePDF,

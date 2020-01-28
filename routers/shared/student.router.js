@@ -5,7 +5,7 @@ let UPLOAD_PATH = 'images';
 var storage = multer.diskStorage({
     destination: UPLOAD_PATH,
     filename: function (req, file, cb) {
-        console.log(req.params,'filenameeeee');
+        console.log(req.params, 'filenameeeee');
         cb(null, file.fieldname + '-' + req.params._id)
     }
 });
@@ -42,10 +42,10 @@ module.exports = (wagner) => {
 
     router.get('/:resource/:_id', (req, res) =>
         studentCtrl.getResource(req, res));
-    
+
     router.get('/get/documents/drive/:_id', (req, res) =>
         studentCtrl.getDocumentsDrive(req, res));
-    
+
     router.get('/get/documents/status/:_id', (req, res) =>
         studentCtrl.getDocumentsStatus(req, res));
 
@@ -63,6 +63,9 @@ module.exports = (wagner) => {
         console.log('Creando Student con image!');
         studentCtrl.create(req, res);
     });
+
+    router.post('/search/numero', (req, res) =>
+        studentCtrl.getStudentByControlNumber(req, res));
 
     router.post('/create', (req, res) =>
         studentCtrl.createWithoutImage(req, res));

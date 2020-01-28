@@ -62,7 +62,7 @@ const create = async (req, res) => {
                     }
                 });
         }).catch(err => {
-            console.log("errr",err);
+            console.log("errr", err);
             res.status(status.INTERNAL_SERVER_ERROR).json({
                 error: err.toString()
             })
@@ -75,6 +75,42 @@ const create = async (req, res) => {
     }
 
 };
+
+const createTitled = (req, res) => {
+    let request = req.body;
+    request.applicationDate = new Date();
+    request.lastModified = new Date();
+    _request.findOne({ studentId: request.studentId }, (error, titled) => {
+        if (error) {
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
+        }
+        if (titled) {
+            return handler.handleError(res, status.NOT_FOUND, { message: 'El estudiante ya cuenta con una solicitud' });
+        }
+        else {
+            _request.create(request).then(created => {
+                res.json({
+                    request: created
+                });
+            }).catch(err => {
+                res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                })
+            });
+        }
+    })
+
+}
+
+
+const removeTitled = (req, res) => {
+    const { id } = req.params;
+    _request.deleteOne({ _id: id }, function (error) {
+        if (error)
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: 'Titulación no encontrada' });
+        return res.status(200).json({ message: "Successful" });
+    });
+}
 
 const getAllRequest = (req, res) => {
     _request.find({ status: { $ne: 'Aprobado' } })
@@ -666,7 +702,7 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.PROCESS: {
                         request.status = eStatusRequest.PROCESS;
                         request.proposedDate = data.appointment;
-                        request.place = 'Aula de Titulación';
+                        request.place = 'Magna de Titulación (J3)';
                         item.status = eStatusRequest.PROCESS;
                         break;
                         // None->Process->Aceptada
@@ -822,9 +858,19 @@ const groupDiary = (req, res) => {
     let data = req.body;
     // let StartDate = new Date();
     // StartDate.setDate(1);
-    // StartDate.setMonth(data.month);
-    let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
+    // StartDate.setMonth(data.month);    
+    let StartDate;
+    let EndDate;
+    if (data.isWeek) {
+        let tmpDate = new Date(data.min);
+        StartDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 0, 0, 0, 0);
+        tmpDate = new Date(data.max);
+        EndDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 23, 59, 59, 0);
+    } else {
+        StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
+        EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
+    }
+    // console.log("FECHAS", StartDate, "--", EndDate);
     let query =
         [
             {
@@ -848,7 +894,7 @@ const groupDiary = (req, res) => {
                     {
                         $push: {
                             id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
-                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$product'
+                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$titulationOption'
                         }
                     }
                 }
@@ -1054,6 +1100,7 @@ module.exports = (Request, Range, Folder, Student) => {
     _student = Student;
     return ({
         create,
+        createTitled,
         getById,
         getAllRequest,
         getAllRequestApproved,
@@ -1072,5 +1119,6 @@ module.exports = (Request, Range, Folder, Student) => {
         StudentsToSchedule,
         verifyCode,
         sendVerificationCode,
+        removeTitled
     });
 };
