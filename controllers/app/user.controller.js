@@ -119,11 +119,11 @@ const login = (req, res) => {
                 user.validatePasswd(password, user.password, invalid => {
                     // Password inválido
                     console.log("inva", invalid);
-                    // if (invalid) {
-                    //     return res.status(status.FORBIDDEN).json({
-                    //         error: 'password is invalid'
-                    //     });
-                    // }
+                    if (invalid) {
+                        return res.status(status.FORBIDDEN).json({
+                            error: 'password is invalid'
+                        });
+                    }
                     // Password válido, se genera el token
                     const token = jwt.sign({ email: user.email }, config.secret);
                     let formatUser = {
@@ -181,9 +181,9 @@ const login = (req, res) => {
                                         // Si fue encontrado
                                         if (oneUser) {
                                             // Quitar permiso para acceder a la credencial
-                                            if (isGraduate) {
-                                                oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
-                                            }
+                                            // if (isGraduate) {
+                                            //     oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
+                                            // }
                                             // Se contruye el token
                                             console.log('1');
                                             // verificar si se cambio de semestre
@@ -605,8 +605,6 @@ const validateEnglishApproved = (controlNumber) => {
                 }
             }
         }, (err, doc) => {
-            console.log(doc, '2.2', err);
-
             if (!err && doc) {
                 resolve(true);
             }
@@ -614,27 +612,6 @@ const validateEnglishApproved = (controlNumber) => {
         });
     });
 };
-
-const validateGraduateStatus = (controlNumber) => {
-    return new Promise(async (resolve) => {
-        const res = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/estatusAlumno/${controlNumber}`);
-        res.end()
-        res.on('response', (data) => {
-            const resStatus = data.body;
-            if (resStatus && resStatus.error === 'FALSE') {
-                if (resStatus.data.estatus_alumno === 'EGR') {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            } else {
-                resolve(false);
-            }
-        });
-    });
-};
-
-
 
 const getRoleId = (roleName) => {
 

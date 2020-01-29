@@ -87,8 +87,5 @@ module.exports = (wagner) => {
     router.put('/document/status/:_id', (req, res) =>
         studentCtrl.updateDocumentLog(req, res));
 
-    router.post('/csv', (req, res) =>
-        studentCtrl.csvIngles(req, res));
-
     return router;
 };

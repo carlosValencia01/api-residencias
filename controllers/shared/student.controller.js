@@ -503,6 +503,7 @@ const assignDocument = (req, res) => {
         }
     });
 };
+
 /** Start functions for inscription */
 const assignDocumentDrive = (req, res) => {
     const { _id } = req.params;
@@ -528,6 +529,7 @@ const assignDocumentDrive = (req, res) => {
         });
     });    
 };
+
 async function updateDocumentStatus(_id,docName,status){
     
     // console.log('1',status);
@@ -707,7 +709,6 @@ const getPeriodInscription = (req, res) => {
     .exec(handler.handleOne.bind(null, 'student', res));     
 };
 
-
 const getDocumentsDrive = async (req,res)=>{
     const { _id } = req.params;
     let id = mongoose.Types.ObjectId(_id);       
@@ -777,62 +778,6 @@ const getCareerDetail = (req,res)=>{
 };
 
 /** End functions for inscription */
-
-const csvIngles = (req, res) => {
-    const _scholar = req.body;
-    var findStudent = (data) => {
-        return _student.findOne({ controlNumber: data.controlNumber }).then(
-            oneStudent => {
-                if (!oneStudent) {
-                    data.isNew = true;
-                    return data;
-                }
-                else {
-                    data._id = oneStudent._id;
-                    return data;
-                }
-            }
-        );
-    };
-
-    var secondStep = (data) => {
-        if (data.isNew) {
-            //Add Date;
-            data.document.releaseDate = new Date();
-            data.documents = new Array(data.document);
-            //Remove properties
-            delete data.document;
-            delete data.isNew;
-            return _student.create(data);
-        }
-        else {
-            const _doc = data.document;
-            _doc.releaseDate = new Date();
-            const query = { _id: data._id, documents: { $elemMatch: { type: _doc.type } } };
-            const push = { $push: { documents: _doc } };
-            _student.findOne(query).then(studentDoc => {
-                if (studentDoc) {
-                    return _student.findOneAndUpdate(query, { $set: { 'documents.$.status': _doc.status, 'documents.$.releaseDate': new Date() } }, { new: true });
-                }
-                else
-                    return _student.findOneAndUpdate({ _id: data._id }, push, { new: true });
-            });
-        }
-    };
-
-    var actions = _scholar.map(findStudent);
-    var results = Promise.all(actions);
-
-    results.then(data => {
-        return Promise.all(data.map(secondStep));
-    });
-
-    results.then((data) => {
-        res.json({ 'Estatus': 'Bien', 'Data': data });
-    }).catch((error) => {
-        return res.json({ Error: error });
-    });
-};
 
 const getRequest = (req, res) => {    
     const { _id } = req.params;    
@@ -942,7 +887,6 @@ const documentsChanged = (req,res)=>{
         });
 };
 
-
 module.exports = (Student, Request, Role, Period) => {
     _student = Student;
     _request = Request;
@@ -954,7 +898,6 @@ module.exports = (Student, Request, Role, Period) => {
         updateOne,
         getAll,
         search,
-        csvIngles,
         uploadImage,
         updateStudent,
         getByControlNumber,
