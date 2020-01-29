@@ -6,8 +6,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 const superagent = require('superagent');
 const mongoose = require('mongoose');
-var FCM = require('fcm-node');
-var fcm = new FCM(config.FCM_SERVERKEY);
+
 
 let _student;
 let _request;
@@ -946,7 +945,9 @@ const documentsChanged = (req,res)=>{
 
 // NOTIFICATIONS FOR APP =========================
 const sendNotification = (req,res)=>{
-    const {token,title,body} = req.body;
+    var FCM = require('fcm-node');
+    var fcm = new FCM(config.FCM_SERVERKEY);
+    const {token,title,body,screen} = req.body;
 
     const message = { 
         registration_ids: token, 
@@ -955,12 +956,13 @@ const sendNotification = (req,res)=>{
             title, 
             body 
         },
-        sound:'default',
-        click_action:'FCM_PLUGIN_ACTIVITY'        
-        // data: {  //you can send only notification or only data(or include both)
-        //     my_key: 'my value',
-        //     my_another_key: 'my another value'
-        // }
+        // sound:'default',
+        click_action:'FCM_PLUGIN_ACTIVITY' ,       
+        data: {  //you can send only notification or only data(or include both)
+            screen,
+            title,
+            body            
+        }
     };    
     fcm.send(message, (err, response)=>{
         if (err) {
