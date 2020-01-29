@@ -21,8 +21,10 @@ module.exports = (wagner) => {
     const Inscription = require('../inscriptions/inscription.model');
 
     // Reception act
-    const Request = require('../reception-act/request.model');
+    const English = require('../reception-act/english.model');
     const Range = require('../reception-act/ranges.models');
+    const Request = require('../reception-act/request.model');
+
     // Shared
     const Department = require('./department.model');
     const Document = require('./document.model');
@@ -42,6 +44,8 @@ module.exports = (wagner) => {
         Inscription,
 
         // Reception act
+        English,
+        Range,
         Request,
 
         // Shared
@@ -51,7 +55,6 @@ module.exports = (wagner) => {
         Position,
         Student,
         Career,
-        Range,
     };
 
     _.each(models, (v, k) => {

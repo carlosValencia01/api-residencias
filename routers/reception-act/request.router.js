@@ -9,11 +9,14 @@ const UPLOAD_FILE = 'documents/';
 const UPLOAD_FILE_TEMP = 'tmpFile/';
 
 module.exports = (wagner) => {
-    const requestCtrl = wagner.invoke((Request, Range, Folder) =>
-        require('../../controllers/reception-act/request.controller')(Request, Range, Folder));
+    const requestCtrl = wagner.invoke((Request, Range, Folder, Student) =>
+        require('../../controllers/reception-act/request.controller')(Request, Range, Folder, Student));
 
     router.post('/create/:_id', (req, res) => {
         return requestCtrl.create(req, res);
+    });
+    router.post('/titled', (req, res) => {
+        return requestCtrl.createTitled(req, res);
     });
 
     router.put('/:_id', (req, res) => {
@@ -63,6 +66,15 @@ module.exports = (wagner) => {
 
     router.get('/:_id', (req, res) =>
         requestCtrl.getById(req, res));
+
+    router.get('/verify/:_requestId/:_code', (req, res) =>
+        requestCtrl.verifyCode(req, res));
+
+    router.get('/sendCode/:_requestId', (req, res) =>
+        requestCtrl.sendVerificationCode(req, res));
+
+    router.delete('/:id', (req, res) =>
+        requestCtrl.removeTitled(req, res));
 
     return router;
 };

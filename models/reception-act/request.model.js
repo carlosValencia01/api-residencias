@@ -18,7 +18,7 @@ const requestSchema = new mongoose.Schema({
     lastModified: { type: Date, required: true },
     observation: { type: String, default: '' },
     doer: { type: String },
-    adviser: { type: String },
+    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String } },
     noIntegrants: { type: Number },
     jury: [
         { name: { type: String }, title: { type: String }, cedula: { type: String } }
@@ -45,7 +45,12 @@ const requestSchema = new mongoose.Schema({
             status: { type: String, enum: ['Process', 'Accept', 'Reject', 'Omit'] },
             driveId: { type: String }
         }
-    ]
+    ],
+    grade: { type: String, uppercase: true, trim: true },
+    titulationOption: { type: String, unique: true, trim: true },
+    verificationCode: { type: String, uppercase: true, trim: true },
+    verificationStatus: { type: Boolean, default: false },
+    sentVerificationCode: { type: Boolean }
 });
 
 const requestModel = mongoose.model('Request', requestSchema, 'requests');

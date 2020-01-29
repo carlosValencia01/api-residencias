@@ -18,32 +18,32 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'users', res));
 };
 
-const getSecretaries = async (req,res)=>{
+const getSecretaries = async (req, res) => {
     const idRole = await getRoleId('Secretaria escolares');
 
-    if(idRole){                
-        _user.find({idRole:idRole},{password:0,idRole:0,email:0,role:0})
-        .populate({
-            path: 'employeeId', model: 'Employee',
-            select: {
-                name: 1,_id:0
-            }
-        }).populate({
-            path: 'careers.careerId', model: 'Career',
-            select: {
-                fullName: 1,shortName:1,acronym:1
-            }
-        }).then(
-            users=>{
-                if(users){
-                    res.status(status.OK).json({users:users});
-                }else{
-                    res.status(status.NOT_FOUND).json({msg:"Not found"});
+    if (idRole) {
+        _user.find({ idRole: idRole }, { password: 0, idRole: 0, email: 0, role: 0 })
+            .populate({
+                path: 'employeeId', model: 'Employee',
+                select: {
+                    name: 1, _id: 0
                 }
-            }
-        );
+            }).populate({
+                path: 'careers.careerId', model: 'Career',
+                select: {
+                    fullName: 1, shortName: 1, acronym: 1
+                }
+            }).then(
+                users => {
+                    if (users) {
+                        res.status(status.OK).json({ users: users });
+                    } else {
+                        res.status(status.NOT_FOUND).json({ msg: "Not found" });
+                    }
+                }
+            );
     }
-    
+
 };
 
 const register = (req, res) => {
@@ -68,15 +68,15 @@ const register = (req, res) => {
 const login = (req, res) => {
     const { email, password } = req.body;
     let query = { email: email };
-    const options = {        
-        "rejectUnauthorized": false, 
-        host: 'wsescolares.tepic.tecnm.mx',    
-        port: 443,     
-        path: `/alumnos/info/${email}`,    
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/info/${email}`,
         // authentication headers     
-        headers: {     
-           'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
-        }     
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
     };
     const dataStudent = JSON.stringify({
         nc: email,
@@ -103,7 +103,7 @@ const login = (req, res) => {
             }
         })
         .populate({
-            path: 'employeeId', model:'Employee',
+            path: 'employeeId', model: 'Employee',
             select: {
                 name: 1, _id: 0
             }
@@ -115,9 +115,10 @@ const login = (req, res) => {
                 });
             }
             if (user) {
-                console.log(user);
+                console.log("exist user");
                 user.validatePasswd(password, user.password, invalid => {
                     // Password inválido
+                    console.log("inva", invalid);
                     if (invalid) {
                         return res.status(status.FORBIDDEN).json({
                             error: 'password is invalid'
@@ -139,6 +140,7 @@ const login = (req, res) => {
                             permissions: user.idRole.permissions
                         }
                     };
+                    console.log("oko",)
                     //Se retorna el usuario y token
                     return res.json({
                         user: formatUser,
@@ -179,9 +181,9 @@ const login = (req, res) => {
                                         // Si fue encontrado
                                         if (oneUser) {
                                             // Quitar permiso para acceder a la credencial
-                                            if (isGraduate) {
-                                                oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
-                                            }
+                                            // if (isGraduate) {
+                                            //     oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
+                                            // }
                                             // Se contruye el token
                                             console.log('1');
                                             // verificar si se cambio de semestre
@@ -302,7 +304,7 @@ const login = (req, res) => {
                 login.write(dataStudent);
                 login.end();
             }
-    });
+        });
 };
 
 const getStudentData = (email,password)=>{
@@ -448,18 +450,18 @@ const updateFullName = (req,res)=>{
         port: 443,     
         path: `/alumnos/info/${nc}`,    
         // authentication headers     
-        headers: {     
-           'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
-        }     
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
     };
 
-    var studentNew = "";                                                                                                       
-    https.get(options, function(apiInfo){
-        
-        apiInfo.on('data', function(data) {
+    var studentNew = "";
+    https.get(options, function (apiInfo) {
+
+        apiInfo.on('data', function (data) {
             studentNew += data;
         });
-        apiInfo.on('end', ()=> {
+        apiInfo.on('end', () => {
             //json con los datos del alumno
             studentNew = JSON.parse(studentNew);
             studentNew.firstName = studentNew.firstname;
@@ -471,22 +473,22 @@ const updateFullName = (req,res)=>{
             studentNew.originSchool = studentNew.originschool;
             studentNew.nameOriginSchool = studentNew.nameoriginschool;
             studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
-            
-            _student.findOneAndUpdate({controlNumber:nc},studentNew, { new: true }).then(
-                stu=>{
-                    if(stu) res.status(status.OK).json({'action':'update fullname',stu});
-                    else res.status(status.BAD_REQUEST).json({'err':'student not found'})
-                }
-            ).catch(err=>res.status(status.BAD_REQUEST).json({err:err}));           
 
-            
+            _student.findOneAndUpdate({ controlNumber: nc }, studentNew, { new: true }).then(
+                stu => {
+                    if (stu) res.status(status.OK).json({ 'action': 'update fullname', stu });
+                    else res.status(status.BAD_REQUEST).json({ 'err': 'student not found' })
+                }
+            ).catch(err => res.status(status.BAD_REQUEST).json({ err: err }));
+
+
         });
-        apiInfo.on('error', function(e) {
+        apiInfo.on('error', function (e) {
             return res.status(status.NOT_FOUND).json({
                 error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta4'
             });
         });
-}); 
+    });
 };
 
 
@@ -513,8 +515,8 @@ const getDataEmployee = (req, res) => {
             if (!err && user) {
                 const employeeData = user.employeeId.toObject();
                 const activePositions = employeeData.positions
-                    .filter(({status}) => status === 'ACTIVE')
-                    .map(({position}) => position);
+                    .filter(({ status }) => status === 'ACTIVE')
+                    .map(({ position }) => position);
                 employeeData.positions = activePositions.slice();
                 res.status(status.OK).json({
                     employee: employeeData
@@ -553,33 +555,34 @@ const updateUserData = (req, res) => {
             }
         });
     })
-    .then(data => {
-        if (!data) {
+        .then(data => {
+            if (!data) {
+                return res.json({
+                    status: status.INTERNAL_SERVER_ERROR,
+                    message: 'Contraseña incorrecta'
+                });
+            }
             return res.json({
-                status: status.INTERNAL_SERVER_ERROR,
-                message: 'Contraseña incorrecta'
+                password: data.password,
+                employee: data.employee
             });
-        }
-        return res.json({
-            password: data.password,
-            employee: data.employee
+        })
+        .catch(_ => {
+            return res.json({
+                status: status.NOT_FOUND,
+                password: false,
+                employee: false
+            });
         });
-    })
-    .catch(_ => {
-        return res.json({
-            status: status.NOT_FOUND,
-            password: false,
-            employee: false
-        });
-    });
 
     const changePassword = (userData) => new Promise((resolve) => {
         userData.encrypt(user.newPassword, async (pass) => {
             if (pass) {
                 await _user.updateOne({ _id: userData._id }, {
-                    $set: { password: pass }}, (err, _) => {
-                        resolve(!err);
-                    });
+                    $set: { password: pass }
+                }, (err, _) => {
+                    resolve(!err);
+                });
             } else {
                 resolve(false);
             }
@@ -588,7 +591,7 @@ const updateUserData = (req, res) => {
 
     const changeEmployee = (employeeId) => new Promise((resolve) => {
         if (employee.name) {
-             _employee.updateOne({_id: employeeId}, {
+            _employee.updateOne({ _id: employeeId }, {
                 $set: {
                     name: employee.name
                 }
@@ -601,38 +604,38 @@ const updateUserData = (req, res) => {
     });
 };
 
-const updateCareersUser = (req,res)=>{
+const updateCareersUser = (req, res) => {
     const careerId = req.body.careerId;
-    const {action,_id} = req.params;
+    const { action, _id } = req.params;
     console.log(req.body);
-    
-    console.log(careerId,action,_id);
-    if(careerId){
 
-        const query = {_id:_id};
-        if(action === 'insert'){
-            _user.findOneAndUpdate(query, {'$push':{careers:{careerId}}})
-            .then(
-                user=>{
-                    if(user){
-                        res.status(status.OK).json({msg:'updated'});
-                    }else{
-                        res.status(status.NOT_FOUND).json({err:'not found'});
+    console.log(careerId, action, _id);
+    if (careerId) {
+
+        const query = { _id: _id };
+        if (action === 'insert') {
+            _user.findOneAndUpdate(query, { '$push': { careers: { careerId } } })
+                .then(
+                    user => {
+                        if (user) {
+                            res.status(status.OK).json({ msg: 'updated' });
+                        } else {
+                            res.status(status.NOT_FOUND).json({ err: 'not found' });
+                        }
                     }
-                }
-            ).catch(
-                err=>{
-                    console.log(err);
-                    
-                    res.status(status.NOT_FOUND).json({err:'not found'});
-                }
-            );
-        }else if(action === 'delete'){
-            _user.findOneAndUpdate(query, {'$pull':{careers:{careerId}}})
-            .exec(handler.handleOne.bind(null, 'user', res));
+                ).catch(
+                    err => {
+                        console.log(err);
+
+                        res.status(status.NOT_FOUND).json({ err: 'not found' });
+                    }
+                );
+        } else if (action === 'delete') {
+            _user.findOneAndUpdate(query, { '$pull': { careers: { careerId } } })
+                .exec(handler.handleOne.bind(null, 'user', res));
         }
-    }else{
-        res.status(status.NOT_FOUND).json({err:'not found'});
+    } else {
+        res.status(status.NOT_FOUND).json({ err: 'not found' });
     }
 };
 
@@ -646,8 +649,6 @@ const validateEnglishApproved = (controlNumber) => {
                 }
             }
         }, (err, doc) => {
-            console.log(doc,'2.2',err);
-            
             if (!err && doc) {
                 resolve(true);
             }
@@ -656,30 +657,9 @@ const validateEnglishApproved = (controlNumber) => {
     });
 };
 
-const validateGraduateStatus = (controlNumber) => {
-    return new Promise(async (resolve) => {
-        const res = superagent.get(`${config.urlAPI}:8080/sii/restful/index.php/alumnos/estatusAlumno/${controlNumber}`);
-        res.end()
-        res.on('response', (data) => {
-            const resStatus = data.body;
-            if (resStatus && resStatus.error === 'FALSE') {
-                if (resStatus.data.estatus_alumno === 'EGR') {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            } else {
-                resolve(false);
-            }
-        });
-    });
-};
-
-
-
 const getRoleId = (roleName) => {
-    
-    
+
+
     return new Promise(async (resolve) => {
         await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
             if (!err && role) {
@@ -699,7 +679,7 @@ const getRoleId = (roleName) => {
         .populate({
             path: 'careerId', model: 'Career',
             select: {
-                fullName:1,shortName:1,acronym:1,_id:1
+                fullName: 1, shortName: 1, acronym: 1, _id: 1
             }
         }).populate({
             path: 'folderId', model: 'Folder',
@@ -785,20 +765,21 @@ const getRoleId = (roleName) => {
                     
                 }            
         });
- };
+};
 
 const getCareerId = (careerName) => {
-    
-    
+
+
     return new Promise(async (resolve) => {
-        await _career.findOne({fullName:careerName}, (err, career) => {
+        await _career.findOne({ fullName: careerName }, (err, career) => {
             if (!err && career) {
                 resolve(career.id);
             }
         });
     });
 };
-module.exports = (User, Student, Employee, Role,Career) => {
+
+module.exports = (User, Student, Employee, Role, Career) => {
     _user = User;
     _student = Student;
     _employee = Employee;
@@ -813,6 +794,6 @@ module.exports = (User, Student, Employee, Role,Career) => {
         getSecretaries,
         updateCareersUser,
         studentLogin,
-        updateFullName,        
+        updateFullName,
     });
 };

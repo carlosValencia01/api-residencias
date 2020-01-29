@@ -2,10 +2,16 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
+
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
+const sendMail = require('../shared/mail.controller');
+const verifyCodeTemplate = require('../../templates/verifyCode');
+
 let _Drive;
 let _request;
 let _ranges;
+let _student;
+
 const create = async (req, res) => {
     let request = req.body;
     request.lastModified = new Date();
@@ -16,6 +22,13 @@ const create = async (req, res) => {
     request.status = eStatusRequest.PROCESS;
     //Add
     request.department = { name: request.department, boss: request.boss };
+    request.adviser = { name: request.adviserName, title: request.adviserTitle, cedula: request.adviserCedula };
+    request.grade = await _getGradeName(request.studentId);
+    if (!request.grade) {
+        return res.status(status.INTERNAL_SERVER_ERROR)
+            .json({ error: 'Error al recuperar grado' });
+    }
+    request.verificationCode = _generateVerificationCode(6);
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -26,8 +39,30 @@ const create = async (req, res) => {
             });
         request.documents = tmpFile;
         _request.create(request).then(created => {
-            res.json({ request: created });
+            // Send email with verification code
+            const emailData = {
+                email: request.email,
+                subject: 'Acto recepcional - Verificación de correo electrónico',
+                sender: 'Servicios escolares <escolares_05@ittepic.edu.mx>',
+                message: verifyCodeTemplate(request.verificationCode)
+            };
+            _sendEmail(emailData)
+                .then(async data => {
+                    if (data.code === 202) {
+                        await _updateSentVerificationCode(created._id, true);
+                        res.status(status.OK).json({ request: created })
+                    } else {
+                        await _updateSentVerificationCode(created._id, false);
+                        res.status(status.OK)
+                            .json({
+                                code: status.INTERNAL_SERVER_ERROR,
+                                request: created,
+                                error: 'Error al envíar el correo'
+                            });
+                    }
+                });
         }).catch(err => {
+            console.log("errr", err);
             res.status(status.INTERNAL_SERVER_ERROR).json({
                 error: err.toString()
             })
@@ -41,6 +76,42 @@ const create = async (req, res) => {
 
 };
 
+const createTitled = (req, res) => {
+    let request = req.body;
+    request.applicationDate = new Date();
+    request.lastModified = new Date();
+    _request.findOne({ studentId: request.studentId }, (error, titled) => {
+        if (error) {
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
+        }
+        if (titled) {
+            return handler.handleError(res, status.NOT_FOUND, { message: 'El estudiante ya cuenta con una solicitud' });
+        }
+        else {
+            _request.create(request).then(created => {
+                res.json({
+                    request: created
+                });
+            }).catch(err => {
+                res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                })
+            });
+        }
+    })
+
+}
+
+
+const removeTitled = (req, res) => {
+    const { id } = req.params;
+    _request.deleteOne({ _id: id }, function (error) {
+        if (error)
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: 'Titulación no encontrada' });
+        return res.status(200).json({ message: "Successful" });
+    });
+}
+
 const getAllRequest = (req, res) => {
     _request.find({ status: { $ne: 'Aprobado' } })
         .populate
@@ -51,7 +122,7 @@ const getAllRequest = (req, res) => {
                 controlNumber: 1,
                 career: 1
             }
-        })
+        }).sort({ applicationDate: 1 })
         .exec(handler.handleMany.bind(null, 'request', res));
 };
 
@@ -68,7 +139,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -82,7 +153,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -96,7 +167,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -110,7 +181,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -124,7 +195,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1
                     }
-                })
+                }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -181,17 +252,46 @@ const correctRequest = async (req, res) => {
     request.phase = eRequest.CAPTURED;
     request.status = eStatusRequest.PROCESS;
     request.observation = '';
+    if (request.verificationCode === '000000') {
+        request.verificationCode = _generateVerificationCode(6);
+    }
     let result = { isCorrect: true };//Valor por defecto
     if (typeof (req.files) !== 'undefined' && req.files !== null)
         result = await _Drive.uploadFile(req, eOperation.EDIT);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
-        _request.findOneAndUpdate({ studentId: _id }, request).then(update => {
-            res.json({ request: update });
-        }).catch(err => {
-            res.status(status.INTERNAL_SERVER_ERROR).json({
-                error: err.toString()
+        _request.findOneAndUpdate({ studentId: _id }, request)
+            .then(update => {
+                // Send email with verification code
+                if (request.verificationCode) {
+                    const emailData = {
+                        email: request.email,
+                        subject: 'Acto recepcional - Verificación de correo electrónico',
+                        sender: 'Servicios escolares <escolares_05@ittepic.edu.mx>',
+                        message: verifyCodeTemplate(request.verificationCode)
+                    };
+                    _sendEmail(emailData)
+                        .then(async data => {
+                            if (data.code === 202) {
+                                await _updateSentVerificationCode(update._id, true);
+                                res.status(status.OK).json({ request: update })
+                            } else {
+                                await _updateSentVerificationCode(update._id, false);
+                                res.status(status.OK)
+                                    .json({
+                                        code: status.INTERNAL_SERVER_ERROR,
+                                        request: update,
+                                        error: 'Error al envíar el correo'
+                                    });
+                            }
+                        });
+                } else {
+                    res.status(status.OK).json({ request: update })
+                }
+            }).catch(err => {
+                res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                })
             })
-        })
     }
     else {
         res.status(status.INTERNAL_SERVER_ERROR).json({
@@ -222,7 +322,7 @@ const addIntegrants = (req, res) => {
             return res.status(status.OK).json(json);
         });
     });
-}
+};
 
 const omitFile = (req, res) => {
     const { _id } = req.params;
@@ -252,7 +352,7 @@ const omitFile = (req, res) => {
                 }).exec(handler.handleOne.bind(null, 'request', res));
             }
         });
-}
+};
 
 // const uploadFile = (req, res) => {
 //     const { _id } = req.params;
@@ -345,7 +445,7 @@ const uploadFile = (req, res) => {
                 }
             }
         });
-}
+};
 
 const getResource = (req, res) => {
     const { _id } = req.params;
@@ -443,7 +543,7 @@ const releasedRequest = (req, res) => {
     let panel = data.jury;
     _request.update({ _id: _id }, {
         $set: {
-            phase: eRequest.RELEASED,
+            phase: data.upload ? eRequest.RELEASED : eRequest.REGISTERED,
             status: eStatusRequest.NONE,
             proposedHour: data.proposedHour,
             duration: data.duration,
@@ -602,7 +702,7 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.PROCESS: {
                         request.status = eStatusRequest.PROCESS;
                         request.proposedDate = data.appointment;
-                        request.place = 'Aula de Titulación';
+                        request.place = 'Magna de Titulación (J3)';
                         item.status = eStatusRequest.PROCESS;
                         break;
                         // None->Process->Aceptada
@@ -758,14 +858,24 @@ const groupDiary = (req, res) => {
     let data = req.body;
     // let StartDate = new Date();
     // StartDate.setDate(1);
-    // StartDate.setMonth(data.month);
-    let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    // StartDate.setMonth(data.month);    
+    let StartDate;
+    let EndDate;
+    if (data.isWeek) {
+        let tmpDate = new Date(data.min);
+        StartDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 0, 0, 0, 0);
+        tmpDate = new Date(data.max);
+        EndDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 23, 59, 59, 0);
+    } else {
+        StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
+        EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
+    }
+    // console.log("FECHAS", StartDate, "--", EndDate);
     let query =
         [
             {
                 $match: {
-                    "proposedDate": { $gte: StartDate, $lte: new Date(StartDate.getFullYear(), data.month + 1, 0) },
+                    "proposedDate": { $gte: StartDate, $lte: EndDate },
                     $or: [{ "phase": "Asignado", "status": "Process" }, { "phase": "Realizado" }]
                 }
             },
@@ -784,7 +894,7 @@ const groupDiary = (req, res) => {
                     {
                         $push: {
                             id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
-                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration'
+                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$titulationOption'
                         }
                     }
                 }
@@ -810,14 +920,16 @@ const groupDiary = (req, res) => {
     });
 
     //.exec(handler.handleMany.bind(null, 'Diary', res));
-}
+};
+
 const groupRequest = (req, res) => {
     let data = req.body;
     let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
     // StartDate.setFullYear(data.year);        
     // StartDate.setMonth(data.month);
     // StartDate.setHours(0, 0, 0, 0);
-    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    // let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0);
+    let EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
     // console.log("Start", StartDate, "End", EndDate);
     let query =
         [
@@ -868,7 +980,7 @@ const groupRequest = (req, res) => {
                 });
         });
     //.exec(handler.handleMany.bind(null, 'Schedule', res));
-}
+};
 
 const StudentsToSchedule = (req, res) => {
     let query =
@@ -895,15 +1007,100 @@ const StudentsToSchedule = (req, res) => {
             }
         ];
     _request.aggregate(query).exec(handler.handleMany.bind(null, 'Students', res));
-}
+};
 
+const verifyCode = (req, res) => {
+    const { _requestId, _code } = req.params;
+    _request.findOne({ _id: _requestId })
+        .then(request => {
+            if (request.verificationCode === _code) {
+                _request.updateOne({ _id: _requestId }, { $set: { verificationStatus: true } })
+                    .then(_ => res.status(status.OK).json({ message: 'Correo verificado' }))
+                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ error: 'Error al verificar código' }))
+            } else {
+                res.status(status.INTERNAL_SERVER_ERROR)
+                    .json({ error: 'Código incorrecto' });
+            }
+        })
+        .catch(_ => {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: 'Error al verificar código' });
+        });
+};
 
-module.exports = (Request, Range, Folder) => {
+const sendVerificationCode = (req, res) => {
+    const { _requestId } = req.params;
+    _request.findOne({ _id: _requestId })
+        .then(request => {
+            if (request.verificationCode) {
+                const emailData = {
+                    email: request.email,
+                    subject: 'Acto recepcional - Verificación de correo electrónico',
+                    sender: 'Servicios escolares <escolares_05@ittepic.edu.mx>',
+                    message: verifyCodeTemplate(request.verificationCode)
+                };
+                _sendEmail(emailData)
+                    .then(async data => {
+                        if (data.code === 202) {
+                            await _updateSentVerificationCode(request._id, true);
+                            res.status(status.OK).json({ message: 'Correo envíado con éxito' })
+                        } else {
+                            await _updateSentVerificationCode(request._id, false);
+                            res.status(status.INTERNAL_SERVER_ERROR).json({ error: 'Error al envíar el correo' });
+                        }
+                    })
+            }
+        })
+        .catch(_ => res.status(status.BAD_REQUEST).json({ error: 'Error, solicitud no encontrada' }));
+};
+
+const _getGradeName = (studentId) => {
+    return new Promise(resolve => {
+        _student.findOne({ _id: studentId })
+            .populate('careerId')
+            .then(student =>
+                resolve(student.sex === 'F' ? student.careerId.grade.female : student.careerId.grade.male))
+            .catch(_ => resolve(null));
+    });
+};
+
+const _generateVerificationCode = (length) => {
+    let number = '';
+    while (number.length < length) {
+        number += Math.floor(Math.random() * 10);
+    }
+    return number;
+};
+
+const _sendEmail = ({ email, subject, sender, message }) => {
+    return new Promise(resolve => {
+        const emailData = {
+            to_email: [email],
+            subject: subject,
+            sender: sender,
+            message: message
+        };
+        sendMail({ body: emailData })
+            .then(data => resolve(data));
+    });
+};
+
+const _updateSentVerificationCode = (requestId, status) => {
+    return new Promise(resolve => {
+        _request.updateOne({ _id: requestId }, { $set: { sentVerificationCode: status } })
+            .then(_ => resolve(true))
+            .catch(_ => resolve(false));
+    });
+};
+
+module.exports = (Request, Range, Folder, Student) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
+    _student = Student;
     return ({
         create,
+        createTitled,
         getById,
         getAllRequest,
         getAllRequestApproved,
@@ -919,6 +1116,9 @@ module.exports = (Request, Range, Folder) => {
         groupDiary,
         fileCheck,
         groupRequest,
-        StudentsToSchedule
+        StudentsToSchedule,
+        verifyCode,
+        sendVerificationCode,
+        removeTitled
     });
 };
