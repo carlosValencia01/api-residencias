@@ -15,6 +15,9 @@ module.exports = (wagner) => {
     router.post('/create/:_id', (req, res) => {
         return requestCtrl.create(req, res);
     });
+    router.post('/titled', (req, res) => {
+        return requestCtrl.createTitled(req, res);
+    });
 
     router.put('/:_id', (req, res) => {
         return requestCtrl.correctRequest(req, res);
@@ -69,6 +72,9 @@ module.exports = (wagner) => {
 
     router.get('/sendCode/:_requestId', (req, res) =>
         requestCtrl.sendVerificationCode(req, res));
+
+    router.delete('/:id', (req, res) =>
+        requestCtrl.removeTitled(req, res));
 
     return router;
 };
