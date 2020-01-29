@@ -715,7 +715,7 @@ const getDocumentsDrive = async (req,res)=>{
     let id = mongoose.Types.ObjectId(_id);       
     const documents = await queryDocuments(id);    
     
-    if(documents.error){
+    if(documents && documents.error) {
         res.status(status.BAD_REQUEST).json({
             error: documents.error,        
             action: 'get documents'
