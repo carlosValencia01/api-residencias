@@ -179,7 +179,7 @@ const createOrUpdateFile = (req, res) => {
     const bodyMedia = files.file.data;
     const mimeType = files.file.mimetype;
 
-    // console.log(content,'create-update');
+    console.log(content,'create-update');
 
     //create bufferStream of document to save into google drive
     const buffer = Uint8Array.from(bodyMedia);
@@ -232,11 +232,12 @@ const createOrUpdateFile = (req, res) => {
                     error: err,
                     action: 'update file1'
                 });
+            }else{
+                res.status(status.OK).json({                
+                    action: 'update file1',
+                    name:nameInDrive
+                });
             }
-            res.status(status.OK).json({                
-                action: 'update file1',
-                name:nameInDrive
-            });
         });
     }
 
