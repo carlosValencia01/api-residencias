@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { eOperation } = require('../../enumerators/reception-act/enums');
 var toUint8Array = require('base64-to-uint8array');
+
 let _folder;
 let _student;
 let _period;
@@ -482,94 +483,51 @@ const createFile2 = async (req, res) => {
 const createFolderFromServer = (req,res)=>{
     
     const {nc} = req.params;
-    // console.log(nc);
+    
     
     _student.findOne({controlNumber:nc}).then(
         async student=>{
             // console.log('1');
-            if(student.filename){
+            if(student){
 
                 const folderId1 = await getFolderId(student._id);
-                
-                
-                const folderName = `${nc} - ${student.fullName}`;                        
+                                                                       
                 if(folderId1){
-                    
-                    const fileId = await createFile(folderName+'.jpg','image/jpg',folderId1.idFolderInDrive,'images/'+student.filename);
-                    console.log(fileId);
-                    const documentInfo = {
-    
-                        doc: {
-                          filename: folderName+'.jpg',
-                          type: 'DRIVE',
-                          fileIdInDrive: fileId.id
-                        },
-                        status: {
-                          name: 'EN PROCESO',
-                          active: true,
-                          message: 'Actualizado desde el servidor'
-                        }
-                      };
-                    const result = await updateStudentDocuments(student._id,documentInfo,folderId1._id);
-                    if(result){
-                        res.status(status.OK).json({st:student})              
-                      }else{
-                        res.status(status.BAD_REQUEST).json({err:student})
-                      }                
+                    res.status(status.OK).json({folderIdInDrive:folderId1.idFolderInDrive});                                      
                 }else{
                     
-                    const period = await getActivePeriod();
-                    
+                    const period = await getActivePeriod();                    
                     if(period){
+                        const folderName = `${nc} - ${student.fullName}`; 
                         const folderId = await getFolderByPeriod(period,student.career,folderName);
                         console.log(folderId);
-                        const fileId = await createFile(folderName+'.jpg','image/jpg',folderId.folderDrive,'images/'+student.filename);
-                        console.log(fileId);
                         
-                        const documentInfo = {
-    
-                            doc: {
-                              filename: folderName+'.jpg',
-                              type: 'DRIVE',
-                              fileIdInDrive: fileId.id
-                            },
-                            status: {
-                              name: 'EN PROCESO',
-                              active: true,
-                              message: 'Actualizado desde el servidor'
-                            }
-                          };
-                          const result = await updateStudentDocuments(student._id,documentInfo,folderId.folderId);
+                        const result = await updateFolderIdStudent(student._id,documentInfo,folderId._id);
                           if(result){
-                            res.status(status.OK).json({st:student})              
+                            res.status(status.OK).json({idFolderInDrive:folderId.folderDrive});             
                           }else{
-                            res.status(status.BAD_REQUEST).json({err:student})
+                            res.status(status.BAD_REQUEST).json({err:"No se pudo crear la carpeta."});
                           }
+                    }else{
+                        res.status(status.BAD_REQUEST).json({err:"No hay periodo activo"});
                     }
                 }                                    
             }else{
-                res.status(status.BAD_REQUEST).json({err:student})
+                res.status(status.NOT_FOUND).json({err:"Estudiante no encontrado"});
             }
             
         }
     ).catch(err=>{
         console.log(err);
         
-        res.status(404).json({err:err})
+        res.status(status.NOT_FOUND).json({err:err})
     });
                          
 };
 
-const updateStudentDocuments = (_id,doc,folderId)=>{
-    const _doc = {
-        filename : doc.doc.filename,
-        type:'DRIVE',
-        fileIdInDrive:doc.doc.fileIdInDrive,
-        status: doc.status
-    };
-    console.log(_doc);
+const updateFolderIdStudent = (_id,folderId)=>{   
         
-    const push = { $push: { documents: _doc },$set:{folderId:folderId} };
+    const push = { $set:{folderId:folderId} };
     return new Promise (async resolve=>{
         _student.findOneAndUpdate({ _id: _id }, push, { new: true }).then(
             updated=>{
@@ -804,6 +762,7 @@ module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
     _period = Period;
+    
     return ({
         createOrUpdateFile,
         createFolder,

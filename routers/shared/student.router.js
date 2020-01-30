@@ -13,12 +13,16 @@ let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
 
-    const studentCtrl = wagner.invoke((Student, Request, Role, Period) =>
-        require('../../controllers/shared/student.controller')(Student, Request, Role, Period));
-
+    const studentCtrl = wagner.invoke((Student, Request, Role, Period, Folder) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, Folder));
+        const driveCtrl = wagner.invoke((Folder, Student, Period) =>  
+        require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
 
     router.get('/', (req, res) =>
         studentCtrl.getAll(req, res));
+        
+    router.get('/get/folderid/:nc', (req, res) =>
+        driveCtrl.createFolderFromServer(req, res));
          
     router.get('/inscription', (req, res) =>
         studentCtrl.getStudentsInscription(req, res));
@@ -55,6 +59,7 @@ module.exports = (wagner) => {
 
     router.get('/get/folderid/:_id', (req, res) =>
         studentCtrl.getFolderId(req, res));
+
     router.get('/get/periodinscription/:_id', (req, res) =>
         studentCtrl.getPeriodInscription(req, res));
 

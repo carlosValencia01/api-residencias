@@ -941,8 +941,10 @@ const sendNotification = (req,res)=>{
 module.exports = (Student, Request, Role, Period) => {
     _student = Student;
     _request = Request;
+    
     _role = Role;
     _period = Period;
+    
     return ({
         create,
         getOne,

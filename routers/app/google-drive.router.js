@@ -1,7 +1,8 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const driveCtrl = wagner.invoke((Folder, Student,Period) =>  require('../../controllers/app/google-drive.controller')(Folder,Student,Period));
+    const driveCtrl = wagner.invoke((Folder, Student, Period) =>  
+    require('../../controllers/app/google-drive.controller')(Folder, 'Student', 'Period'));
     
     
     router.post('/create/folder', (req, res) =>
@@ -22,6 +23,8 @@ module.exports = (wagner) => {
     router.get('/get/folders/period/:period/:type', (req, res) =>
         driveCtrl.getFoldersByPeriod(req, res));
         
+    
+        
     router.post('/get/file', (req, res) =>
         driveCtrl.downloadFile(req, res));
 
@@ -29,12 +32,6 @@ module.exports = (wagner) => {
         driveCtrl.downloadPhoto(req, res));
 
     router.post('/upload/file2', (req, res) =>
-        driveCtrl.createFile2(req, res)); 
-    
-    router.post('/saveImage/:nc', (req, res) =>
-        driveCtrl.createFolderFromServer(req, res)); 
-
-
-
+        driveCtrl.createFile2(req, res));     
     return router;
 };
