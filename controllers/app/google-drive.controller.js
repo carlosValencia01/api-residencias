@@ -312,10 +312,14 @@ const downloadFile = (req, res) => {
             (err, file) => {
                 if (err) console.log(err);
                 file.data.
-                    on('end', () => {                
-                        fs.readFile(path, (error, data) => {
+                    on('end',async () => {                
+                        console.log('1');
+                        
+                      await fs.readFile(path, (error, data) => {
+                          console.log('2');
+                          
                             if (error) {
-                                console.log(error, '-=-=-=-=-=-=-=-=-');
+                                console.log(error, '-=-=-=-=-=-=-=-=-',data);
                                 res.status(status.BAD_REQUEST).json({
                                     error: error,
                                     action: 'download file'
@@ -327,6 +331,8 @@ const downloadFile = (req, res) => {
                                 file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                             });
                         });
+                        console.log('3');
+                        // fs.unlinkSync(path);
                     }).on('error', (err) => {
                         console.log('===--==', err);
                         res.status(status.BAD_REQUEST).json({
@@ -482,7 +488,8 @@ const createFile2 = async (req, res) => {
 
 const createFolderFromServer = (req,res)=>{
     
-    const {nc} = req.params;
+    const {nc,type} = req.params;
+    
     
     
     _student.findOne({controlNumber:nc}).then(
@@ -499,12 +506,12 @@ const createFolderFromServer = (req,res)=>{
                     const period = await getActivePeriod();                    
                     if(period){
                         const folderName = `${nc} - ${student.fullName}`; 
-                        const folderId = await getFolderByPeriod(period,student.career,folderName);
-                        console.log(folderId);
+                        const folderId = await getFolderByPeriod(period,student.career,folderName,type);
+                        // console.log(folderId);
                         
-                        const result = await updateFolderIdStudent(student._id,documentInfo,folderId._id);
+                        const result = await updateFolderIdStudent(student._id,folderId.folderId);
                           if(result){
-                            res.status(status.OK).json({idFolderInDrive:folderId.folderDrive});             
+                            res.status(status.OK).json({folderIdInDrive:folderId.folderDrive});             
                           }else{
                             res.status(status.BAD_REQUEST).json({err:"No se pudo crear la carpeta."});
                           }
@@ -618,10 +625,10 @@ const getActivePeriod = ()=>{
         });
     });    
 };
-const getFolderByPeriod = (period,career,name) => {
+const getFolderByPeriod = (period,career,name, type) => {
     const query = {
         idPeriod: period._id,
-        type: 1
+        type
     };
 
     return new Promise(async (resolve) => {
@@ -634,11 +641,11 @@ const getFolderByPeriod = (period,career,name) => {
                 // console.log(periodFolder,'folders');
                 const careerFolder =  folders.filter(folder=> folder.name.indexOf(career) !==-1);
                 if(careerFolder.length === 0){
-                    const careerFolderId = await createSubFolder(career,periodFolder[0].idFolderInDrive,period._id,1);
+                    const careerFolderId = await createSubFolder(career,periodFolder[0].idFolderInDrive,period._id,type);
                     const studentFolderId = await createSubFolder(name,careerFolderId.folderDrive,period._id);
                     resolve(studentFolderId);
                 }else{
-                    const studentFolderId = await createSubFolder(name,careerFolder[0].idFolderInDrive,period._id,1);
+                    const studentFolderId = await createSubFolder(name,careerFolder[0].idFolderInDrive,period._id,type);
                     resolve(studentFolderId);
                 }
             }else{

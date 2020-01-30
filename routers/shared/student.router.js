@@ -21,7 +21,7 @@ module.exports = (wagner) => {
     router.get('/', (req, res) =>
         studentCtrl.getAll(req, res));
         
-    router.get('/get/folderid/:nc', (req, res) =>
+    router.get('/get/folderid/:nc/:type', (req, res) =>
         driveCtrl.createFolderFromServer(req, res));
          
     router.get('/inscription', (req, res) =>
