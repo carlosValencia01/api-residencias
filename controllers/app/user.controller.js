@@ -11,6 +11,7 @@ let _student;
 let _employee;
 let _role;
 let _career;
+let _english;
 
 const getAll = (req, res) => {
     _user.find({})
@@ -174,8 +175,6 @@ const login = (req, res) => {
                                             error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                         });
                                     } else {
-                                        // Se verifica si tiene aprobado el inglés
-                                        let englishApproved = await validateEnglishApproved(email);
                                         // Se verifica si es egresado
                                         let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
                                         // Si fue encontrado
@@ -184,7 +183,8 @@ const login = (req, res) => {
                                             // if (isGraduate) {
                                             //     oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
                                             // }
-                                            // Se contruye el token
+                                            // Se verifica si tiene aprobado el inglés
+                                            let englishApproved = await validateEnglishApproved(email);
                                             console.log('1');
                                             // verificar si se cambio de semestre
                                             https.get(options, (apiInfo) => {                                            
@@ -199,13 +199,14 @@ const login = (req, res) => {
                                                     if(studentInfo.semester > oneUser.semester){
                                                         oneUser.semester = studentInfo.semester;                            
                                                         _student
-                                                            .findOneAndUpdate({_id:oneUser._id},{$set:{semester:studentInfo.semester}})
-                                                            .then(ok=>{},err=>{});
+                                                        .findOneAndUpdate({_id:oneUser._id},{$set:{semester:studentInfo.semester}})
+                                                        .then(ok=>{},err=>{});
                                                     }
                                                 });
                                             });  
                                             setTimeout( () => {
                                                 console.log('3');
+                                                // Se contruye el token
                                                 const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
                                                 let formatUser = {
                                                     _id: oneUser._id,
@@ -248,13 +249,14 @@ const login = (req, res) => {
                                                                 permissions: 1, name: 1, _id: 0
                                                             }
                                                         })
-                                                        .exec((err, user) => {
-                                                            // Se contruye el token
-                                                            console.log();
+                                                        .exec(async (err, user) => {
+                                                            // Se verifica si tiene aprobado el inglés
+                                                            let englishApproved = await validateEnglishApproved(email);
                                                             // Quitar permiso para acceder a la credencial
-                                                            if (isGraduate) {
-                                                                user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
-                                                            }
+                                                            // if (isGraduate) {
+                                                            //     user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
+                                                            // }
+                                                            // Se contruye el token
                                                             const token = jwt.sign({ email: user.controlNumber }, config.secret);
                                                             let formatUser = {
                                                                 _id: user._id,
@@ -491,7 +493,6 @@ const updateFullName = (req,res)=>{
     });
 };
 
-
 const getDataEmployee = (req, res) => {
     const { email } = req.params;
     const query = { email: email };
@@ -640,20 +641,62 @@ const updateCareersUser = (req, res) => {
 };
 
 const validateEnglishApproved = (controlNumber) => {
-    return new Promise(async (resolve) => {
-        await _student.findOne({
+    return new Promise((resolve) => {
+        const query = {
             controlNumber: controlNumber,
             documents: {
                 $elemMatch: {
                     type: 'Ingles'
                 }
             }
-        }, (err, doc) => {
-            if (!err && doc) {
-                resolve(true);
-            }
-            resolve(false);
-        });
+        };
+        _student
+            .findOne(query)
+            .then(student => {
+                if (student) {
+                    resolve(true);
+                }
+                _english
+                    .findOne({controlNumber: controlNumber})
+                    .then(data => {
+                        if (data) {
+                            const doc = {
+                                releaseDate: data.releaseDate,
+                                type: 'Ingles',
+                                status: [
+                                    {
+                                        name: 'ACTIVO',
+                                        active: true,
+                                        message: 'Inglés liberado',
+                                        date: data.releaseDate,
+                                    }
+                                ]
+                            };
+                            _student
+                                .updateOne({controlNumber: data.controlNumber}, {$addToSet: {documents: doc}})
+                                .then(updated => {
+                                    if (updated.nModified) {
+                                        _english.deleteOne({_id: data._id})
+                                            .then(deleted => {
+                                                if (deleted.deletedCount) {
+                                                    resolve(true);
+                                                } else {
+                                                    resolve(false);
+                                                }
+                                            })
+                                            .catch(_ => resolve(false));
+                                    } else {
+                                        resolve(false);
+                                    }
+                                })
+                                .catch(_ => resolve(false));
+                        } else {
+                            resolve(false);
+                        }
+                    })
+                    .catch(_ => resolve(false));
+            })
+            .catch(_ => resolve(false));
     });
 };
 
@@ -779,12 +822,13 @@ const getCareerId = (careerName) => {
     });
 };
 
-module.exports = (User, Student, Employee, Role, Career) => {
+module.exports = (User, Student, Employee, Role, Career, English) => {
     _user = User;
     _student = Student;
     _employee = Employee;
     _role = Role;
     _career = Career;
+    _english = English;
     return ({
         register,
         login,
