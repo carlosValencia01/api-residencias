@@ -1,6 +1,7 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
 let _student;
+let _english;
 
 const search = (req, res) => {
   const { search } = req.params;
@@ -58,41 +59,41 @@ const getAllNotReleased = async (req, res) => {
 };
 
 // Deprecated
-const create = (req, res) => {
-  let student = req.body;
-  _student.findOne({ controlNumber: student.controlNumber }).then(
-    oneStudent => {
-      console.log('one', oneStudent);
-      if (!oneStudent) {        
-        student.document.releaseDate=new Date();
-        student.documents = new Array(student.document);
-        console.log('one', student);
-        _student.create(student).then(created => {
-          console.log('ESTUDIANTE ASS', created);
-          var json = {};
-          json['student'] = created;
-          res.json(json);
-        }).catch(err => {
-          return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
-        });
-      }
-      else {
-        const _doc = student.document;
-        _doc.releaseDate = new Date();        
-        const query = { _id: oneStudent._id, documents: { $elemMatch: { type: _doc.type } } };
-        const push = { $push: { documents: _doc } };
+// const create = (req, res) => {
+//   let student = req.body;
+//   _student.findOne({ controlNumber: student.controlNumber }).then(
+//     oneStudent => {
+//       console.log('one', oneStudent);
+//       if (!oneStudent) {        
+//         student.document.releaseDate=new Date();
+//         student.documents = new Array(student.document);
+//         console.log('one', student);
+//         _student.create(student).then(created => {
+//           console.log('ESTUDIANTE ASS', created);
+//           var json = {};
+//           json['student'] = created;
+//           res.json(json);
+//         }).catch(err => {
+//           return handler.handleError(res, status.INTERNAL_SERVER_ERROR, err);
+//         });
+//       }
+//       else {
+//         const _doc = student.document;
+//         _doc.releaseDate = new Date();        
+//         const query = { _id: oneStudent._id, documents: { $elemMatch: { type: _doc.type } } };
+//         const push = { $push: { documents: _doc } };
 
-        _student.findOne(query).then(studentDoc => {
-          if (studentDoc) {            
-            _student.findOneAndUpdate(query, { $set: { 'documents.$.status': _doc.status, 'documents.$.releaseDate': new Date() } }, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
-          }
-          else {            
-            _student.findOneAndUpdate({ _id: oneStudent._id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
-          }
-        });
-      }
-    });
-};
+//         _student.findOne(query).then(studentDoc => {
+//           if (studentDoc) {            
+//             _student.findOneAndUpdate(query, { $set: { 'documents.$.status': _doc.status, 'documents.$.releaseDate': new Date() } }, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
+//           }
+//           else {            
+//             _student.findOneAndUpdate({ _id: oneStudent._id }, push, { new: true }).exec(handler.handleOne.bind(null, 'student', res));
+//           }
+//         });
+//       }
+//     });
+// };
 
 const releaseRemove = (req, res) => {
   const { _controlNumber } = req.params;
@@ -137,62 +138,74 @@ const releaseStudent = (req, res) => {
     })
 };
 
-// Deprecated
-// const csvIngles = (req, res) => {
-//   const _scholar = req.body;
-//   var findStudent = (data) => {
-//       return _student.findOne({ controlNumber: data.controlNumber }).then(
-//           oneStudent => {
-//               if (!oneStudent) {
-//                   data.isNew = true;
-//                   return data;
-//               }
-//               else {
-//                   data._id = oneStudent._id;
-//                   return data;
-//               }
-//           }
-//       );
-//   };
+const releaseEnglishCsv = (req, res) => {
+  const students = req.body;
+  const findStudent = (data) => {
+    return _student.findOne({controlNumber: data.controlNumber})
+      .then(student => {
+        if (student) {
+          data._id = student._id;
+          data.exists = true;
+          return data;
+        } else {
+          data.exists = false;
+          return data;
+        }
+      })
+      .catch(_ => {
+        data.exists = false;
+        return data;
+      });
+  };
+  const releaseEnglish = (data) => {
+    if (data.exists) {
+      const doc = {
+        releaseDate: new Date(),
+        type: 'Ingles',
+        status: [
+          {
+              name: 'ACTIVO',
+              active: true,
+              message: 'Inglés liberado',
+              date: new Date(),
+          }
+        ]
+      };
+      const query = {_id: data._id, documents: {$elemMatch: {type: doc.type}}};
+      _student.findOne(query)
+        .then(student => {
+          if (student) {
+            return null;
+          }
+          return _student.updateOne({_id: data._id}, {$addToSet: {documents: doc}});
+        })
+        .catch(_ => null);
+        return null;
+    } else {
+      _english.findOne({controlNumber: data.controlNumber})
+        .then(controlNumber => {
+          if (controlNumber) {
+            return null;
+          }
+          return _english.create({controlNumber: data.controlNumber, releaseDate: new Date()});
+        });
+    }
+  };
+  const actions = students.map(findStudent);
+  const results = Promise.all(actions);
 
-//   var secondStep = (data) => {
-//       if (data.isNew) {
-//           //Add Date;
-//           data.document.releaseDate = new Date();
-//           data.documents = new Array(data.document);
-//           //Remove properties
-//           delete data.document;
-//           delete data.isNew;
-//           return _student.create(data);
-//       }
-//       else {
-//           const _doc = data.document;
-//           _doc.releaseDate = new Date();
-//           const query = { _id: data._id, documents: { $elemMatch: { type: _doc.type } } };
-//           const push = { $push: { documents: _doc } };
-//           _student.findOne(query).then(studentDoc => {
-//               if (studentDoc) {
-//                   return _student.findOneAndUpdate(query, { $set: { 'documents.$.status': _doc.status, 'documents.$.releaseDate': new Date() } }, { new: true });
-//               }
-//               else
-//                   return _student.findOneAndUpdate({ _id: data._id }, push, { new: true });
-//           });
-//       }
-//   };
+  results.then(data => {
+      return Promise.all(data.map(releaseEnglish));
+  });
 
-//   var actions = _scholar.map(findStudent);
-//   var results = Promise.all(actions);
-
-//   results.then(data => {
-//       return Promise.all(data.map(secondStep));
-//   });
-
-//   results.then((data) => {
-//       res.json({ 'Estatus': 'Bien', 'Data': data });
-//   }).catch((error) => {
-//       return res.json({ Error: error });
-//   });
-// };
+  results
+    .then((data) => {
+      return res.status(status.OK).json({ 'data': data });
+    })
+    .catch((error) => {
+      return res.status(status.INTERNAL_SERVER_ERROR).json({ error: error });
+    });
+};
 
 const _getAllStudents = () => {
   return new Promise(resolve => {
@@ -202,15 +215,16 @@ const _getAllStudents = () => {
   });
 };
 
-module.exports = (Student) => {
+module.exports = (Student, English) => {
   _student = Student;
+  _english = English;
   return ({
     search,
-    create,
     releaseRemove,
     getAllReleased,
     getAllNotReleased,
     releaseStudent,
+    releaseEnglishCsv,
   });
 };
 
