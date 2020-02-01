@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 let employeeSchema = new mongoose.Schema({
     rfc: {type: String, unique: true, uppercase: true, trim: true, minlength: 10, maxlength: 13},
     curp: {type: String, unique: true, uppercase: true, trim: true, minlength: 18, maxlength: 18},
+    email: {type: String, trim: true},
     name: {
         firstName: {type: String, required: true, uppercase: true, trim: true},
         lastName: {type: String, required: true, uppercase: true, trim: true},
@@ -16,7 +17,7 @@ let employeeSchema = new mongoose.Schema({
         title: {type: String, uppercase: true, trim: true},
         cedula: {type: String, uppercase: true, trim: true},
         abbreviation: {type: String, uppercase: true, trim: true},
-        level: {type: String, enum: ['DOCTORADO', 'MAESTRIA', 'LICENCIATURA'], uppercase: true, trim: true},
+        level: {type: String, enum: ['DOCTORADO', 'MAESTRÍA', 'LICENCIATURA'], uppercase: true, trim: true},
         default: {type: Boolean, default: false}
     }],
     positions: [{

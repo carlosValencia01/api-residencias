@@ -218,9 +218,17 @@ const getOne = (req, res) => {
 
 const csvDegree = (req, res) => {
     const _employees = req.body;
-    var findEmployee = (data) => {
+    const findEmployee = (data) => {
         return _employee.findOne({ rfc: data.rfc }).then(
-            oneEmployee => {
+            async oneEmployee => {
+                if (data.positions.length) {
+                    await Promise.all(data.positions.map(findPosition));
+                    data.positions.forEach((pos, index) => {
+                        if (pos.delete) {
+                            data.positions.splice(index, 1);
+                        }
+                    });
+                }
                 if (!oneEmployee) {
                     data.isNew = true;
                     return data;
@@ -233,7 +241,35 @@ const csvDegree = (req, res) => {
         );
     };
 
-    var secondStep = (data) => {
+    const findPosition = (position) => {
+        const query = {
+            name: { $regex: new RegExp(`^${position.name}$`, 'i') }
+        };
+        return _position.find(query)
+            .populate('ascription')
+            .then(async data => {
+                if (data) {
+                    const pos = data.filter(({ascription}) => ascription.name === position.ascription)[0];
+                    if (pos) {
+                        position._id = pos._id;
+                        position.position = pos._id,
+                        position.activateDate = (typeof position.activateDate) === 'string' ? new Date(position.activateDate) : position.activateDate,
+                        position.deactivateDate = position.deactivateDate ? (typeof position.deactivateDate) === 'string' ? new Date(position.deactivateDate) : position.deactivateDate : null,
+                        position.status = position.deactivateDate ? 'INACTIVE' : 'ACTIVE'
+                        if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
+                            if (await _isAssignedDepartmentBoss(position._id) && !position.deactivateDate) {
+                                position.delete = true;
+                            }
+                            return position;
+                        }
+                        return position;
+                    }
+                    return null;
+                }
+            });
+    };
+
+    const secondStep = (data) => {
         if (data.isNew) {
             delete data.isNew;
             return _employee.create(data);
@@ -244,8 +280,8 @@ const csvDegree = (req, res) => {
         }
     };
 
-    var actions = _employees.map(findEmployee);
-    var results = Promise.all(actions);
+    const actions = _employees.map(findEmployee);
+    const results = Promise.all(actions);
 
     results.then(data => {
         return Promise.all(data.map(secondStep));
