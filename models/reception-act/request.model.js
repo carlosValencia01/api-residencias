@@ -50,7 +50,8 @@ const requestSchema = new mongoose.Schema({
     titulationOption: { type: String, unique: true, trim: true },
     verificationCode: { type: String, uppercase: true, trim: true },
     verificationStatus: { type: Boolean, default: false },
-    sentVerificationCode: { type: Boolean }
+    sentVerificationCode: { type: Boolean },
+    registry: { type: Object}
 });
 
 const requestModel = mongoose.model('Request', requestSchema, 'requests');

@@ -762,6 +762,7 @@ const updateRequest = (req, res) => {
                         // }
                         request.phase = eRequest.GENERATED;
                         request.status = eStatusRequest.NONE;
+                        request.registry = data.registry;
                         item.status = eStatusRequest.ACCEPT;
                         item.phase = 'Realizado';
                         break;
