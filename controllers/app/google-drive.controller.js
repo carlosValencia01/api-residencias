@@ -107,7 +107,7 @@ const createFolder = (req, res) => {
             });
         }
         else {
-            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id, type:type }).then(
+            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id, type: type }).then(
                 created => {
 
                     res.status(status.OK).json({
@@ -129,7 +129,7 @@ const createFolderIntoFolder = (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const { folderName, period, parentFolderId, type } = req.body;
     // console.log(folderName, period, parentFolderId );
-    
+
     var fileMetadata = {
         'name': folderName,
         'mimeType': 'application/vnd.google-apps.folder',
@@ -141,14 +141,14 @@ const createFolderIntoFolder = (req, res) => {
     }, function (err, folder) {
         if (err) {
             console.log(err);
-            
+
             res.status(status.BAD_REQUEST).json({
                 error: err,
                 action: 'create folder'
             });
         }
         else {
-            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id,type: type }).then(
+            _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id, type: type }).then(
                 created => {
 
                     res.status(status.OK).json({
@@ -184,18 +184,18 @@ const createOrUpdateFile = (req, res) => {
     //create bufferStream of document to save into google drive
     const buffer = Uint8Array.from(bodyMedia);
     let bufferStream = new stream.PassThrough();
-    bufferStream.end(buffer); 
+    bufferStream.end(buffer);
 
     let media = {
         mimeType: mimeType,
         body: bufferStream
     };
-    
+
     const image = files.file.name.split('.');
-    const nameInDrive = req.body.filename.indexOf('FOTO') > 0 ? req.body.filename + '.' + image[image.length-1] : req.body.filename;
-    if(content.newF=='true'){ //create new file
+    const nameInDrive = req.body.filename.indexOf('FOTO') > 0 ? req.body.filename + '.' + image[image.length - 1] : req.body.filename;
+    if (content.newF == 'true') { //create new file
         const folderId = content.folderId;
-        
+
         // name for display in google drive
         let fileMetadata = {
             name: nameInDrive,
@@ -207,22 +207,22 @@ const createOrUpdateFile = (req, res) => {
             media: media,
             fields: 'id'
         },
-        (err, file) => {            
-            if (err) {
-                res.status(status.BAD_REQUEST).json({
-                    error: err,
-                    action: 'create file'
-                });
-            } else {
-                res.status(201).json({
-                    fileId: file.data.id,
-                    name: fileMetadata.name,
-                    mimeType: mimeType,
-                    action: 'create file'
-                });
-            }
-        });
-    }else if(content.newF=='false'){ // update file
+            (err, file) => {
+                if (err) {
+                    res.status(status.BAD_REQUEST).json({
+                        error: err,
+                        action: 'create file'
+                    });
+                } else {
+                    res.status(201).json({
+                        fileId: file.data.id,
+                        name: fileMetadata.name,
+                        mimeType: mimeType,
+                        action: 'create file'
+                    });
+                }
+            });
+    } else if (content.newF == 'false') { // update file
         drive.files.update({
             fileId: content.fileId,
             media: media,
@@ -295,14 +295,14 @@ const getFoldersByPeriod = (req, res) => {
 const downloadFile = (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const { fileId, fileName } = req.body; // enviado desde el cliente
-    console.log(fileId,fileName,'download');
-    
+    console.log(fileId, fileName, 'download');
+
     //const fileId='10pp_v89K1DBlszNLwPbSjoOBNV8DdAsH'; //pdf
     //const fileName = '14400975-CURP.pdf';//pdf
     // const fileId='1H75kViaYggVmzQOniWjvW__q-zmdttD_'; //img
     // const fileName = '15401011-FOTO.png';//img
     // const mimeType='application/pdf';//pdf    
-    if(fileName && fileId){
+    if (fileName && fileId) {
 
         const path = 'documents/tmpFile/' + fileName;
         let dest = fs.createWriteStream(path);
@@ -313,14 +313,14 @@ const downloadFile = (req, res) => {
             (err, file) => {
                 if (err) console.log(err);
                 file.data.
-                    on('end',async () => {                
+                    on('end', async () => {
                         console.log('1');
-                        
-                      await fs.readFile(path, (error, data) => {
-                          console.log('2');
-                          
+
+                        await fs.readFile(path, (error, data) => {
+                            console.log('2');
+
                             if (error) {
-                                console.log(error, '-=-=-=-=-=-=-=-=-',data);
+                                console.log(error, '-=-=-=-=-=-=-=-=-', data);
                                 res.status(status.BAD_REQUEST).json({
                                     error: error,
                                     action: 'download file'
@@ -340,28 +340,28 @@ const downloadFile = (req, res) => {
                             error: err,
                             action: 'download file'
                         });
-    
+
                     }).pipe(dest);
             }
         );
-    }else{
+    } else {
         res.status(304).json({
             action: 'get file - not f',
-            
+
         });
     }
 
 };
 
-const downloadPhoto = (req,res)=>{
+const downloadPhoto = (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const { fileId, fileName } = req.body; // enviado desde el cliente
-    console.log(fileId,fileName,'download');
-    
-    
-    if(fileName && fileId){
-        if(fileName.indexOf('FOTO') !==-1){
-                       
+    console.log(fileId, fileName, 'download');
+
+
+    if (fileName && fileId) {
+        if (fileName.indexOf('FOTO') !== -1) {
+
             const path = 'documents/tmpFile/' + fileName;
             let dest = fs.createWriteStream(path);
             drive.files.get({
@@ -369,17 +369,17 @@ const downloadPhoto = (req,res)=>{
                 alt: 'media'
             }, { responseType: 'stream' },
                 (err, file) => {
-                    if (err){
+                    if (err) {
                         console.log('===-**-==', err);
-                                res.status(status.BAD_REQUEST).json({
-                                    error: err,
-                                    action: 'download file'
-                                });
-                       
-                    }else{
-                        
+                        res.status(status.BAD_REQUEST).json({
+                            error: err,
+                            action: 'download file'
+                        });
+
+                    } else {
+
                         file.data.
-                            on('end', () => {                
+                            on('end', () => {
                                 fs.readFile(path, (error, data) => {
                                     if (error) {
                                         console.log(error, '-=-=-=-=-=-=-=-=-');
@@ -400,44 +400,44 @@ const downloadPhoto = (req,res)=>{
                                     error: err,
                                     action: 'download file'
                                 });
-            
+
                             }).pipe(dest);
-                    } 
+                    }
                 }
             );
-        }else{
+        } else {
             res.status(304).json({
                 action: 'get file - not f',
-                
+
             });
         }
-        }else{
-            res.status(404).json({
-                action: 'get file - not found',
-                
-            });
-        }
+    } else {
+        res.status(404).json({
+            action: 'get file - not found',
+
+        });
+    }
 };
 
 
-const createFile2 = async (req, res) => {    
+const createFile2 = async (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
-    const { mimeType, nameInDrive, bodyMedia, folderId, newF,fileId} = req.body;
-    console.log(nameInDrive,'create2');
-    
+    const { mimeType, nameInDrive, bodyMedia, folderId, newF, fileId } = req.body;
+    console.log(nameInDrive, 'create2');
+
     const filePath = 'documents/tmpFile/' + nameInDrive;
     // console.log(nameInDrive);
 
     let buffer = toUint8Array(bodyMedia);
     let bufferStream = new stream.PassThrough();
-    bufferStream.end(buffer); 
-    
+    bufferStream.end(buffer);
+
     let media = await {
         mimeType: mimeType,
         body: bufferStream
     };
-    
-    if(newF){
+
+    if (newF) {
 
         // name for display in google drive
         let fileMetadata = {
@@ -449,184 +449,184 @@ const createFile2 = async (req, res) => {
             requestBody: fileMetadata,
             media: media,
             fields: 'id'
-    
+
         },
-        (err, file) => {
-                                    
-            if (err) {
-                res.status(status.BAD_REQUEST).json({
-                    error: err,
-                    action: 'create file'
-                });
-            } else {
-                res.status(201).json({
-                    fileId: file.data.id,
-                    name: fileMetadata.name,                    
-                    action: 'create file'
-                });
-            }
-        });
-    }else if(!newF){ // update file
+            (err, file) => {
+
+                if (err) {
+                    res.status(status.BAD_REQUEST).json({
+                        error: err,
+                        action: 'create file'
+                    });
+                } else {
+                    res.status(201).json({
+                        fileId: file.data.id,
+                        name: fileMetadata.name,
+                        action: 'create file'
+                    });
+                }
+            });
+    } else if (!newF) { // update file
         drive.files.update({
             fileId: fileId,
             media: media,
-        }, (err, file) => {            
+        }, (err, file) => {
             if (err) {
                 res.status(status.BAD_REQUEST).json({
                     error: err,
                     action: 'update file2'
                 });
-            }            
-            
-            res.status(status.OK).json({                
+            }
+
+            res.status(status.OK).json({
                 action: 'update file2',
-                filename:nameInDrive
+                filename: nameInDrive
             });
         });
     }
 
 };
 
-const createFolderFromServer = (req,res)=>{
-    
-    const {nc,type} = req.params;
-    
-    
-    
-    _student.findOne({controlNumber:nc}).then(
-        async student=>{
+const createFolderFromServer = (req, res) => {
+
+    const { nc, type } = req.params;
+
+
+
+    _student.findOne({ controlNumber: nc }).then(
+        async student => {
             // console.log('1');
-            if(student){
+            if (student) {
 
                 const folderId1 = await getFolderId(student._id);
-                                                                       
-                if(folderId1){
-                    res.status(status.OK).json({folderIdInDrive:folderId1.idFolderInDrive});                                      
-                }else{
-                    
-                    const period = await getActivePeriod();                    
-                    if(period){
-                        const folderName = `${nc} - ${student.fullName}`; 
-                        const folderId = await getFolderByPeriod(period,student.career,folderName,type);
+
+                if (folderId1) {
+                    res.status(status.OK).json({ folderIdInDrive: folderId1.idFolderInDrive });
+                } else {
+
+                    const period = await getActivePeriod();
+                    if (period) {
+                        const folderName = `${nc} - ${student.fullName}`;
+                        const folderId = await getFolderByPeriod(period, student.career, folderName, type);
                         // console.log(folderId);
-                        
-                        const result = await updateFolderIdStudent(student._id,folderId.folderId);
-                          if(result){
-                            res.status(status.OK).json({folderIdInDrive:folderId.folderDrive});             
-                          }else{
-                            res.status(status.BAD_REQUEST).json({err:"No se pudo crear la carpeta."});
-                          }
-                    }else{
-                        res.status(status.BAD_REQUEST).json({err:"No hay periodo activo"});
+
+                        const result = await updateFolderIdStudent(student._id, folderId.folderId);
+                        if (result) {
+                            res.status(status.OK).json({ folderIdInDrive: folderId.folderDrive });
+                        } else {
+                            res.status(status.BAD_REQUEST).json({ err: "No se pudo crear la carpeta." });
+                        }
+                    } else {
+                        res.status(status.BAD_REQUEST).json({ err: "No hay periodo activo" });
                     }
-                }                                    
-            }else{
-                res.status(status.NOT_FOUND).json({err:"Estudiante no encontrado"});
+                }
+            } else {
+                res.status(status.NOT_FOUND).json({ err: "Estudiante no encontrado" });
             }
-            
+
         }
-    ).catch(err=>{
+    ).catch(err => {
         console.log(err);
-        
-        res.status(status.NOT_FOUND).json({err:err})
+
+        res.status(status.NOT_FOUND).json({ err: err })
     });
-                         
+
 };
 
-const updateFolderIdStudent = (_id,folderId)=>{   
-        
-    const push = { $set:{folderId:folderId} };
-    return new Promise (async resolve=>{
+const updateFolderIdStudent = (_id, folderId) => {
+
+    const push = { $set: { folderId: folderId } };
+    return new Promise(async resolve => {
         _student.findOneAndUpdate({ _id: _id }, push, { new: true }).then(
-            updated=>{
+            updated => {
                 resolve(true);
             },
-            err=>{
+            err => {
                 resolve(false);
             }
-        ).catch(err=>resolve(err));
+        ).catch(err => resolve(err));
     });
 };
 
-const createSubFolder = async (folderName,parentFolderId,period,type)=>{
-    const drive = google.drive({version: 'v3', auth});
+const createSubFolder = async (folderName, parentFolderId, period, type) => {
+    const drive = google.drive({ version: 'v3', auth });
     var fileMetadata = {
         'name': folderName,
         'mimeType': 'application/vnd.google-apps.folder',
         'parents': [parentFolderId]
     };
-   return new Promise(async (resolve)=>{
+    return new Promise(async (resolve) => {
         drive.files.create({
             requestBody: fileMetadata,
             fields: 'id'
         }, function (err, folder) {
             if (err) {
                 console.log(err);
-                
-                resolve (false);
+
+                resolve(false);
             }
             else {
-                _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id,type: type }).then(
+                _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id, type: type }).then(
                     created => {
 
-                       resolve({folderDrive:folder.data.id,folderId:created._id});
+                        resolve({ folderDrive: folder.data.id, folderId: created._id });
                     }
                 ).catch(err => {
                     console.log(err.toString());
-                    resolve (false);
+                    resolve(false);
                 });
             };
-        });    
-   }); 
-};
-
-const createFile = async (nameInDrive,mimeType,folderId,filePath)=>{
-    const drive = google.drive({version: 'v3', auth});
-    let fileMetadata = {
-        name:nameInDrive,
-        mimeType:mimeType,
-        parents:[folderId]
-    };
-        
-    // file content to upload
-    let media = await {
-        mimeType:mimeType,
-        body: fs.createReadStream(filePath)
-    };   
-    
-    return new Promise(async (resolve)=>{
-        drive.files.create({
-            requestBody:fileMetadata,
-            media:media,
-            fields:'id'        
-
-            },
-            (err,file)=>{
-                fs.unlinkSync(filePath);//delete file from server
-                if(err) {
-                    resolve(false);
-                }else {   
-                    resolve({id:file.data.id});                    
-                }                        
         });
     });
 };
 
-const getActivePeriod = ()=>{
-    
+const createFile = async (nameInDrive, mimeType, folderId, filePath) => {
+    const drive = google.drive({ version: 'v3', auth });
+    let fileMetadata = {
+        name: nameInDrive,
+        mimeType: mimeType,
+        parents: [folderId]
+    };
+
+    // file content to upload
+    let media = await {
+        mimeType: mimeType,
+        body: fs.createReadStream(filePath)
+    };
+
     return new Promise(async (resolve) => {
-        await _period.findOne({active:true}, (err, period) => {            
-            
-            
+        drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id'
+
+        },
+            (err, file) => {
+                fs.unlinkSync(filePath);//delete file from server
+                if (err) {
+                    resolve(false);
+                } else {
+                    resolve({ id: file.data.id });
+                }
+            });
+    });
+};
+
+const getActivePeriod = () => {
+
+    return new Promise(async (resolve) => {
+        await _period.findOne({ active: true }, (err, period) => {
+
+
             if (!err && period) {
                 resolve(period);
-            }else{
+            } else {
                 resolve(false);
             }
         });
-    });    
+    });
 };
-const getFolderByPeriod = (period,career,name, type) => {
+const getFolderByPeriod = (period, career, name, type) => {
     const query = {
         idPeriod: period._id,
         type
@@ -634,37 +634,37 @@ const getFolderByPeriod = (period,career,name, type) => {
 
     return new Promise(async (resolve) => {
         await _folder.find(query, async (err, folders) => {
-            
+
             if (!err && folders) {
                 // console.log(period,career,name);
-                
-                const periodFolder =  folders.filter(folder=> folder.name.indexOf(period.periodName) !==-1);
+
+                const periodFolder = folders.filter(folder => folder.name.indexOf(period.periodName) !== -1);
                 // console.log(periodFolder,'folders');
-                const careerFolder =  folders.filter(folder=> folder.name.indexOf(career) !==-1);
-                if(careerFolder.length === 0){
-                    const careerFolderId = await createSubFolder(career,periodFolder[0].idFolderInDrive,period._id,type);
-                    const studentFolderId = await createSubFolder(name,careerFolderId.folderDrive,period._id);
+                const careerFolder = folders.filter(folder => folder.name.indexOf(career) !== -1);
+                if (careerFolder.length === 0) {
+                    const careerFolderId = await createSubFolder(career, periodFolder[0].idFolderInDrive, period._id, type);
+                    const studentFolderId = await createSubFolder(name, careerFolderId.folderDrive, period._id);
                     resolve(studentFolderId);
-                }else{
-                    const studentFolderId = await createSubFolder(name,careerFolder[0].idFolderInDrive,period._id,type);
+                } else {
+                    const studentFolderId = await createSubFolder(name, careerFolder[0].idFolderInDrive, period._id, type);
                     resolve(studentFolderId);
                 }
-            }else{
+            } else {
                 resolve(false);
             }
         });
-    }); 
+    });
 
 };
 
-const getFolderId = (_id) => {    
-    
+const getFolderId = (_id) => {
+
     return new Promise(async (resolve) => {
-        await  _student.findOne({ _id: _id}, (err, student) => {
-                               
+        await _student.findOne({ _id: _id }, (err, student) => {
+
             if (!err && student) {
                 resolve(student.folderId);
-            }else{
+            } else {
                 resolve(false);
             }
         }).populate({
@@ -673,31 +673,40 @@ const getFolderId = (_id) => {
                 idFolderInDrive: 1
             }
         });
-    });     
+    });
 };
 
-const updatePhotoName = (req,res)=>{
-    const {_id} = req.params;
+const updatePhotoName = (req, res) => {
+    const { _id } = req.params;
 
 };
 
 //Subir archivo para Acto_Recepcional
-const uploadFile = async (req, operation = eOperation.NEW) => {
+const uploadFile = async (req, operation = eOperation.NEW, isJsPdf = false) => {
     const drive = google.drive({ version: 'v3', auth });
+
     const content = req.body;
-    const files = req.files;    
-    const bodyMedia = files.file.data;
-    const mimeType = files.file.mimetype;
+    const files = isJsPdf ? content.file : req.files;    
+    const bodyMedia = isJsPdf ? files.data : files.file.data;
+    const mimeType = isJsPdf ? files.mimetype : files.file.mimetype;
     //create bufferStream of document to save into google drive
-    const buffer = Uint8Array.from(bodyMedia);
+    const buffer = isJsPdf ? toUint8Array(bodyMedia) : Uint8Array.from(bodyMedia);
     let bufferStream = new stream.PassThrough();
     bufferStream.end(buffer);
 
-    let media = {
-        mimeType: mimeType,
-        body: bufferStream
-    };
-    const nameInDrive = content.Document + path.extname(files.file.name);
+    let media;
+    if (isJsPdf) {
+        media = await {
+            mimeType: mimeType,
+            body: bufferStream
+        };
+    } else {
+        media = {
+            mimeType: mimeType,
+            body: bufferStream
+        };
+    }
+    const nameInDrive = content.Document + path.extname((isJsPdf ? files.name : files.file.name));
     let response;
     switch (operation) {
         case eOperation.NEW: {
@@ -714,7 +723,7 @@ const uploadFile = async (req, operation = eOperation.NEW) => {
                         if (err) {
                             console.log("Error New", err);
                             resolve({ isCorrect: false });
-                        } else {                            
+                        } else {
                             resolve({ isCorrect: true, fileId: file.data.id });
                             // return { isCorrect: true, fileId: file.data.id };
                         }
@@ -730,7 +739,7 @@ const uploadFile = async (req, operation = eOperation.NEW) => {
                             console.log("Error Edit", err);
                             resolve({ isCorrect: false });
                         }
-                        else {                            
+                        else {
                             resolve({ isCorrect: true });
                         }
                     });
@@ -742,7 +751,7 @@ const uploadFile = async (req, operation = eOperation.NEW) => {
 };
 
 const downloadToLocal = async (fileId, tmpName) => {
-    const drive = google.drive({ version: 'v3', auth });    
+    const drive = google.drive({ version: 'v3', auth });
     var dest = fs.createWriteStream(`documents/tmpFile/${tmpName}`);
     response = await new Promise(resolve => {
         drive.files.get({
@@ -753,13 +762,13 @@ const downloadToLocal = async (fileId, tmpName) => {
             (err, file) => {
                 if (err)
                     resolve(false);
-                file.data.on('end', function () {                    
+                file.data.on('end', function () {
                     resolve(true);
                 }).on('error', function (err) {
                     console.log('Error during download', err);
                     resolve(false);
                 }).pipe(dest);
-                
+
             }
         );
     });
@@ -770,7 +779,7 @@ module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
     _period = Period;
-    
+
     return ({
         createOrUpdateFile,
         createFolder,
@@ -779,7 +788,7 @@ module.exports = (Folder, Student, Period) => {
         getAllFolders,
         getFoldersByPeriod,
         downloadFile,
-        createFile2,       
+        createFile2,
         downloadPhoto,
         createFolderFromServer,
         uploadFile,

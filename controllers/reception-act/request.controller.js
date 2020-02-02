@@ -417,7 +417,8 @@ const uploadFile = (req, res) => {
                 if (typeof (result) !== 'undefined' && result.isCorrect) {
                     _request.update({ _id: _id }, {
                         $set: {
-                            status: eStatusRequest.PROCESS
+                            status: eStatusRequest.PROCESS,
+                            phase: eRequest.DELIVERED
                         },
                         $addToSet: {
                             documents:
@@ -434,8 +435,13 @@ const uploadFile = (req, res) => {
                 req.body.fileId = tmpDocument[0].driveId;
                 let result = await _Drive.uploadFile(req, eOperation.EDIT);
                 if (typeof (result) !== 'undefined' && result.isCorrect) {
-                    _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+                    _request.update({
+                        _id: _id,
+                        documents: { $elemMatch: { type: data.Document } }
+                    }, {
                         $set: {
+                            status: eStatusRequest.PROCESS,
+                            phase: eRequest.DELIVERED,
                             'documents.$': {
                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
                                 driveId: tmpDocument[0].driveId,
@@ -488,103 +494,103 @@ const fileCheck = (req, res) => {
             return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
         // console.log("reqq", request);
         const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
-        
+
         // Documentos primera parte (CURP, ACTA, etc)
-        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === 'CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === 'ACTA_NACIMIENTO' || doc.type === 'CURP' || doc.type === 'CERTIFICADO_BACHILLERATO' || doc.type === 'CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES'|| doc.type === 'RECIBO');
+        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === 'CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === 'ACTA_NACIMIENTO' || doc.type === 'CURP' || doc.type === 'CERTIFICADO_BACHILLERATO' || doc.type === 'CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
         const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
         const docsReject = docs.filter(doc => doc.status === 'Reject');
-        const numDocsAR = (docsAcept.length+docsReject.length);
+        const numDocsAR = (docsAcept.length + docsReject.length);
 
         // Documentos segunda parte (INE, CEDULA y XML)
         const docsTitle = request.documents.filter(doc => doc.type === 'INE' || doc.type === 'CEDULA_PROFESIONAL' || doc.type === 'XML');
         const docsTitleAcept = docsTitle.filter(doc => doc.status === 'Accept');
         const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
-        const numDocsTitleAR = (docsTitleAcept.length+docsTitleReject.length);
+        const numDocsTitleAR = (docsTitleAcept.length + docsTitleReject.length);
 
-        if(numDocsTitleAR == 0){
-            if(numDocsAR === docs.length){
+        if (numDocsTitleAR == 0) {
+            if (numDocsAR === docs.length) {
                 const email = request.email;
                 const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
                 const subject = 'Acto recepcional - Resultado de validación de documentos';
                 const subtitle = 'Acuse de documentos entregados';
                 var body = '';
                 var documents = '<ol style="text-align:left">';
-                for(var i = 0; i < docs.length; i++){
-                    switch(docs[i].type){
+                for (var i = 0; i < docs.length; i++) {
+                    switch (docs[i].type) {
                         case 'FOTOS':
-                            documents += '<li>'+'FOTOS : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'FOTOS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'CEDULA_TECNICA':
-                            documents += '<li>'+'CÉDULA TÉCNICA : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'CÉDULA TÉCNICA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'REVALIDACION':
-                            documents += '<li>'+'REVALIDACIÓN : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'REVALIDACIÓN : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'ACTA_NACIMIENTO':
-                            documents += '<li>'+'ACTA DE NACIMIENTO : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'ACTA DE NACIMIENTO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'CURP':
-                            documents += '<li>'+'CURP : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'CURP : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'CERTIFICADO_BACHILLERATO':
-                            documents += '<li>'+'CERTIFICADO DE BACHILLERATO : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'CERTIFICADO DE BACHILLERATO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'CERTIFICADO_LICENCIATURA':
-                            documents += '<li>'+'CERTIFICADO DE LICENCIATURA : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'CERTIFICADO DE LICENCIATURA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'SERVICIO SOCIAL':
-                            documents += '<li>'+'SERVICIO SOCIAL : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'SERVICIO SOCIAL : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'LIBERACION_INGLES':
-                            documents += '<li>'+'LIBERACIÓN DE INGLÉS : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'LIBERACIÓN DE INGLÉS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'RECIBO':
-                            documents += '<li>'+'RECIBO DE PAGO : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            documents += '<li>' + 'RECIBO DE PAGO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                     }
                 }
                 documents += '</ol>';
-                if(docsReject.length === 0){
+                if (docsReject.length === 0) {
                     body = 'Su documentación fue aceptada, espera tu carta de no inconveniencia.';
                 } else {
                     body = 'Se encontraron errores en su documentación, favor de corregirlos:';
                 }
-                const message = mailTemplate(subtitle, body,documents);
-                _sendEmail({email: email, subject: subject, sender: sender, message: message});
+                const message = mailTemplate(subtitle, body, documents);
+                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
             }
         } else {
-            if(numDocsTitleAR == docsTitle.length){
+            if (numDocsTitleAR == docsTitle.length) {
                 const email = request.email;
                 const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
                 const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
                 const subtitle = 'Resultado de validación de documentos';
                 var body = '';
                 var documents = '<ol style="text-align:left">';
-                for(var i = 0; i < docsTitle.length; i++){
-                    switch(docsTitle[i].type){
+                for (var i = 0; i < docsTitle.length; i++) {
+                    switch (docsTitle[i].type) {
                         case 'INE':
-                            documents += '<li>'+'INE : '+(docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docsTitle[i].observation)+'</li>';
+                            documents += '<li>' + 'INE : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
                             break;
                         case 'CEDULA_PROFESIONAL':
-                            documents += '<li>'+'CÉDULA PROFESIONAL : '+(docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docsTitle[i].observation)+'</li>';
+                            documents += '<li>' + 'CÉDULA PROFESIONAL : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
                             break;
                         case 'XML':
-                            documents += '<li>'+'XML : '+(docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docsTitle[i].observation)+'</li>';
+                            documents += '<li>' + 'XML : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
                             break;
                     }
                 }
                 documents += '</ol>';
-       
-                if(docsTitleReject.length === 0){
+
+                if (docsTitleReject.length === 0) {
                     body = 'Su documentación fue aceptada. Para recoger tu título:';
-                    body += '<div style="text-align:center;">'+
-                            '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">'+
-                            '</div>'
+                    body += '<div style="text-align:center;">' +
+                        '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">' +
+                        '</div>'
                 } else {
                     body = 'Se encontraron errores en su documentación, favor de corregirlos:';
                 }
-                const message = mailTemplate(subtitle, body,documents);
-                _sendEmail({email: email, subject: subject, sender: sender, message: message});
+                const message = mailTemplate(subtitle, body, documents);
+                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
             }
         }
 
@@ -630,9 +636,16 @@ const fileCheck = (req, res) => {
                 }).exec(handler.handleOne.bind(null, 'request', res));
             }
             else {
-                var json = {};
-                json['request'] = request;
-                return res.status(status.OK).json(json);
+                _request.findOneAndUpdate({ _id: _id }, {
+                    $set: {
+                        phase: eRequest.DELIVERED,
+                        status: eStatusRequest.PROCESS,
+                        lastModified: new Date(),
+                    }
+                }).exec(handler.handleOne.bind(null, 'request', res));
+                // var json = {};
+                // json['request'] = request;
+                // return res.status(status.OK).json(json);
             }
         }
     })
@@ -645,7 +658,7 @@ const releasedRequest = (req, res) => {
     _request.update({ _id: _id }, {
         $set: {
             phase: data.upload ? eRequest.RELEASED : eRequest.REGISTERED,
-            status: eStatusRequest.NONE,
+            status: data.upload ? eStatusRequest.NONE : eStatusRequest.PROCESS,
             proposedHour: data.proposedHour,
             duration: data.duration,
             lastModified: new Date(),
@@ -661,14 +674,14 @@ const releasedRequest = (req, res) => {
             }
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
-    
+
     const subtitle = 'Liberación de proyecto de acto protocolario';
     const body = 'Su proyecto ha sido liberado';
     const email = data.email;
     const subject = 'Acto recepcional - Liberación de proyecto';
     const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-    const message = mailTemplate(subtitle, body,'');
-    _sendEmail({email: email, subject: subject, sender: sender, message: message});
+    const message = mailTemplate(subtitle, body, '');
+    _sendEmail({ email: email, subject: subject, sender: sender, message: message });
 };
 
 const updateRequest = (req, res) => {
@@ -678,8 +691,10 @@ const updateRequest = (req, res) => {
     var subtitleMail = '';
     var bodyMail = '';
     var observationsMail = '';
+    let msnError = '';
+    // console.log("DATA", data);
     // console.log("Data", data);
-    _request.findOne({ _id: _id }).exec((error, request) => {
+    _request.findOne({ _id: _id }).exec(async (error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
         if (!request)
@@ -717,10 +732,16 @@ const updateRequest = (req, res) => {
                     // request.status = eStatusRequest.PROCESS; 17/11
                     request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT;
-                    request.documents.push(
-                        {
-                            type: eFile.SOLICITUD, dateRegister: new Date(), nameFile: 'Solicitud', status: "Accept"
+                    req.body.Document = eFile.SOLICITUD;
+                    let isUploadFile = await _Drive.uploadFile(req, eOperation.NEW, true);
+                    if (typeof (isUploadFile) !== 'undefined' && isUploadFile.isCorrect) {
+                        request.documents.push({
+                            type: eFile.SOLICITUD, dateRegister: new Date(), nameFile: eFile.SOLICITUD, status: 'Accept', driveId: isUploadFile.fileId
                         });
+                    }
+                    else {
+                        msnError = 'Archivo no cargado';
+                    }
                 } else {
                     request.phase = eRequest.CAPTURED;
                     request.status = eStatusRequest.PROCESS;
@@ -747,10 +768,16 @@ const updateRequest = (req, res) => {
                     // request.status = eStatusRequest.PROCESS; 17/11
                     request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT;
-                    request.documents.push(
-                        {
-                            type: eFile.REGISTRO, dateRegister: new Date(), nameFile: 'Registro', status: "Accept"
+                    req.body.Document = eFile.REGISTRO;
+                    let isUploadFile = await _Drive.uploadFile(req, eOperation.NEW, true);
+                    if (typeof (isUploadFile) !== 'undefined' && isUploadFile.isCorrect) {
+                        request.documents.push({
+                            type: eFile.REGISTRO, dateRegister: new Date(), nameFile: eFile.REGISTRO, status: 'Accept', driveId: isUploadFile.fileId
                         });
+                    }
+                    else {
+                        msnError = 'Archivo no cargado';
+                    }
                 }
                 break;
             }
@@ -823,12 +850,22 @@ const updateRequest = (req, res) => {
                     subtitleMail = 'Generación de Constancia de No Inconveniencia';
                     bodyMail = 'Su Constancia de No Inconveniencia fue generada';
                     request.phase = eRequest.ASSIGNED;
-                    request.documents.push(
-                        {
-                            type: eFile.INCONVENIENCE, dateRegister: new Date(), nameFile: 'No_Inconveniencia', status: "Accept"
-                        });
+                    // request.documents.push(
+                    //     {
+                    //         type: eFile.INCONVENIENCE, dateRegister: new Date(), nameFile: 'No_Inconveniencia', status: "Accept"
+                    //     });
                     request.status = eStatusRequest.NONE;
                     item.status = eStatusRequest.ACCEPT
+                    req.body.Document = eFile.INCONVENIENCE;
+                    let isUploadFile = await _Drive.uploadFile(req, eOperation.NEW, true);
+                    if (typeof (isUploadFile) !== 'undefined' && isUploadFile.isCorrect) {
+                        request.documents.push({
+                            type: eFile.INCONVENIENCE, dateRegister: new Date(), nameFile: eFile.INCONVENIENCE, status: 'Accept', driveId: isUploadFile.fileId
+                        });
+                    }
+                    else {
+                        msnError = 'Archivo no cargado';
+                    }
                 }
                 break;
             }
@@ -1004,25 +1041,29 @@ const updateRequest = (req, res) => {
         request.doer = data.doer;
         request.observation = data.observation;
         request.lastModified = new Date();
-
-        request.save((errorReq, response) => {
-            if (errorReq) {
-                // console.log(errorReq);
-                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, errorReq);
-            }
-            var json = {};
-            json['request'] = response;
-            // Enviar correo
-            const subject = subjectMail;
-            const subtitle = subtitleMail;
-            const body = bodyMail;
-            const observations = observationsMail;
-            const email = request.email;
-            const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-            const message = mailTemplate(subtitle, body, observations);
-            _sendEmail({email: email, subject: subject, sender: sender, message: message});
-            return res.status(status.OK).json(json);
-        });
+        if (msnError !== '') {
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: msnError });
+        }
+        else {
+            request.save((errorReq, response) => {
+                if (errorReq) {
+                    // console.log(errorReq);
+                    return handler.handleError(res, status.INTERNAL_SERVER_ERROR, errorReq);
+                }
+                var json = {};
+                json['request'] = response;
+                // Enviar correo
+                const subject = subjectMail;
+                const subtitle = subtitleMail;
+                const body = bodyMail;
+                const observations = observationsMail;
+                const email = request.email;
+                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                const message = mailTemplate(subtitle, body, observations);
+                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
+                return res.status(status.OK).json(json);
+            });
+        }
     });
 };
 
