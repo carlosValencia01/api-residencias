@@ -616,6 +616,7 @@ const fileCheck = (req, res) => {
                 }
             }).exec(handler.handleOne.bind(null, 'request', res));
         } else {
+            console.log(result.length);
             
             if (result.length >= 14) {
                 if(result.length === 18){                    
@@ -654,7 +655,7 @@ const fileCheck = (req, res) => {
                 // return res.status(status.OK).json(json);
             }
         }
-    })
+    });
 };
 
 const releasedRequest = (req, res) => {
