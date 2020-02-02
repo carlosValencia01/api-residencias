@@ -6,6 +6,7 @@ const fs = require('fs');
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
 const sendMail = require('../shared/mail.controller');
 const verifyCodeTemplate = require('../../templates/verifyCode');
+const mailTemplate = require('../../templates/notificationMailReception');
 
 let _Drive;
 let _request;
@@ -487,6 +488,106 @@ const fileCheck = (req, res) => {
             return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
         // console.log("reqq", request);
         const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+        
+        // Documentos primera parte (CURP, ACTA, etc)
+        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === 'CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === 'ACTA_NACIMIENTO' || doc.type === 'CURP' || doc.type === 'CERTIFICADO_BACHILLERATO' || doc.type === 'CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES'|| doc.type === 'RECIBO');
+        const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+        const docsReject = docs.filter(doc => doc.status === 'Reject');
+        const numDocsAR = (docsAcept.length+docsReject.length);
+
+        // Documentos segunda parte (INE, CEDULA y XML)
+        const docsTitle = request.documents.filter(doc => doc.type === 'INE' || doc.type === 'CEDULA_PROFESIONAL' || doc.type === 'XML');
+        const docsTitleAcept = docsTitle.filter(doc => doc.status === 'Accept');
+        const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
+        const numDocsTitleAR = (docsTitleAcept.length+docsTitleReject.length);
+
+        if(numDocsTitleAR == 0){
+            if(numDocsAR === docs.length){
+                const email = request.email;
+                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                const subject = 'Acto recepcional - Resultado de validación de documentos';
+                const subtitle = 'Acuse de documentos entregados';
+                var body = '';
+                var documents = '<ol style="text-align:left">';
+                for(var i = 0; i < docs.length; i++){
+                    switch(docs[i].type){
+                        case 'FOTOS':
+                            documents += '<li>'+'FOTOS : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'CEDULA_TECNICA':
+                            documents += '<li>'+'CÉDULA TÉCNICA : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'REVALIDACION':
+                            documents += '<li>'+'REVALIDACIÓN : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'ACTA_NACIMIENTO':
+                            documents += '<li>'+'ACTA DE NACIMIENTO : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'CURP':
+                            documents += '<li>'+'CURP : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'CERTIFICADO_BACHILLERATO':
+                            documents += '<li>'+'CERTIFICADO DE BACHILLERATO : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'CERTIFICADO_LICENCIATURA':
+                            documents += '<li>'+'CERTIFICADO DE LICENCIATURA : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'SERVICIO SOCIAL':
+                            documents += '<li>'+'SERVICIO SOCIAL : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'LIBERACION_INGLES':
+                            documents += '<li>'+'LIBERACIÓN DE INGLÉS : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                        case 'RECIBO':
+                            documents += '<li>'+'RECIBO DE PAGO : '+(docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docs[i].observation)+'</li>';
+                            break;
+                    }
+                }
+                documents += '</ol>';
+                if(docsReject.length === 0){
+                    body = 'Su documentación fue aceptada, espera tu carta de no inconveniencia.';
+                } else {
+                    body = 'Se encontraron errores en su documentación, favor de corregirlos:';
+                }
+                const message = mailTemplate(subtitle, body,documents);
+                _sendEmail({email: email, subject: subject, sender: sender, message: message});
+            }
+        } else {
+            if(numDocsTitleAR == docsTitle.length){
+                const email = request.email;
+                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
+                const subtitle = 'Resultado de validación de documentos';
+                var body = '';
+                var documents = '<ol style="text-align:left">';
+                for(var i = 0; i < docsTitle.length; i++){
+                    switch(docsTitle[i].type){
+                        case 'INE':
+                            documents += '<li>'+'INE : '+(docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docsTitle[i].observation)+'</li>';
+                            break;
+                        case 'CEDULA_PROFESIONAL':
+                            documents += '<li>'+'CÉDULA PROFESIONAL : '+(docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docsTitle[i].observation)+'</li>';
+                            break;
+                        case 'XML':
+                            documents += '<li>'+'XML : '+(docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - '+docsTitle[i].observation)+'</li>';
+                            break;
+                    }
+                }
+                documents += '</ol>';
+       
+                if(docsTitleReject.length === 0){
+                    body = 'Su documentación fue aceptada. Para recoger tu título:';
+                    body += '<div style="text-align:center;">'+
+                            '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">'+
+                            '</div>'
+                } else {
+                    body = 'Se encontraron errores en su documentación, favor de corregirlos:';
+                }
+                const message = mailTemplate(subtitle, body,documents);
+                _sendEmail({email: email, subject: subject, sender: sender, message: message});
+            }
+        }
+
         if (result.length === 14) {
             _request.findOneAndUpdate({ _id: _id }, {
                 $set: {
@@ -560,12 +661,23 @@ const releasedRequest = (req, res) => {
             }
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
-
+    
+    const subtitle = 'Liberación de proyecto de acto protocolario';
+    const body = 'Su proyecto ha sido liberado';
+    const email = data.email;
+    const subject = 'Acto recepcional - Liberación de proyecto';
+    const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+    const message = mailTemplate(subtitle, body,'');
+    _sendEmail({email: email, subject: subject, sender: sender, message: message});
 };
 
 const updateRequest = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
+    var subjectMail = '';
+    var subtitleMail = '';
+    var bodyMail = '';
+    var observationsMail = '';
     // console.log("Data", data);
     _request.findOne({ _id: _id }).exec((error, request) => {
         if (error)
@@ -597,6 +709,10 @@ const updateRequest = (req, res) => {
             }
             case eRequest.SENT: {
                 if (data.operation !== eStatusRequest.REJECT) {
+                    subjectMail = 'Acto recepcional - Validación de solicitud';
+                    subtitleMail = 'Validación de solicitud de acto protocolario';
+                    bodyMail = 'Su solicitud ha sido aceptada';
+                    observationsMail = item.observation;
                     request.phase = eRequest.VERIFIED;
                     // request.status = eStatusRequest.PROCESS; 17/11
                     request.status = eStatusRequest.NONE;
@@ -609,6 +725,10 @@ const updateRequest = (req, res) => {
                     request.phase = eRequest.CAPTURED;
                     request.status = eStatusRequest.PROCESS;
                     item.status = eStatusRequest.REJECT;
+                    subjectMail = 'Acto recepcional - Validación de solicitud';
+                    subtitleMail = 'Validación de solicitud de acto protocolario';
+                    bodyMail = 'Su solicitud ha sido rechazada';
+                    observationsMail = item.observation;
                 }
                 break;
             }
@@ -619,6 +739,10 @@ const updateRequest = (req, res) => {
                     item.status = eStatusRequest.REJECT;
                 }
                 else {
+                    subjectMail = 'Acto recepcional - Registro de proyecto';
+                    subtitleMail = 'Registro de proyecto de acto protocolario';
+                    bodyMail = 'Su proyecto ha sido registrado';
+                    observationsMail = item.observation;
                     request.phase = eRequest.REGISTERED;
                     // request.status = eStatusRequest.PROCESS; 17/11
                     request.status = eStatusRequest.NONE;
@@ -645,11 +769,19 @@ const updateRequest = (req, res) => {
             }
             case eRequest.RELEASED: {
                 if (data.operation === eStatusRequest.REJECT) {
+                    subjectMail = 'Acto recepcional - Validación de liberación de proyecto';
+                    subtitleMail = 'Validación de formato de liberación de proyecto';
+                    bodyMail = 'Liberación rechazada';
+                    observationsMail = item.observation;
                     request.phase = eRequest.REGISTERED;
                     request.status = eStatusRequest.REJECT;
                     item.status = eStatusRequest.REJECT;
                 }
                 else {
+                    subjectMail = 'Acto recepcional - Validación de liberación de proyecto';
+                    subtitleMail = 'Validación de formato de liberación de proyecto';
+                    bodyMail = 'Liberación aceptada';
+                    observationsMail = item.observation;
                     request.phase = eRequest.DELIVERED;
                     request.status = eStatusRequest.NONE;
                     request.documents.push(
@@ -687,6 +819,9 @@ const updateRequest = (req, res) => {
                     if (typeof (data.duration) !== 'undefined') {
                         request.duration = data.duration;
                     }
+                    subjectMail = 'Acto recepcional - Constancia de no inconveniencia';
+                    subtitleMail = 'Generación de Constancia de No Inconveniencia';
+                    bodyMail = 'Su Constancia de No Inconveniencia fue generada';
                     request.phase = eRequest.ASSIGNED;
                     request.documents.push(
                         {
@@ -725,12 +860,19 @@ const updateRequest = (req, res) => {
                         break;
                     }
                     case eStatusRequest.ACCEPT: {
+                        subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
+                        subtitleMail = 'Confirmación de fecha de titulación';
+                        bodyMail = 'Tu fecha solicitada ha sido confirmada';
                         request.phase = eRequest.REALIZED;
                         request.status = eStatusRequest.PROCESS;
                         item.status = eStatusRequest.ACCEPT;
                         break;
                     }
                     case eStatusRequest.REJECT: {
+                        subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
+                        subtitleMail = 'Confirmación de fecha de titulación';
+                        bodyMail = 'Tu fecha solicitada ha sido rechazada';
+                        observationsMail = item.observation;
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
                         break;
@@ -760,6 +902,10 @@ const updateRequest = (req, res) => {
                         //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
                         //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
                         // }
+                        subjectMail = 'Acto recepcional - Aprobación de acto protocolario';
+                        subtitleMail = 'Aprobación de acto protocolario';
+                        bodyMail = 'Su acto protocolario ha sido aprobado';
+                        observationsMail = item.observation;
                         request.phase = eRequest.GENERATED;
                         request.status = eStatusRequest.NONE;
                         request.registry = data.registry;
@@ -772,6 +918,10 @@ const updateRequest = (req, res) => {
                         //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
                         //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
                         // }
+                        subjectMail = 'Acto recepcional - Aprobación de acto protocolario';
+                        subtitleMail = 'Aprobación de acto protocolario';
+                        bodyMail = 'Su acto protocolario no ha sido aprobado y su titulación está rechazada';
+                        observationsMail = item.observation;
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
                         item.phase = 'Realizado';
@@ -791,6 +941,10 @@ const updateRequest = (req, res) => {
                     }
                     //Fue impresa el acta
                     case eStatusRequest.PRINTED: {
+                        subjectMail = 'Acto recepcional - Acta de examen profesional';
+                        subtitleMail = 'Acta de examen profesional';
+                        bodyMail = 'Su acta ha sido impresa';
+                        observationsMail = item.observation;
                         request.status = eStatusRequest.ACCEPT;
                         item.phase = 'Generado';
                         item.status = eStatusRequest.PROCESS;
@@ -804,6 +958,10 @@ const updateRequest = (req, res) => {
                     }
                     //Se valida que el titulado paso por ella
                     case eStatusRequest.ACCEPT: {
+                        subjectMail = 'Acto recepcional - Acta de examen profesional';
+                        subtitleMail = 'Acta de examen profesional';
+                        bodyMail = 'Su acta ha sido entregada';
+                        observationsMail = item.observation;
                         request.phase = eRequest.TITLED;
                         request.status = eStatusRequest.NONE;
                         item.status = eStatusRequest.ACCEPT
@@ -829,6 +987,10 @@ const updateRequest = (req, res) => {
                     }
                     //Se valida que pasarón por el titulo
                     case eStatusRequest.FINALIZED: {
+                        subjectMail = 'Acto recepcional - Título entregado';
+                        subtitleMail = 'Título entregado';
+                        bodyMail = 'Su título ha sido entregado';
+                        observationsMail = item.observation;
                         request.phase = eRequest.TITLED;
                         request.status = eStatusRequest.FINALIZED;
                         item.status = eStatusRequest.ACCEPT
@@ -850,6 +1012,15 @@ const updateRequest = (req, res) => {
             }
             var json = {};
             json['request'] = response;
+            // Enviar correo
+            const subject = subjectMail;
+            const subtitle = subtitleMail;
+            const body = bodyMail;
+            const observations = observationsMail;
+            const email = request.email;
+            const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+            const message = mailTemplate(subtitle, body, observations);
+            _sendEmail({email: email, subject: subject, sender: sender, message: message});
             return res.status(status.OK).json(json);
         });
     });
