@@ -26,6 +26,7 @@ let employeeSchema = new mongoose.Schema({
         status: {type: String, trim: true, uppercase: true, enum: ['ACTIVE', 'INACTIVE']},
         activateDate: {type: Date},
         deactivateDate: {type: Date},
+        eSignatureId: {type: mongoose.Schema.Types.ObjectId, ref: 'ESignature'}
     }]
 });
 const employeeModel = mongoose.model('Employee', employeeSchema, 'employees');
