@@ -616,24 +616,30 @@ const fileCheck = (req, res) => {
                 }
             }).exec(handler.handleOne.bind(null, 'request', res));
         } else {
-
-            if (result.length === 18) {
-                _request.findOneAndUpdate({ _id: _id }, {
-                    $set: {
-                        phase: eRequest.TITLED,
-                        status: eStatusRequest.ACCEPT,
-                        lastModified: new Date(),
-                    },
-                    $addToSet: {
-                        history: {
+            
+            if (result.length >= 14) {
+                if(result.length === 18){                    
+                    _request.findOneAndUpdate({ _id: _id }, {
+                        $set: {
                             phase: eRequest.TITLED,
-                            achievementDate: new Date(),
-                            doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                            observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                            status: eStatusRequest.PROCESS
+                            status: eStatusRequest.ACCEPT,
+                            lastModified: new Date(),
+                        },
+                        $addToSet: {
+                            history: {
+                                phase: eRequest.TITLED,
+                                achievementDate: new Date(),
+                                doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                                observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                                status: eStatusRequest.PROCESS
+                            }
                         }
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                    }).exec(handler.handleOne.bind(null, 'request', res));
+                }else{
+                    var json = {};
+                    json['request'] = request;
+                    return res.status(status.OK).json(json);
+                }
             }
             else {
                 _request.findOneAndUpdate({ _id: _id }, {
