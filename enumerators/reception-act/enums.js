@@ -17,7 +17,8 @@ const eFile = {
     INE: 'INE',
     CED_PROFESIONAL: 'CEDULA_PROFESIONAL',
     XML: 'XML',
-    ACTA_EXAMEN:'ACTA_EXAMEN'
+    JURAMENTO_ETICA: 'JURAMENTO_ETICA',
+    ACTA_EXAMEN: 'ACTA_EXAMEN'
 };
 
 const eCareer = {
