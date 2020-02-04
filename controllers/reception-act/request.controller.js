@@ -253,6 +253,11 @@ const correctRequest = async (req, res) => {
     request.phase = eRequest.CAPTURED;
     request.status = eStatusRequest.PROCESS;
     request.observation = '';
+
+    let depto = { name: request.department, boss: request.boss };
+    delete request.boss;
+    delete request.department;
+    request.department = depto;
     if (request.verificationCode === '000000') {
         request.verificationCode = _generateVerificationCode(6);
     }
@@ -405,20 +410,26 @@ const omitFile = (req, res) => {
 const uploadFile = (req, res) => {
     const { _id } = req.params;
     const data = req.body;
-    const files = req.files;
+    const isJsPdf = typeof (data.isJsPdf) !== 'undefined' ? data.isJsPdf : false;
+    // const files = req.files;
+    console.log("DATA edit", data.IsEdit);
+    console.log("da", (data.IsEdit === 'true' ? 'Accept' : 'Process'));
+    const files = isJsPdf ? data.file : req.files;
     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
         async (error, request) => {
             if (error) {
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
             }
-            const docName = data.Document + path.extname(files.file.name);
+            // const docName = data.Document + path.extname(files.file.name);
+            const docName = data.Document + path.extname((isJsPdf ? files.name : files.file.name));
             if (!request) {
-                let result = await _Drive.uploadFile(req, eOperation.NEW);
+                let result = await _Drive.uploadFile(req, eOperation.NEW, isJsPdf);
                 if (typeof (result) !== 'undefined' && result.isCorrect) {
                     _request.update({ _id: _id }, {
                         $set: {
                             status: eStatusRequest.PROCESS,
-                            phase: eRequest.DELIVERED
+                            phase: data.phase
+                            // phase: eRequest.DELIVERED
                         },
                         $addToSet: {
                             documents:
@@ -433,7 +444,7 @@ const uploadFile = (req, res) => {
             } else {
                 const tmpDocument = request.documents.filter(doc => doc.type === data.Document);
                 req.body.fileId = tmpDocument[0].driveId;
-                let result = await _Drive.uploadFile(req, eOperation.EDIT);
+                let result = await _Drive.uploadFile(req, eOperation.EDIT, isJsPdf);
                 if (typeof (result) !== 'undefined' && result.isCorrect) {
                     _request.update({
                         _id: _id,
@@ -441,7 +452,8 @@ const uploadFile = (req, res) => {
                     }, {
                         $set: {
                             status: eStatusRequest.PROCESS,
-                            phase: eRequest.DELIVERED,
+                            // phase: eRequest.DELIVERED,
+                            phase: data.phase,
                             'documents.$': {
                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
                                 driveId: tmpDocument[0].driveId,
@@ -617,7 +629,8 @@ const fileCheck = (req, res) => {
             }).exec(handler.handleOne.bind(null, 'request', res));
         } else {
             if (result.length >= 14) {
-                if (result.length === 18) {
+                console.log("es 19", result.length, result.length === 19);
+                if (result.length === 19) {
                     _request.findOneAndUpdate({ _id: _id }, {
                         $set: {
                             phase: eRequest.TITLED,
@@ -635,9 +648,18 @@ const fileCheck = (req, res) => {
                         }
                     }).exec(handler.handleOne.bind(null, 'request', res));
                 } else {
-                    var json = {};
-                    json['request'] = request;
-                    return res.status(status.OK).json(json);
+                    if (request.documents.length === 19) {
+                        _request.findOneAndUpdate({ _id: _id }, {
+                            $set: {
+                                status: eStatusRequest.PROCESS,
+                                lastModified: new Date(),
+                            }
+                        }).exec(handler.handleOne.bind(null, 'request', res));
+                    } else {
+                        var json = {};
+                        json['request'] = request;
+                        return res.status(status.OK).json(json);
+                    }
                 }
             }
             else {
@@ -697,8 +719,6 @@ const updateRequest = (req, res) => {
     var bodyMail = '';
     var observationsMail = '';
     let msnError = '';
-    // console.log("DATA", data);
-    // console.log("Data", data);
     _request.findOne({ _id: _id }).exec(async (error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -712,7 +732,7 @@ const updateRequest = (req, res) => {
         };
         if (typeof (request.history) === 'undefined')
             request.history = [];
-        switch (request.phase) {
+        switch (data.phase) {
             case eRequest.CAPTURED: {
                 if (data.operation !== eStatusRequest.REJECT) {
                     request.phase = eRequest.SENT;
@@ -1088,7 +1108,7 @@ const groupDiary = (req, res) => {
         StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
         EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
     }
-    // console.log("FECHAS", StartDate, "--", EndDate);
+    console.log("FECHAS", StartDate, "--", EndDate);
     let query =
         [
             {
