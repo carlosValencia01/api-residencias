@@ -537,7 +537,7 @@ const updateFolderIdStudent = (_id, folderId) => {
 
     const push = { $set: { folderId: folderId } };
     return new Promise(async resolve => {
-        _student.findOneAndUpdate({ _id: _id }, push, { new: true }).then(
+        _student.updateOne({ _id: _id }, push, { new: true }).then(
             updated => {
                 resolve(true);
             },

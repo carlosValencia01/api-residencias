@@ -47,7 +47,7 @@ const updatePeriod = (req,res)=> {
     const period = req.body;
     
     const idPeriod = req.params.id;
-    _period.findOneAndUpdate({_id:idPeriod},period).then(updated => {
+    _period.updateOne({_id:idPeriod},{$set:period}).then(updated => {
         res.status(status.OK).json({
             model:'period', 
             period: updated,        
