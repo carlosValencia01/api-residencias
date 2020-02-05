@@ -222,7 +222,7 @@ const csvDegree = (req, res) => {
         return _employee.findOne({ rfc: data.rfc }).then(
             async oneEmployee => {
                 if (data.positions.length) {
-                    await Promise.all(data.positions.map(findPosition));
+                    await Promise.all(data.positions.map(pos => findPosition(pos, oneEmployee ? oneEmployee._id : '')));
                     data.positions.forEach((pos, index) => {
                         if (pos.delete) {
                             data.positions.splice(index, 1);
@@ -241,7 +241,7 @@ const csvDegree = (req, res) => {
         );
     };
 
-    const findPosition = (position) => {
+    const findPosition = (position, employeeId = '') => {
         const query = {
             name: { $regex: new RegExp(`^${position.name}$`, 'i') }
         };
@@ -257,7 +257,7 @@ const csvDegree = (req, res) => {
                         position.deactivateDate = position.deactivateDate ? (typeof position.deactivateDate) === 'string' ? new Date(position.deactivateDate) : position.deactivateDate : null,
                         position.status = position.deactivateDate ? 'INACTIVE' : 'ACTIVE'
                         if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
-                            if (await _isAssignedDepartmentBoss(position._id) && !position.deactivateDate) {
+                            if (await _isAssignedDepartmentBoss(position._id, employeeId) && !position.deactivateDate) {
                                 position.delete = true;
                             }
                             return position;
@@ -342,7 +342,7 @@ const updateEmployeePositions = async (req, res) => {
         const item = _positions[index];
         const position = item.position;
         if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
-            if (await _isAssignedDepartmentBoss(position._id) && item.status === 'ACTIVE') {
+            if (await _isAssignedDepartmentBoss(position._id, _id) && item.status === 'ACTIVE') {
                 _positions.splice(index, 1);
             }
         }
@@ -437,7 +437,7 @@ const uploadEmployeePositionsByCsv = async (req, res) => {
     const addPositions = async (position) => {
         if (!await _isActivePosition(activePositionsEmployee, position)) {
             if (position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO' || position.name.toUpperCase() === 'DIRECTOR') {
-                if (await _isAssignedDepartmentBoss(position._id) && !position.deactivateDate) {
+                if (await _isAssignedDepartmentBoss(position._id, _employeeId) && !position.deactivateDate) {
                     return null;
                 }
             }
@@ -523,7 +523,7 @@ const _getActivePositionsByEmployee = (employeeId) => {
     });
 };
 
-const _isAssignedDepartmentBoss = (positionId) => {
+const _isAssignedDepartmentBoss = (positionId, employeeId = '') => {
     return new Promise(resolve => {
         const query = {
             positions: {$elemMatch: {$and: [{position: positionId}, {status: 'ACTIVE'}]}}
@@ -531,7 +531,7 @@ const _isAssignedDepartmentBoss = (positionId) => {
         _employee.findOne(query)
             .populate('positions.position')
             .then(employee => {
-                resolve(!!employee);
+                resolve(!!employee && employeeId.toString() !== employee._id.toString());
             })
             .catch(_ => resolve(false));
     });
