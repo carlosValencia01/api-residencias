@@ -32,8 +32,8 @@ const createMinuteBook = (req, res) => {
 
 const changeMinuteBookStatus = (req, res ) => {
     const {_id} = req.params;
-    const {status} = req.body;
-    _minuteBook.update({_id: _id}, {$set: {status: status}})
+    const {_status} = req.body;
+    _minuteBook.update({_id: _id}, {$set: {status: _status}})
         .then(_ => {
             res.status(status.OK).json({message : 'Estatus actualizado con éxito'});
         })
