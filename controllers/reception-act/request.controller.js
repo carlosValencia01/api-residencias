@@ -411,9 +411,7 @@ const uploadFile = (req, res) => {
     const { _id } = req.params;
     const data = req.body;
     const isJsPdf = typeof (data.isJsPdf) !== 'undefined' ? data.isJsPdf : false;
-    // const files = req.files;
-    console.log("DATA edit", data.IsEdit);
-    console.log("da", (data.IsEdit === 'true' ? 'Accept' : 'Process'));
+    // const files = req.files;    
     const files = isJsPdf ? data.file : req.files;
     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
         async (error, request) => {
@@ -916,7 +914,7 @@ const updateRequest = (req, res) => {
                         request.phase = eRequest.REALIZED;
                         request.proposedDate = data.appointment;
                         request.proposedHour = data.minutes;
-                        request.status = eStatusRequest.PROCESS;
+                        request.status = eStatusRequest.NONE;
                         request.place = data.place;
                         item.status = eStatusRequest.ACCEPT;
                         break;
@@ -926,7 +924,7 @@ const updateRequest = (req, res) => {
                         subtitleMail = 'Confirmación de fecha de titulación';
                         bodyMail = 'Tu fecha solicitada ha sido confirmada';
                         request.phase = eRequest.REALIZED;
-                        request.status = eStatusRequest.PROCESS;
+                        request.status = eStatusRequest.NONE;
                         item.status = eStatusRequest.ACCEPT;
                         break;
                     }
@@ -948,6 +946,12 @@ const updateRequest = (req, res) => {
                 tmpDateRequest.setHours(0, 0, 0, 0);
                 tmpDateRequest.setHours(request.proposedHour / 60, request.proposedHour % 60, 0, 0);
                 switch (data.operation) {
+                    case eStatusRequest.PROCESS: {
+                        request.phase = eRequest.REALIZED;
+                        request.status = eStatusRequest.PROCESS;
+                        item.status = eStatusRequest.NONE;
+                        break;
+                    }
                     case eStatusRequest.CANCELLED: {
                         if (tmpDateCompare.getTime() > tmpDateRequest.getTime()) {
                             return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento Inamovible' });
