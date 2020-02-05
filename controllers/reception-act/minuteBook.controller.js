@@ -3,6 +3,7 @@ let _minuteBook;
 
 const getAllMinuteBooks = (req, res) => {
     _minuteBook.find({})
+        .populate('careers')
         .then(minuteBooks => {
             res.status(status.OK).json(minuteBooks);
         })
@@ -30,7 +31,8 @@ const createMinuteBook = (req, res) => {
 };
 
 const changeMinuteBookStatus = (req, res ) => {
-    const {_id, status} = req.params;
+    const {_id} = req.params;
+    const {status} = req.body;
     _minuteBook.update({_id: _id}, {$set: {status: status}})
         .then(_ => {
             res.status(status.OK).json({message : 'Estatus actualizado con éxito'});
