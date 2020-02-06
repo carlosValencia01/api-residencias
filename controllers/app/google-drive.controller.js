@@ -498,26 +498,52 @@ const createFolderFromServer = (req, res) => {
             // console.log('1');
             if (student) {
 
-                const folderId1 = await getFolderId(student._id);
+                if(type == 1){
 
-                if (folderId1) {
-                    res.status(status.OK).json({ folderIdInDrive: folderId1.idFolderInDrive });
-                } else {
-
-                    const period = await getActivePeriod();
-                    if (period) {
-                        const folderName = `${nc} - ${student.fullName}`;
-                        const folderId = await getFolderByPeriod(period, student.career, folderName, type);
-                        // console.log(folderId);
-
-                        const result = await updateFolderIdStudent(student._id, folderId.folderId);
-                        if (result) {
-                            res.status(status.OK).json({ folderIdInDrive: folderId.folderDrive });
-                        } else {
-                            res.status(status.BAD_REQUEST).json({ err: "No se pudo crear la carpeta." });
-                        }
+                    const folderId1 = await getFolderId(student._id);
+    
+                    if (folderId1) {
+                        res.status(status.OK).json({ folderIdInDrive: folderId1.idFolderInDrive });
                     } else {
-                        res.status(status.BAD_REQUEST).json({ err: "No hay periodo activo" });
+    
+                        const period = await getActivePeriod();
+                        if (period) {
+                            const folderName = `${nc} - ${student.fullName}`;
+                            const folderId = await getFolderByPeriod(period, student.career, folderName, type);
+                            // console.log(folderId);
+    
+                            const result = await updateFolderIdStudent(student._id, folderId.folderId);
+                            if (result) {
+                                res.status(status.OK).json({ folderIdInDrive: folderId.folderDrive });
+                            } else {
+                                res.status(status.BAD_REQUEST).json({ err: "No se pudo crear la carpeta." });
+                            }
+                        } else {
+                            res.status(status.BAD_REQUEST).json({ err: "No hay periodo activo" });
+                        }
+                    }
+                }else if(type == 2){
+                    const folderId2 = await getFolderId2(student._id);
+    
+                    if (folderId2) {
+                        res.status(status.OK).json({ folderIdInDrive: folderId2.idFolderInDrive });
+                    } else {
+    
+                        const period = await getActivePeriod();
+                        if (period) {
+                            const folderName = `${nc} - ${student.fullName}`;
+                            const folderId = await getFolderByPeriod(period, student.career, folderName, type);
+                            // console.log(folderId);
+    
+                            const result = await updateFolderId2Student(student._id, folderId.folderId);
+                            if (result) {
+                                res.status(status.OK).json({ folderIdInDrive: folderId.folderDrive });
+                            } else {
+                                res.status(status.BAD_REQUEST).json({ err: "No se pudo crear la carpeta." });
+                            }
+                        } else {
+                            res.status(status.BAD_REQUEST).json({ err: "No hay periodo activo" });
+                        }
                     }
                 }
             } else {
@@ -536,6 +562,20 @@ const createFolderFromServer = (req, res) => {
 const updateFolderIdStudent = (_id, folderId) => {
 
     const push = { $set: { folderId: folderId } };
+    return new Promise(async resolve => {
+        _student.updateOne({ _id: _id }, push, { new: true }).then(
+            updated => {
+                resolve(true);
+            },
+            err => {
+                resolve(false);
+            }
+        ).catch(err => resolve(err));
+    });
+};
+const updateFolderId2Student = (_id, folderId) => {
+
+    const push = { $set: { folderIdRecAct: folderId } };
     return new Promise(async resolve => {
         _student.updateOne({ _id: _id }, push, { new: true }).then(
             updated => {
@@ -669,6 +709,24 @@ const getFolderId = (_id) => {
             }
         }).populate({
             path: 'folderId', model: 'Folder',
+            select: {
+                idFolderInDrive: 1
+            }
+        });
+    });
+};
+const getFolderId2 = (_id) => {
+
+    return new Promise(async (resolve) => {
+        await _student.findOne({ _id: _id }, (err, student) => {
+
+            if (!err && student) {
+                resolve(student.folderIdRecAct);
+            } else {
+                resolve(false);
+            }
+        }).populate({
+            path: 'folderIdRecAct', model: 'Folder',
             select: {
                 idFolderInDrive: 1
             }
