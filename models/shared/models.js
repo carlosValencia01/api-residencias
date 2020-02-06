@@ -24,6 +24,7 @@ module.exports = (wagner) => {
     const English = require('../reception-act/english.model');
     const Range = require('../reception-act/ranges.models');
     const Request = require('../reception-act/request.model');
+    const MinuteBook = require('../reception-act/minuteBook.model');
 
     // Shared
     const Department = require('./department.model');
@@ -47,6 +48,7 @@ module.exports = (wagner) => {
         English,
         Range,
         Request,
+        MinuteBook,
 
         // Shared
         Department,
