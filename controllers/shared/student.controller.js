@@ -386,7 +386,7 @@ const search = (req, res) => {
         }
     };
     console.log('query', query);
-    _student.find(query, {
+    _student.find(query, null, {
         skip: +start,
         limit: +limit
     }).exec(handler.handleMany.bind(null, 'students', res));
