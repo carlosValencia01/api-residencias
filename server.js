@@ -62,18 +62,32 @@ const uri = `${URL}/${v}/`;
 
 const jwtOptions = {
   path: [
-    `${uri}user/login`, `${uri}user/register`,`${uri}user/student/login` ,`${uri}student/login`, `/favicon.ico`,
-    `${uri}student/create`, `${uri}inscription/updateStudent`, `${uri}graduationmail`, `${uri}employee/create`, `${uri}user/send/code`,
-    `${uri}inscription/sendmail`, `${uri}english`, `${uri}request`, `${uri}role`, `${uri}period/create` ,`${uri}drive/upload`,`${uri}drive/upload/file`,
-    `${uri}department/employees`, `${uri}document`, `${uri}position`, `${uri}department/all`, `${uri}student/notify`, `${uri}user/graduation/login`,
-    /^\/escolares\/credenciales\/student\/image\/.*/,
-    /^\/escolares\/credenciales\/student\/document\/.*/,
-    /^\/escolares\/credenciales\/employee\/image\/.*/,
-    /^\/escolares\/credenciales\/graduationmail\/.*/,
-    /^\/escolares\/credenciales\/request\/.*/,
-    /^\/escolares\/credenciales\/user\/.*/,
-    /^\/escolares\/credenciales\/document\/.*/,
-    /^\/escolares\/credenciales\/position\/.*/,
+    `${uri}user/login`, 
+    `${uri}user/register`,
+    `${uri}user/student/login` , // app inscripciones
+    `${uri}user/graduation/login`, //app graduacion
+    `${uri}drive/upload/file`,
+    `${uri}student/notify`, 
+    // `${uri}graduationmail`,  
+    // `${uri}inscription/updateStudent`, 
+    // `${uri}inscription/sendmail`, 
+    // `${uri}student/create`, 
+    // `${uri}english`, 
+    // `${uri}student/login`, 
+    // `${uri}department/employees`, 
+    // `${uri}document`, 
+    // `${uri}position`, 
+    // `${uri}department/all`, 
+    // /^\/escolares\/credenciales\/student\/image\/.*/,
+    // /^\/escolares\/credenciales\/student\/document\/.*/,
+    // /^\/escolares\/credenciales\/employee\/image\/.*/,
+    // /^\/escolares\/credenciales\/graduationmail\/.*/,
+    // /^\/escolares\/credenciales\/request\/.*/,
+    // /^\/escolares\/credenciales\/user\/.*/,
+    // /^\/escolares\/credenciales\/document\/.*/,
+    // /^\/escolares\/credenciales\/position\/.*/,
+    // `/favicon.ico`,
+    // `${uri}request`, `${uri}role`,
   ]
 };
 // files
