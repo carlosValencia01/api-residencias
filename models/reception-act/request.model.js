@@ -51,7 +51,8 @@ const requestSchema = new mongoose.Schema({
     verificationCode: { type: String, uppercase: true, trim: true },
     verificationStatus: { type: Boolean, default: false },
     sentVerificationCode: { type: Boolean },
-    registry: { type: Object}
+    registry: { type: Object },
+    isIntegral: { type: Boolean, default: true }
 });
 
 const requestModel = mongoose.model('Request', requestSchema, 'requests');

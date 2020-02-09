@@ -124,9 +124,9 @@ const login = (req, res) => {
                 });
             } else {
                 // Validar si es alumno y su nc y NIP son válidos
-                const resApi = await getStudentData(email,password);                
-                
-                if(resApi){
+                const resApi = await getStudentData(email, password);
+
+                if (resApi) {
                     let queryNc = { controlNumber: email };
                     // Buscamos sus datos en la BD local
                     _student.findOne(queryNc)
@@ -155,36 +155,36 @@ const login = (req, res) => {
                                     let englishApproved = await validateEnglishApproved(email);
                                     console.log('1');
                                     // verificar si se cambio de semestre
-                                    if(resApi.semester > oneUser.semester){
-                                        _student.updateOne(queryNc,{
+                                    if (resApi.semester > oneUser.semester) {
+                                        _student.updateOne(queryNc, {
                                             $set: { semester: resApi.semester }
-                                        }).then(ok=>{});
+                                        }).then(ok => { });
                                     }
-                                     // Se contruye el token
-                                     const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
-                                     let formatUser = {
-                                         _id: oneUser._id,
-                                         name: {
-                                             firstName: oneUser.firstName,
-                                             lastName: `${oneUser.fatherLastName} ${oneUser.motherLastName}`,
-                                             fullName: oneUser.fullName
-                                         },
-                                         email: oneUser.controlNumber,
-                                         career: oneUser.career,
-                                         rol: {
-                                             name: oneUser.idRole.name,
-                                             permissions: oneUser.idRole.permissions
-                                         },
-                                         english: englishApproved,
-                                         graduate: isGraduate,
-                                         semester: resApi.semester
-                                     };
-                                     // Se retorna el usuario y token
-                                     return res.json({
-                                         user: formatUser,
-                                         token: token,
-                                         action: 'signin'
-                                     });
+                                    // Se contruye el token
+                                    const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
+                                    let formatUser = {
+                                        _id: oneUser._id,
+                                        name: {
+                                            firstName: oneUser.firstName,
+                                            lastName: `${oneUser.fatherLastName} ${oneUser.motherLastName}`,
+                                            fullName: oneUser.fullName
+                                        },
+                                        email: oneUser.controlNumber,
+                                        career: oneUser.career,
+                                        rol: {
+                                            name: oneUser.idRole.name,
+                                            permissions: oneUser.idRole.permissions
+                                        },
+                                        english: englishApproved,
+                                        graduate: isGraduate,
+                                        semester: resApi.semester
+                                    };
+                                    // Se retorna el usuario y token
+                                    return res.json({
+                                        user: formatUser,
+                                        token: token,
+                                        action: 'signin'
+                                    });
                                 } else {
                                     // No se encontró el registro en la base de datos local buscar en el sii                      
                                     _student.create(resApi)
@@ -240,7 +240,7 @@ const login = (req, res) => {
                             }
                         });
 
-                }else{
+                } else {
                     return res.status(status.NOT_FOUND).json({
                         error: 'Usuario y/o contraseña incorrectos'
                     });
@@ -417,7 +417,7 @@ const updateFullName = (req, res) => {
             studentNew.nameOriginSchool = studentNew.nameoriginschool;
             studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
 
-            _student.updateOne({ controlNumber: nc }, {$set:studentNew}, { new: true }).then(
+            _student.updateOne({ controlNumber: nc }, { $set: studentNew }, { new: true }).then(
                 stu => {
                     if (stu) res.status(status.OK).json({ 'action': 'update fullname', stu });
                     else res.status(status.BAD_REQUEST).json({ 'err': 'student not found' })
@@ -660,9 +660,9 @@ const getRoleId = (roleName) => {
 const studentLogin = async (req, res) => {
     const { nc, nip } = req.body;
     var studentNew = await getStudentData(nc, nip);
-    if(studentNew){        
-        
-        _student.findOne({ controlNumber: nc }, { documents: 0, idRole: 0, fileName: 0, acceptedTerms: 0, dateAcceptedTerms: 0, stepWizard: 0, inscriptionStatus: 0, __v: 0 ,nip:0})
+    if (studentNew) {
+
+        _student.findOne({ controlNumber: nc }, { documents: 0, idRole: 0, fileName: 0, acceptedTerms: 0, dateAcceptedTerms: 0, stepWizard: 0, inscriptionStatus: 0, __v: 0, nip: 0 })
             .populate({
                 path: 'careerId', model: 'Career',
                 select: {
@@ -675,10 +675,10 @@ const studentLogin = async (req, res) => {
                 }
             }).exec(async (error, oneUser) => {
                 if (oneUser) {
-                    if(studentNew.semester > oneUser.semester){
-                        _student.updateOne({controlNumber:nc},{
+                    if (studentNew.semester > oneUser.semester) {
+                        _student.updateOne({ controlNumber: nc }, {
                             $set: { semester: studentNew.semester }
-                        }).then(ok=>{});
+                        }).then(ok => { });
                     }
                     const token = jwt.sign({ nc: oneUser.controlNumber }, config.secret);
                     let { fullName, shortName, acronym, _id } = oneUser.careerId;
@@ -692,61 +692,61 @@ const studentLogin = async (req, res) => {
                         token: token,
                         action: 'signin'
                     });
-                } else {                    
+                } else {
                     //no se encuentra en la bd
                     _student.create(studentNew)
                         .then(created => {
                             console.log('Estudiant creado');
                             _student.findOne({ controlNumber: nc }, { documents: 0, idRole: 0, fileName: 0, acceptedTerms: 0, dateAcceptedTerms: 0, stepWizard: 0, inscriptionStatus: 0, __v: 0 })
-                        .populate({
-                            path: 'careerId', model: 'Career',
-                            select: {
-                                fullName: 1, shortName: 1, acronym: 1, _id: 1
-                            }
-                        }).populate({
-                            path: 'folderId', model: 'Folder',
-                            select: {
-                                idFolderInDrive: 1
-                            }
-                        }).exec((err, oneUser) => {
-                            // Se contruye el token                                
+                                .populate({
+                                    path: 'careerId', model: 'Career',
+                                    select: {
+                                        fullName: 1, shortName: 1, acronym: 1, _id: 1
+                                    }
+                                }).populate({
+                                    path: 'folderId', model: 'Folder',
+                                    select: {
+                                        idFolderInDrive: 1
+                                    }
+                                }).exec((err, oneUser) => {
+                                    // Se contruye el token                                
 
-                            const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
-                            let { fullName, shortName, acronym, _id } = oneUser.careerId;
-                            let career = { fullName, shortName, acronym, _id };
-                            let user = { student: oneUser, career };
-                            user.student.careerId = undefined;
-                            user.student.nip = undefined;
+                                    const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
+                                    let { fullName, shortName, acronym, _id } = oneUser.careerId;
+                                    let career = { fullName, shortName, acronym, _id };
+                                    let user = { student: oneUser, career };
+                                    user.student.careerId = undefined;
+                                    user.student.nip = undefined;
 
-                            return res.status(status.OK).json({
-                                user,
-                                token,
-                                action: 'signin'
-                            });
-                        });
+                                    return res.status(status.OK).json({
+                                        user,
+                                        token,
+                                        action: 'signin'
+                                    });
+                                });
                         }).catch(err => {
                             console.log(err);
                             return res.status(status.NOT_FOUND).json({
                                 error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                             });
-                        });                    
+                        });
                 }
             });
-    }else {
+    } else {
         return res.status(status.NOT_FOUND).json({
             error: 'No se encuentra registrado en la base de datos de credenciales . Favor de acudir al departamento de Servicios Escolares a darse de alta'
         });
     }
 };
-const loginMiGraduacion = (req,res)=>{
+const loginMiGraduacion = (req, res) => {
     const { email, password } = req.body;
     let query = { email: email };
     console.log(query);
-    
+
     _user.findOne(query)
         .exec(async (err, user) => {
             console.log(user);
-            
+
             if (err) {
                 return res.status(status.INTERNAL_SERVER_ERROR).json({
                     error: err.toString()
@@ -766,7 +766,7 @@ const loginMiGraduacion = (req,res)=>{
                     const token = jwt.sign({ email: user.email }, config.secret);
                     let formatUser = {
                         role: user.role
-                    };                    
+                    };
                     //Se retorna el usuario y token
                     return res.json({
                         user: formatUser,
@@ -774,11 +774,11 @@ const loginMiGraduacion = (req,res)=>{
                         action: 'signin'
                     });
                 });
-            }else{
+            } else {
                 return res.status(status.NOT_FOUND).json({
                     error: 'User not found'
                 });
-            } 
+            }
         });
 };
 
@@ -796,6 +796,93 @@ const getCareerId = (careerName) => {
     });
 };
 
+const titledRegister = async (req, res) => {
+    const data = req.body;
+    console.log("data",);
+    const resApi = await getStudentData(data.controlNumber, data.nip);
+    console.log("Api--", resApi);
+    if (resApi) {
+        let queryNc = { controlNumber: data.controlNumber };
+        // Buscamos sus datos en la BD local
+        _student.findOne(queryNc)
+            .populate({
+                path: 'idRole', model: 'Role',
+                select: {
+                    permissions: 1, name: 1, _id: 0
+                }
+            }).exec(async (error, oneUser) => {
+                // Hubo un error en la consulta
+                if (error) {
+                    return res.status(status.NOT_FOUND).json({
+                        error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                    });
+                } else {
+                    // Se verifica si tiene aprobado el inglés                                        
+                    // Se verifica si es egresado
+                    let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
+                    // Si fue encontrado
+                    if (oneUser) {
+                        let englishApproved = await validateEnglishApproved(data.controlNumber);
+                        // verificar si se cambio de semestre
+                        if (resApi.semester > oneUser.semester) {
+                            _student.updateOne(queryNc, {
+                                $set: { semester: resApi.semester }
+                            }).then(ok => { });
+                        }
+                        let formatUser = {
+                            _id: oneUser._id,
+                            fullName: oneUser.fullName,
+                            career: oneUser.career,
+                            controlNumber: oneUser.controlNumber,
+                            isGraduate: isGraduate,
+                            englishApproved: englishApproved
+                        };
+                        return res.json(
+                            formatUser
+                        );
+                    } else {
+                        // No se encontró el registro en la base de datos local buscar en el sii                      
+                        _student.create(resApi)
+                            .then(created => {
+                                _student.findOne({ _id: created._id })
+                                    .populate({
+                                        path: 'idRole', model: 'Role',
+                                        select: {
+                                            permissions: 1, name: 1, _id: 0
+                                        }
+                                    })
+                                    .exec(async (err, user) => {
+                                        // Se verifica si tiene aprobado el inglés
+                                        let englishApproved = await validateEnglishApproved(data.controlNumber);
+                                        let formatUser = {
+                                            _id: user._id,
+                                            fullName: user.fullName,
+                                            career: user.career,
+                                            controlNumber: user.controlNumber,
+                                            isGraduate: isGraduate,
+                                            englishApproved: englishApproved
+                                        };
+                                        // Se retorna el usuario y token
+                                        return res.json(
+                                            formatUser
+                                        );
+                                    });
+                            }).catch(err => {
+                                console.log(err);
+                                return res.status(status.NOT_FOUND).json({
+                                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                                });
+                            });
+                    }
+                }
+            });
+
+    } else {
+        return res.status(status.NOT_FOUND).json({
+            error: 'Usuario y/o contraseña incorrectos'
+        });
+    }
+}
 module.exports = (User, Student, Employee, Role, Career, English) => {
     _user = User;
     _student = Student;
@@ -813,6 +900,7 @@ module.exports = (User, Student, Employee, Role, Career, English) => {
         updateCareersUser,
         studentLogin,
         updateFullName,
-        loginMiGraduacion
+        loginMiGraduacion,
+        titledRegister
     });
 };

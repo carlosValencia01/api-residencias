@@ -3,7 +3,7 @@ const router = require('express').Router();
 module.exports = (wagner) => {
 
     const userCtrl = wagner.invoke((User, Student, Employee, Role, Career, English) =>
-      require('../../controllers/app/user.controller')(User, Student, Employee, Role, Career, English));
+        require('../../controllers/app/user.controller')(User, Student, Employee, Role, Career, English));
 
     router.get('/', (req, res) =>
         userCtrl.getAll(req, res));
@@ -18,12 +18,14 @@ module.exports = (wagner) => {
 
     router.post('/login', (req, res) =>
         userCtrl.login(req, res));
-        
+
     router.post('/student/login', (req, res) =>
         userCtrl.studentLogin(req, res));
     router.post('/graduation/login', (req, res) =>
         userCtrl.loginMiGraduacion(req, res));
-        
+
+    router.post('/titled/register', (req, res) =>
+        userCtrl.titledRegister(req, res));
 
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
@@ -33,4 +35,4 @@ module.exports = (wagner) => {
         userCtrl.updateCareersUser(req, res));
 
     return router;
-  };
+};
