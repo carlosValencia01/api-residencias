@@ -833,6 +833,24 @@ const downloadToLocal = async (fileId, tmpName) => {
     return response;
 }
 
+const getWebLink = async (fileId) => {
+    const drive = google.drive({ version: 'v3', auth });
+    let response;
+    response = await new Promise(resolve => {
+        drive.files.get({
+            fileId: fileId, fields: 'webViewLink'
+        }).then(
+            (success) => {
+                console.log("SUCE",success);
+                resolve({ isCorrect: true, WebLink: success.data.webViewLink });
+            }, (failed) => {
+                resolve({ isCorrect: false, WebLink: '' });
+            }
+        );
+    });
+    return response;
+}
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -850,7 +868,8 @@ module.exports = (Folder, Student, Period) => {
         downloadPhoto,
         createFolderFromServer,
         uploadFile,
-        downloadToLocal
+        downloadToLocal,
+        getWebLink
     });
 };
 

@@ -51,8 +51,15 @@ module.exports = (wagner) => {
         return requestCtrl.releasedRequest(req, res);
     });
 
+    router.put('/:_id/jury', (req, res) => {
+        return requestCtrl.changeJury(req, res);
+    });
+
     router.get('/:_id/file/:resource', (req, res) =>
         requestCtrl.getResource(req, res));
+
+    router.get('/:_id/weblink/:resource', (req, res) =>
+        requestCtrl.getResourceLink(req, res));
 
     router.put('/:_id/file', (req, res) =>
         requestCtrl.fileCheck(req, res));

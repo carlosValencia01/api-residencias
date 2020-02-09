@@ -483,7 +483,33 @@ const getResource = (req, res) => {
             console.log(`${__dirname}/../../documents/tmpFile/${tmpName}`);
             const fullPath = path.normalize(`${__dirname}/../../documents/tmpFile/${tmpName}`);
             res.set('Content-Type', 'application/pdf');
-            fs.createReadStream(fullPath).pipe(res);
+            fs.createReadStream(fullPath).pipe(res);            
+            fs.unlinkSync(fullPath);
+        }
+        else {
+            return res.status(status.BAD_REQUEST).json({ message: 'Documento no encontrado' });
+        }
+    });
+};
+
+const getResourceLink = (req, res) => {
+    const { _id } = req.params;
+    const { resource } = req.params;
+    _request.findOne({ _id: _id }, async (errorRequest, request) => {
+        if (errorRequest)
+            return handler.handleError(res, status.NOT_FOUND, { message: 'Solicitud no encontrada' });
+        if (!request.documents)
+            return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
+        var fileInformation = request.documents.find(f => f.nameFile.includes(resource.toUpperCase()));
+        if (!fileInformation)
+            return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
+
+        console.log("FILE INFORMACION", fileInformation);
+        const tmpName = resource.toUpperCase() + "_" + _id + ".pdf";
+        let result = await _Drive.getWebLink(fileInformation.driveId);
+        if (typeof (result) !== 'undefined' && result.isCorrect) {
+            var json = { document: result.WebLink };
+            return res.status(status.OK).json(json);
         }
         else {
             return res.status(status.BAD_REQUEST).json({ message: 'Documento no encontrado' });
@@ -627,8 +653,8 @@ const fileCheck = (req, res) => {
             }).exec(handler.handleOne.bind(null, 'request', res));
         } else {
             if (result.length >= 14) {
-                console.log("es 19", result.length, result.length === 19);
-                if (result.length === 19) {
+                console.log("es 20", result.length, result.length === 20);
+                if (result.length === 20) {
                     _request.findOneAndUpdate({ _id: _id }, {
                         $set: {
                             phase: eRequest.TITLED,
@@ -1002,7 +1028,7 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.PROCESS: {
                         request.status = eStatusRequest.PRINTED;
                         item.phase = 'Generado';
-                        item.status = eStatusRequest.PROCESS;
+                        item.status = eStatusRequest.NONE;
                         break;
                     }
                     //Fue impresa el acta
@@ -1335,6 +1361,30 @@ const _updateSentVerificationCode = (requestId, status) => {
     });
 };
 
+const changeJury = (req, res) => {
+    const { _id } = req.params;
+    let data = req.body;
+    _request.update({ _id: _id }, {
+        $set: {
+            jury: data.Jury,
+            proposedHour: data.Hour,
+            duration: data.Duration
+        },
+        $addToSet: {
+            history: {
+                phase: eRequest.GENERATED,
+                achievementDate: new Date(),
+                doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                observation: 'Cambio de jurado',
+                status: eStatusRequest.NONE
+            }
+        }
+    }).exec(handler.handleOne.bind(null, 'request', res));
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 module.exports = (Request, Range, Folder, Student) => {
     _request = Request;
     _ranges = Range;
@@ -1361,6 +1411,8 @@ module.exports = (Request, Range, Folder, Student) => {
         StudentsToSchedule,
         verifyCode,
         sendVerificationCode,
-        removeTitled
+        removeTitled,
+        getResourceLink,
+        changeJury
     });
 };
