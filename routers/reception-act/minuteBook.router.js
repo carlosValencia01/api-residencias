@@ -12,6 +12,9 @@ module.exports = (wagner) => {
 
     router.put('/changeStatus/:_id', (req, res) =>
         minuteBookCtrl.changeMinuteBookStatus(req, res));
+
+    router.get('/getAllActive', (req, res) =>
+        minuteBookCtrl.getAllActiveMinuteBooks(req, res));
         
     return router;
 };

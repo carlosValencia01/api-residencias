@@ -42,12 +42,24 @@ const changeMinuteBookStatus = (req, res ) => {
         });
 };
 
+const getAllActiveMinuteBooks = (req, res) => {
+    _minuteBook.find({ "status": true })
+        .populate('careers')
+        .then(minuteBooks => {
+            res.status(status.OK).json(minuteBooks);
+        })
+        .catch(error => {
+            res.status(status.INTERNAL_SERVER_ERROR).json({error : error, message : 'Ocurrió un error al crear el libro'});
+        })
+};
+
 module.exports = (MinuteBook) => {
     _minuteBook = MinuteBook;
     return ({
         getAllMinuteBooks,
         createMinuteBook,
-        changeMinuteBookStatus
+        changeMinuteBookStatus,
+        getAllActiveMinuteBooks
     });
 };
 
