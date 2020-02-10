@@ -796,92 +796,229 @@ const getCareerId = (careerName) => {
     });
 };
 
-const titledRegister = async (req, res) => {
-    const data = req.body;
-    console.log("data",);
-    const resApi = await getStudentData(data.controlNumber, data.nip);
-    console.log("Api--", resApi);
-    if (resApi) {
-        let queryNc = { controlNumber: data.controlNumber };
-        // Buscamos sus datos en la BD local
-        _student.findOne(queryNc)
-            .populate({
-                path: 'idRole', model: 'Role',
-                select: {
-                    permissions: 1, name: 1, _id: 0
+const getStudentBySii = (email, nip) => {
+    const dataStudent = JSON.stringify({
+        nc: email, nip: nip
+    });
+    const optionsCareer = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        path: `/alumnos/login`,
+        method: 'POST',
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
+            'Content-Type': 'application/json',
+            'Content-Length': dataStudent.length
+        }
+    };
+    return new Promise(async (resolve) => {
+        var careerResponse = "";
+        const requestCareer = https.request(optionsCareer, (career) => {
+            career.on('data', (data) => {
+                careerResponse += data;
+            });
+            career.on('end', () => {
+                const CareerJson = JSON.parse(careerResponse);
+                if (CareerJson.error) {
+                    resolve({ response: false, data: null });
                 }
-            }).exec(async (error, oneUser) => {
-                // Hubo un error en la consulta
-                if (error) {
-                    return res.status(status.NOT_FOUND).json({
-                        error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                    });
-                } else {
-                    // Se verifica si tiene aprobado el inglés                                        
-                    // Se verifica si es egresado
-                    let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
-                    // Si fue encontrado
-                    if (oneUser) {
-                        let englishApproved = await validateEnglishApproved(data.controlNumber);
-                        // verificar si se cambio de semestre
-                        if (resApi.semester > oneUser.semester) {
-                            _student.updateOne(queryNc, {
-                                $set: { semester: resApi.semester }
-                            }).then(ok => { });
+                else {
+                    // console.log("CarreraJson", CareerJson);
+                    const optionsInformation = {
+                        "rejectUnauthorized": false,
+                        host: 'wsescolares.tepic.tecnm.mx',
+                        path: `/alumnos/info/${email}`,
+                        headers: {
+                            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
                         }
-                        let formatUser = {
-                            _id: oneUser._id,
-                            fullName: oneUser.fullName,
-                            career: oneUser.career,
-                            controlNumber: oneUser.controlNumber,
-                            isGraduate: isGraduate,
-                            englishApproved: englishApproved
-                        };
-                        return res.json(
-                            formatUser
-                        );
-                    } else {
-                        // No se encontró el registro en la base de datos local buscar en el sii                      
-                        _student.create(resApi)
-                            .then(created => {
-                                _student.findOne({ _id: created._id })
-                                    .populate({
-                                        path: 'idRole', model: 'Role',
-                                        select: {
-                                            permissions: 1, name: 1, _id: 0
-                                        }
-                                    })
-                                    .exec(async (err, user) => {
-                                        // Se verifica si tiene aprobado el inglés
-                                        let englishApproved = await validateEnglishApproved(data.controlNumber);
-                                        let formatUser = {
-                                            _id: user._id,
-                                            fullName: user.fullName,
-                                            career: user.career,
-                                            controlNumber: user.controlNumber,
-                                            isGraduate: isGraduate,
-                                            englishApproved: englishApproved
-                                        };
-                                        // Se retorna el usuario y token
-                                        return res.json(
-                                            formatUser
-                                        );
-                                    });
-                            }).catch(err => {
-                                console.log(err);
-                                return res.status(status.NOT_FOUND).json({
-                                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                                });
-                            });
-                    }
+                    };
+                    https.get(optionsInformation, (res) => {
+                        var studentResponse = "";
+                        res.on('data', (information) => {
+                            studentResponse += information;
+                        });
+                        res.on('end', async () => {
+                            const StudentJson = JSON.parse(studentResponse);
+                            // console.log("SutdentJson", StudentJson);
+                            if (StudentJson.error) {
+                                resolve({ response: false, data: null });
+                            }
+                            else {
+                                let newStudent = {
+                                    firstName: StudentJson.firstname,
+                                    fatherLastName: StudentJson.fatherlastname,
+                                    motherLastName: StudentJson.motherlastname,
+                                    birthPlace: StudentJson.birthplace,
+                                    dateBirth: StudentJson.datebirth,
+                                    civilStatus: StudentJson.civilstatus,
+                                    semester: StudentJson.semester,
+                                    email: StudentJson.email,
+                                    curp: StudentJson.curp,
+                                    sex: StudentJson.sex,
+                                    street: StudentJson.street,
+                                    suburb: StudentJson.suburb,
+                                    city: StudentJson.city,
+                                    state: StudentJson.city,
+                                    cp: StudentJson.cp,
+                                    phone: StudentJson.phone,
+                                    originSchool: StudentJson.originschool,
+                                    nameOriginSchool: StudentJson.nameoriginschool,
+                                    nss: StudentJson.nss,
+                                    fullName: `${StudentJson.firstname} ${StudentJson.fatherlastname} ${StudentJson.motherlastname}`,
+                                    firstName: StudentJson.firstname,
+                                    nip: nip,
+                                    controlNumber: email,
+                                    estatus: CareerJson.estatus,
+                                    career: getFullCarrera(CareerJson.carrera)
+                                };
+                                const ROLE_ID = await getRoleId('Estudiante');
+                                const CAREER_ID = await getCareerId(newStudent.career);
+                                newStudent.careerId = CAREER_ID;
+                                newStudent.idRole = ROLE_ID;
+                                resolve({ response: true, data: newStudent });
+                            }
+                        })
+                    }).on('error', (e) => {
+                        console.error("Error Recuperacion", e);
+                        resolve({ response: false, data: null });
+                    });
                 }
             });
+        });
+        requestCareer.on('error', (e) => {
+            console.log("Error de logeo", e);
+            resolve({ response: false, data: null });
+        });
+        requestCareer.write(dataStudent);
+        requestCareer.end();
+    });
+
+};
+
+const titledRegister = async (req, res) => {
+    const data = req.body;
+    // console.log("data", data);
+    const result = await getStudentBySii(data.controlNumber, data.nip);
+    // getStudentData(data.controlNumber, data.nip);
+    // console.log(result);
+    // console.log("Api--", result);
+    if (result.response) {
+        const StudentGet = result.data;
+        // res.status(status.OK).json({ response: true });
+        let queryNc = { controlNumber: data.controlNumber };
+        // Buscamos sus datos en la BD local
+        _student.findOne(queryNc).exec(async (error, student) => {
+            // Hubo un error en la consulta
+            if (error) {
+                return res.status(status.NOT_FOUND).json({
+                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                });
+            } else {
+                let isGraduate = StudentGet.estatus.toUpperCase() === 'EGR';
+                // Si fue encontrado
+                if (student) {
+                    let englishApproved = await validateEnglishApproved(data.controlNumber);
+                    // verificar si se cambio de semestre
+                    if (StudentGet.semester > student.semester) {
+                        _student.updateOne(queryNc, {
+                            $set: { semester: StudentGet.semester }
+                        }).then(ok => { });
+                    }
+                    let formatUser = {
+                        _id: student._id,
+                        fullName: student.fullName,
+                        career: student.career,
+                        controlNumber: student.controlNumber,
+                        isGraduate: isGraduate,
+                        englishApproved: englishApproved
+                    };
+                    return res.json(
+                        formatUser
+                    );
+                } else {
+                    // No se encontró el registro en la base de datos local buscar en el sii                      
+                    _student.create(StudentGet)
+                        .then(async (created) => {
+                            // console.log("CREATED", created);
+                            let englishApproved = await validateEnglishApproved(data.controlNumber);
+                            let formatUser = {
+                                _id: created._id,
+                                fullName: created.fullName,
+                                career: created.career,
+                                controlNumber: created.controlNumber,
+                                isGraduate: isGraduate,
+                                englishApproved: englishApproved
+                            };
+                            // Se retorna el usuario y token
+                            return res.json(
+                                formatUser
+                            );
+                        }).catch(err => {
+                            console.log(err);
+                            return res.status(status.NOT_FOUND).json({
+                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                            });
+                        });
+                }
+            }
+        });
 
     } else {
         return res.status(status.NOT_FOUND).json({
-            error: 'Usuario y/o contraseña incorrectos'
+            error: 'Número de control y/o contraseña incorrectos'
         });
     }
+}
+
+function getFullCarrera(carrera) {
+    var career = "";
+    switch (carrera) {
+        case 'L01':
+            career = 'ARQUITECTURA';
+            break;
+        case 'L02':
+            career = 'INGENIERÍA CIVIL';
+            break;
+        case 'L03':
+            career = 'INGENIERÍA ELÉCTRICA';
+            break;
+        case 'L04':
+            career = 'INGENIERÍA INDUSTRIAL';
+            break;
+        case 'L05':
+            career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
+            break;
+        case 'L06':
+            career = 'INGENIERÍA BIOQUÍMICA';
+            break;
+        case 'L07':
+            career = 'INGENIERÍA QUÍMICA';
+            break;
+        case 'L08':
+            career = 'LICENCIATURA EN ADMINISTRACIÓN';
+            break;
+        case 'L12':
+            career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
+            break;
+        case 'L11':
+            career = 'INGENIERÍA MECATRÓNICA';
+            break;
+        case 'ITI':
+            career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
+            break;
+        case 'MTI':
+            career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
+            break;
+        case 'P01':
+            career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
+            break;
+        case 'DCA':
+            career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
+            break;
+        default:
+            break;
+    }
+    return career;
 }
 module.exports = (User, Student, Employee, Role, Career, English) => {
     _user = User;
