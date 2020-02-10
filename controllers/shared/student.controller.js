@@ -96,10 +96,9 @@ const documentsHaveChanges = (documents, status) => {
         const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
-                    const prevStatus = filteredDoc.status[filteredDoc.status.length - 2];
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
 
-                    return prevStatus.name == 'RECHAZADO' ? (curStatus.name == 'EN PROCESO' && curStatus.message == 'Se actualizo el documento') ? { filename: filteredDoc.filename, moified: true } : { filename: filteredDoc.filename, moified: false } : { filename: filteredDoc.filename, moified: false };
+                    return curStatus.name == 'EN PROCESO' ? { filename: filteredDoc.filename, moified: true } : { filename: filteredDoc.filename, moified: false };
                 } else { return { err: false }; }
             }
         ).filter(mapedDocument => mapedDocument.moified == true);
@@ -116,10 +115,9 @@ const documentsHaveChangesAdmin = (documents, status) => {
         const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
-                    const prevStatus = filteredDoc.status[filteredDoc.status.length - 2];
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
 
-                    return prevStatus.name == 'RECHAZADO' ? (curStatus.name == 'EN PROCESO' && curStatus.message == 'Se actualizo el documento') || curStatus.name == 'VALIDADO' ? { filename: filteredDoc.filename, moified: true } : { filename: filteredDoc.filename, moified: false } : { filename: filteredDoc.filename, moified: false };
+                    return curStatus.name == 'EN PROCESO' || curStatus.name == 'VALIDADO' ? { filename: filteredDoc.filename, moified: true } : { filename: filteredDoc.filename, moified: false };
                 } else { return { err: false }; }
             }
         ).filter(mapedDocument => mapedDocument.moified == true);
