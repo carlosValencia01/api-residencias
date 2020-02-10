@@ -106,22 +106,26 @@ const getPositionsByDepartment = (req, res) => {
 
 const getAvailablePositionsByDepartment = async (req, res) => {
     const { _departmentId, _employeeId } = req.params;
-    const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
-    const departmentBossPosition = await _getDeparmentBossPosition(_departmentId);
-    const directorPosition = await _getDirectorPosition(_departmentId);
-    let occupiedPositions = [];
-    occupiedPositions = (departmentBossPosition ? activePositionsEmployee.concat([departmentBossPosition]) : activePositionsEmployee);
-    occupiedPositions = (directorPosition ? occupiedPositions.concat([directorPosition]) : occupiedPositions).map(({ name }) => name.toUpperCase());
+    const activePositionsEmployee = (await _getActivePositionsByEmployee(_employeeId)).map(({ name }) => name.toUpperCase());
     _position.find({ ascription: _departmentId })
         .populate({
             path: 'ascription',
             model: 'Department',
             select: '-careers'
         })
-        .select('name ascription canSign')
-        .then(data => {
-            if (data && data.length) {
-                const availablePositions = data.filter(pos => !occupiedPositions.includes(pos.name.toUpperCase()));
+        .select('name ascription canSign isUnique')
+        .then(async positions => {
+            if (positions && positions.length) {
+                let availablePositions = [];
+                for (const position of positions) {
+                    if (activePositionsEmployee.includes(position.name.toUpperCase())) {
+                        continue;
+                    }
+                    if (position.isUnique && await _isAssignedPosition(position._id)) {
+                        continue;
+                    }
+                    availablePositions.push(position);
+                }
                 res.status(status.OK)
                     .json(availablePositions);
             } else {
@@ -132,6 +136,29 @@ const getAvailablePositionsByDepartment = async (req, res) => {
         .catch(err =>
             res.status(status.INTERNAL_SERVER_ERROR)
                 .json({ error: err ? err.toString() : 'Ocurrió un error' }));
+};
+
+const getPositionById = (req, res) => {
+    const { positionId } = req.params;
+    _position.findOne({ _id: positionId })
+        .populate({
+            path: 'ascription',
+            model: 'Department',
+            populate: {
+                path: 'careers',
+                model: 'Career'
+            }
+        })
+        .then(position => {
+            if (position) {
+                res.status(status.OK).json(position);
+            } else {
+                res.status(status.NOT_FOUND).json({ message: 'Puesto no encontrado' });
+            }
+        })
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err ? err.toString() : 'Error' }));
 };
 
 const _getActivePositionsByEmployee = (employeeId) => {
@@ -156,121 +183,33 @@ const _getActivePositionsByEmployee = (employeeId) => {
     });
 };
 
-const _getDeparmentBossPosition = (departmentId) => {
+const _isAssignedPosition = (positionId) => {
     return new Promise(resolve => {
         const query = {
-            $and: [
-                { ascription: departmentId },
-                { name: { $regex: new RegExp('^JEFE DE DEPARTAMENTO$', 'i') }}
-            ]
+            positions: {
+                $elemMatch: {
+                    $and: [
+                        { position: positionId },
+                        { status: 'ACTIVE' }
+                    ]
+                }
+            }
         };
-        _position.findOne(query)
-            .select('name ascription')
-            .then(position => {
-                if (position) {
-                    const query = {
-                        positions: {
-                            $elemMatch: {
-                                $and: [
-                                    { position: position._id },
-                                    { status: 'ACTIVE' }
-                                ]
-                            }
-                        }
-                    };
-                    _employee.findOne(query)
-                        .populate({
-                            path: 'positions.position',
-                            model: 'Position',
-                            select: 'name ascription'
-                        })
-                        .then(employee => {
-                            if (employee && employee.positions && employee.positions.length) {
-                                const position = employee.positions
-                                    .filter(({ status, position }) =>
-                                        status === 'ACTIVE' && position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0].position;
-                                resolve(position);
-                            } else {
-                                resolve(null);
-                            }
-                        })
-                        .catch(_ => resolve(null));
+        _employee.findOne(query)
+            .populate({
+                path: 'positions.position',
+                model: 'Position',
+                select: 'name ascription'
+            })
+            .then(employee => {
+                if (employee && employee.positions && employee.positions.length) {
+                    resolve(true);
                 } else {
-                    resolve(null);
+                    resolve(false);
                 }
             })
-            .catch(_ => resolve(null));
+            .catch(_ => resolve(true));
     });
-};
-
-const _getDirectorPosition = (departmentId) => {
-    return new Promise(resolve => {
-        const query = {
-            $and: [
-                { ascription: departmentId },
-                { name: { $regex: new RegExp('^DIRECTOR$', 'i') }}
-            ]
-        };
-        _position.findOne(query)
-            .select('name ascription')
-            .then(position => {
-                if (position) {
-                    const query = {
-                        positions: {
-                            $elemMatch: {
-                                $and: [
-                                    { position: position._id },
-                                    { status: 'ACTIVE' }
-                                ]
-                            }
-                        }
-                    };
-                    _employee.findOne(query)
-                        .populate({
-                            path: 'positions.position',
-                            model: 'Position',
-                            select: 'name ascription'
-                        })
-                        .then(employee => {
-                            if (employee && employee.positions && employee.positions.length) {
-                                const position = employee.positions
-                                    .filter(({ status, position }) =>
-                                        status === 'ACTIVE' && position.name.toUpperCase() === 'DIRECTOR')[0].position;
-                                resolve(position);
-                            } else {
-                                resolve(null);
-                            }
-                        })
-                        .catch(_ => resolve(null));
-                } else {
-                    resolve(null);
-                }
-            })
-            .catch(_ => resolve(null));
-    });
-};
-
-const getPositionById = (req, res) => {
-    const { positionId } = req.params;
-    _position.findOne({ _id: positionId })
-        .populate({
-            path: 'ascription',
-            model: 'Department',
-            populate: {
-                path: 'careers',
-                model: 'Career'
-            }
-        })
-        .then(position => {
-            if (position) {
-                res.status(status.OK).json(position);
-            } else {
-                res.status(status.NOT_FOUND).json({ message: 'Puesto no encontrado' });
-            }
-        })
-        .catch(err =>
-            res.status(status.INTERNAL_SERVER_ERROR)
-                .json({ error: err ? err.toString() : 'Error' }));
 };
 
 module.exports = (Position, Employee) => {
