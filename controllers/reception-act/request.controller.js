@@ -1178,8 +1178,8 @@ const groupRequest = (req, res) => {
             {
                 $match: {
                     "proposedDate": { $gte: StartDate, $lte: EndDate }, $or: [
-                        // { "phase": "Asignado", "status": "Process" },
-                        { "phase": "Realizado", "status": "Process" }]
+                        { "phase": "Realizado", "status": "Process" },
+                        { "phase": "Realizado", "status": "None" }]
                 }
 
             },

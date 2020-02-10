@@ -738,6 +738,51 @@ const studentLogin = async (req, res) => {
         });
     }
 };
+const loginMiGraduacion = (req,res)=>{
+    const { email, password } = req.body;
+    let query = { email: email };
+    console.log(query);
+    
+    _user.findOne(query)
+        .exec(async (err, user) => {
+            console.log(user);
+            
+            if (err) {
+                return res.status(status.INTERNAL_SERVER_ERROR).json({
+                    error: err.toString()
+                });
+            }
+            if (user) {
+                console.log("exist user");
+                user.validatePasswd(password, user.password, invalid => {
+                    // Password inválido
+                    console.log("inva", invalid);
+                    if (invalid) {
+                        return res.status(status.FORBIDDEN).json({
+                            error: 'password is invalid'
+                        });
+                    }
+                    // Password válido, se genera el token
+                    const token = jwt.sign({ email: user.email }, config.secret);
+                    let formatUser = {
+                        role: user.role
+                    };                    
+                    //Se retorna el usuario y token
+                    return res.json({
+                        user: formatUser,
+                        // token: token,
+                        action: 'signin'
+                    });
+                });
+            }else{
+                return res.status(status.NOT_FOUND).json({
+                    error: 'User not found'
+                });
+            } 
+        });
+};
+
+// end for app movile
 
 const getCareerId = (careerName) => {
 
@@ -768,5 +813,6 @@ module.exports = (User, Student, Employee, Role, Career, English) => {
         updateCareersUser,
         studentLogin,
         updateFullName,
+        loginMiGraduacion
     });
 };
