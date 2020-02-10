@@ -796,101 +796,66 @@ const getCareerId = (careerName) => {
     });
 };
 
-const getStudentBySii = (email, nip) => {
-    const dataStudent = JSON.stringify({
-        nc: email, nip: nip
-    });
-    const optionsCareer = {
-        "rejectUnauthorized": false,
-        host: 'wsescolares.tepic.tecnm.mx',
-        path: `/alumnos/login`,
-        method: 'POST',
-        headers: {
-            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
-            'Content-Type': 'application/json',
-            'Content-Length': dataStudent.length
-        }
-    };
+const getStudentBySii = (email) => {
     return new Promise(async (resolve) => {
-        var careerResponse = "";
-        const requestCareer = https.request(optionsCareer, (career) => {
-            career.on('data', (data) => {
-                careerResponse += data;
+        const optionsInformation = {
+            "rejectUnauthorized": false,
+            host: 'wsescolares.tepic.tecnm.mx',
+            path: `/alumnos/info/${email}`,
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+            }
+        };
+        https.get(optionsInformation, (res) => {
+            var studentResponse = "";
+            res.on('data', (information) => {
+                studentResponse += information;
             });
-            career.on('end', () => {
-                const CareerJson = JSON.parse(careerResponse);
-                if (CareerJson.error) {
+            res.on('end', async () => {
+                const StudentJson = JSON.parse(studentResponse);
+                // console.log("SutdentJson", StudentJson);
+                if (StudentJson.error) {
                     resolve({ response: false, data: null });
                 }
                 else {
-                    // console.log("CarreraJson", CareerJson);
-                    const optionsInformation = {
-                        "rejectUnauthorized": false,
-                        host: 'wsescolares.tepic.tecnm.mx',
-                        path: `/alumnos/info/${email}`,
-                        headers: {
-                            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
-                        }
+                    let newStudent = {
+                        firstName: StudentJson.firstname,
+                        fatherLastName: StudentJson.fatherlastname,
+                        motherLastName: StudentJson.motherlastname,
+                        birthPlace: StudentJson.birthplace,
+                        dateBirth: StudentJson.datebirth,
+                        civilStatus: StudentJson.civilstatus,
+                        semester: StudentJson.semester,
+                        email: StudentJson.email,
+                        curp: StudentJson.curp,
+                        sex: StudentJson.sex,
+                        street: StudentJson.street,
+                        suburb: StudentJson.suburb,
+                        city: StudentJson.city,
+                        state: StudentJson.city,
+                        cp: StudentJson.cp,
+                        phone: StudentJson.phone,
+                        originSchool: StudentJson.originschool,
+                        nameOriginSchool: StudentJson.nameoriginschool,
+                        nss: StudentJson.nss,
+                        fullName: `${StudentJson.firstname} ${StudentJson.fatherlastname} ${StudentJson.motherlastname}`,
+                        firstName: StudentJson.firstname,
+                        nip: '',
+                        controlNumber: email,
+                        estatus: StudentJson.status,//CareerJson.estatus,
+                        career: getFullCarrera(StudentJson.career)
                     };
-                    https.get(optionsInformation, (res) => {
-                        var studentResponse = "";
-                        res.on('data', (information) => {
-                            studentResponse += information;
-                        });
-                        res.on('end', async () => {
-                            const StudentJson = JSON.parse(studentResponse);
-                            // console.log("SutdentJson", StudentJson);
-                            if (StudentJson.error) {
-                                resolve({ response: false, data: null });
-                            }
-                            else {
-                                let newStudent = {
-                                    firstName: StudentJson.firstname,
-                                    fatherLastName: StudentJson.fatherlastname,
-                                    motherLastName: StudentJson.motherlastname,
-                                    birthPlace: StudentJson.birthplace,
-                                    dateBirth: StudentJson.datebirth,
-                                    civilStatus: StudentJson.civilstatus,
-                                    semester: StudentJson.semester,
-                                    email: StudentJson.email,
-                                    curp: StudentJson.curp,
-                                    sex: StudentJson.sex,
-                                    street: StudentJson.street,
-                                    suburb: StudentJson.suburb,
-                                    city: StudentJson.city,
-                                    state: StudentJson.city,
-                                    cp: StudentJson.cp,
-                                    phone: StudentJson.phone,
-                                    originSchool: StudentJson.originschool,
-                                    nameOriginSchool: StudentJson.nameoriginschool,
-                                    nss: StudentJson.nss,
-                                    fullName: `${StudentJson.firstname} ${StudentJson.fatherlastname} ${StudentJson.motherlastname}`,
-                                    firstName: StudentJson.firstname,
-                                    nip: nip,
-                                    controlNumber: email,
-                                    estatus: CareerJson.estatus,
-                                    career: getFullCarrera(CareerJson.carrera)
-                                };
-                                const ROLE_ID = await getRoleId('Estudiante');
-                                const CAREER_ID = await getCareerId(newStudent.career);
-                                newStudent.careerId = CAREER_ID;
-                                newStudent.idRole = ROLE_ID;
-                                resolve({ response: true, data: newStudent });
-                            }
-                        })
-                    }).on('error', (e) => {
-                        console.error("Error Recuperacion", e);
-                        resolve({ response: false, data: null });
-                    });
+                    const ROLE_ID = await getRoleId('Estudiante');
+                    const CAREER_ID = await getCareerId(newStudent.career);
+                    newStudent.careerId = CAREER_ID;
+                    newStudent.idRole = ROLE_ID;
+                    resolve({ response: true, data: newStudent });
                 }
-            });
-        });
-        requestCareer.on('error', (e) => {
-            console.log("Error de logeo", e);
+            })
+        }).on('error', (e) => {
+            console.error("Error Recuperacion", e);
             resolve({ response: false, data: null });
         });
-        requestCareer.write(dataStudent);
-        requestCareer.end();
     });
 
 };
@@ -898,7 +863,7 @@ const getStudentBySii = (email, nip) => {
 const titledRegister = async (req, res) => {
     const data = req.body;
     // console.log("data", data);
-    const result = await getStudentBySii(data.controlNumber, data.nip);
+    const result = await getStudentBySii(data.controlNumber);
     // getStudentData(data.controlNumber, data.nip);
     // console.log(result);
     // console.log("Api--", result);
@@ -965,7 +930,7 @@ const titledRegister = async (req, res) => {
 
     } else {
         return res.status(status.NOT_FOUND).json({
-            error: 'Número de control y/o contraseña incorrectos'
+            error: 'Número de control incorrecto'
         });
     }
 }
