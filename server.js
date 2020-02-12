@@ -68,7 +68,9 @@ const jwtOptions = {
     `${uri}user/graduation/login`, //app graduacion
     `${uri}drive/upload/file`,
     `${uri}student/notify`, 
-    /^\/escolares\/credenciales\/graduationmail\/.*/
+    /^\/escolares\/credenciales\/graduationmail\/.*/,
+    /^\/escolares\/credenciales\/student\/image\/.*/,
+    /^\/escolares\/credenciales\/employee\/image\/.*/,
     // `${uri}graduationmail`,  
     // `${uri}inscription/updateStudent`, 
     // `${uri}inscription/sendmail`, 
@@ -79,9 +81,7 @@ const jwtOptions = {
     // `${uri}document`, 
     // `${uri}position`, 
     // `${uri}department/all`, 
-    // /^\/escolares\/credenciales\/student\/image\/.*/,
     // /^\/escolares\/credenciales\/student\/document\/.*/,
-    // /^\/escolares\/credenciales\/employee\/image\/.*/,
     // /^\/escolares\/credenciales\/request\/.*/,
     // /^\/escolares\/credenciales\/user\/.*/,
     // /^\/escolares\/credenciales\/document\/.*/,
