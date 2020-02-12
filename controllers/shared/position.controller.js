@@ -6,202 +6,210 @@ let _employee;
 
 const getAllPositions = (req, res) => {
     _position.find({})
-        .populate({ path: 'ascription', model: 'Department'})
-        .populate({ path: 'documents', model: 'Document' })
+        .populate({
+            path: 'ascription',
+            model: 'Department'
+        })
+        .populate({
+            path: 'documents',
+            model: 'Document'
+        })
         .exec(handler.handleMany.bind(null, 'positions', res));
 };
 
 const createPosition = (req, res) => {
     const position = req.body;
     _position.create(position)
-        .then(position => res.json(position))
-        .catch(err => res.json({
-            status: status.INTERNAL_SERVER_ERROR,
-            error: err.toString()
-        }));
+        .then(position => res.status(status.OK).json(position))
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err ? err.toString() : 'Error al crear puesto' }));
 };
 
 const updatePosition = (req, res) => {
     const { _id } = req.params;
     const position = req.body;
-    _position.updateOne({ _id: _id }, position, (err, data) => {
-        if (!err && data) {
-            res.json({ status: data.n ? status.OK : status.NOT_FOUND });
-        } else {
-            res.json({
-                status: status.INTERNAL_SERVER_ERROR,
-                error: err.toString()
-            });
-        }
-    });
+    _position.updateOne({ _id: _id }, position)
+        .then(data => {
+            if (data && data.n) {
+                res.status(status.OK)
+                    .json({ message: 'Puesto actualizado con éxito' });
+            } else {
+                res.status(status.NOT_FOUND)
+                    .json({ message: 'Puesto no encontrado' });
+            }
+        })
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err.toString() }));
 };
 
 const removePosition = (req, res) => {
     const { _id } = req.params;
-    _employee.find({ 'positions.position': _id }, (err, position) => {
-        if (!err && !position.length) {
-            _position.deleteOne({ _id: _id }, (err, deleted) => {
-                if (!err && deleted) {
-                    res.json({ status: deleted.n && deleted.deletedCount ? status.OK : status.NOT_FOUND });
-                } else {
-                    res.json({
-                        status: status.INTERNAL_SERVER_ERROR,
-                        error: err ? err.toString() : 'No se pudo borrar el puesto'
-                    });
-                }
-            });
-        } else {
-            res.json({
-                status: status.INTERNAL_SERVER_ERROR,
-                error: err ? err.toString() : 'El puesto está asignado'
-            });
-        }
-    });
+    _employee.find({ 'positions.position': _id })
+        .then(employees => {
+            if (employees && !employees.length) {
+                _position.deleteOne({ _id: _id })
+                    .then(deleted => {
+                        if (deleted && deleted.n) {
+                            res.status(status.OK)
+                                .json({ message: 'Puesto borrado con éxito' });
+                        } else {
+                            res.status(status.NOT_FOUND)
+                                .json({ message: 'Puesto no encontrado' });
+                        }
+                    })
+                    .catch(err =>
+                        res.status(status.INTERNAL_SERVER_ERROR)
+                            .json({ error: err ? err.toString() : 'Error al borrar puesto' }));
+            } else {
+                res.status(status.INTERNAL_SERVER_ERROR)
+                    .json({ message: 'El puesto está asignado' });
+            }
+        })
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err ? err.toString() : 'Error al borrar puesto' }));
 };
 
 const updateDocumentAssign = (req, res) => {
     const { _positionId } = req.params;
     const _documents = req.body.documents;
-    _position.updateOne({ _id: _positionId }, { documents: _documents }, (err, data) => {
-        if (!err && data) {
-            res.json({ status: data.n ? status.OK : status.NOT_FOUND });
-        } else {
-            res.json({
-                status: status.INTERNAL_SERVER_ERROR,
-                error: err.toString()
-            });
-        }
-    })
+    _position.updateOne({ _id: _positionId }, { documents: _documents })
+        .then(data => {
+            if (data && data.n) {
+                res.status(status.OK)
+                    .json({ message: 'Documentos actualizados con éxito' });
+            } else {
+                res.status(status.NOT_FOUND)
+                    .json({ message: 'Puesto no encontrado' });
+            }
+        })
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err ? err.toString() : 'Error al actualizar documentos' }));
 };
 
-const getPositionsForDepartment = (req, res) => {
+const getPositionsByDepartment = (req, res) => {
     const { _departmentId } = req.params;
     _position.find({ ascription: _departmentId })
-        .populate({ path: 'documents', model: 'Document' })
-        .populate({ path: 'ascription', model: 'Department' })
+        .populate({
+            path: 'documents',
+            model: 'Document'
+        })
+        .populate({
+            path: 'ascription',
+            model: 'Department'
+        })
         .exec(handler.handleMany.bind(null, 'positions', res));
 };
 
 const getAvailablePositionsByDepartment = async (req, res) => {
     const { _departmentId, _employeeId } = req.params;
-    const activePositionsEmployee = await _getActivePositionsByEmployee(_employeeId);
-    const departmentBoss = await _getDeparmentBoss(_departmentId);
-    const director = await _getDirector(_departmentId);
-    let occupiedPositions = [];
-    occupiedPositions = (departmentBoss ? activePositionsEmployee.concat([departmentBoss]) : activePositionsEmployee);
-    occupiedPositions = (director ? occupiedPositions.concat([director]) : occupiedPositions).map(({name}) => name.toUpperCase());;
-    _position.find({ascription: _departmentId})
-        .populate({path: 'ascription', model: 'Department', select: '-careers'})
-        .select('name ascription canSign')
-        .exec((err, data) => {
-           if (!err && data) {
-               const availablePositions = data.filter(pos => !occupiedPositions.includes(pos.name.toUpperCase()));
+    const activePositionsEmployee = (await _getActivePositionsByEmployee(_employeeId)).map(({ name }) => name.toUpperCase());
+    _position.find({ ascription: _departmentId })
+        .populate({
+            path: 'ascription',
+            model: 'Department',
+            select: '-careers'
+        })
+        .select('name ascription canSign isUnique')
+        .then(async positions => {
+            if (positions && positions.length) {
+                let availablePositions = [];
+                for (const position of positions) {
+                    if (activePositionsEmployee.includes(position.name.toUpperCase())) {
+                        continue;
+                    }
+                    if (position.isUnique && await _isAssignedPosition(position._id)) {
+                        continue;
+                    }
+                    availablePositions.push(position);
+                }
                 res.status(status.OK)
                     .json(availablePositions);
-           } else {
-               res.status(status.INTERNAL_SERVER_ERROR)
-                   .json({error: err ? err.toString() : 'Ocurrió un error'})
-           }
-        });
+            } else {
+                res.status(status.NOT_FOUND)
+                    .json({ message : 'No se encontraron puestos' });
+            }
+        })
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err ? err.toString() : 'Ocurrió un error' }));
+};
+
+const getPositionById = (req, res) => {
+    const { positionId } = req.params;
+    _position.findOne({ _id: positionId })
+        .populate({
+            path: 'ascription',
+            model: 'Department',
+            populate: {
+                path: 'careers',
+                model: 'Career'
+            }
+        })
+        .then(position => {
+            if (position) {
+                res.status(status.OK).json(position);
+            } else {
+                res.status(status.NOT_FOUND).json({ message: 'Puesto no encontrado' });
+            }
+        })
+        .catch(err =>
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ error: err ? err.toString() : 'Error' }));
 };
 
 const _getActivePositionsByEmployee = (employeeId) => {
     return new Promise(resolve => {
-        _employee.findOne({_id: employeeId})
+        _employee.findOne({ _id: employeeId })
             .populate({
-                path: 'positions.position', model: 'Position', select: 'name ascription',
+                path: 'positions.position',
+                model: 'Position',
+                select: 'name ascription',
             })
-            .exec((err, data) => {
-                if (!err && data) {
-                    const activePositions = data.positions
+            .then(employee => {
+                if (employee && employee.positions && employee.positions.length) {
+                    const activePositions = employee.positions
                         .filter(pos => pos.status === 'ACTIVE')
                         .map(pos => pos.position);
                     resolve(activePositions);
                 } else {
                     resolve([]);
                 }
-            });
+            })
+            .catch(_ => resolve([]));
     });
 };
 
-const _getDeparmentBoss = (departmentId) => {
+const _isAssignedPosition = (positionId) => {
     return new Promise(resolve => {
         const query = {
-            $and: [
-                {ascription: departmentId},
-                {name: {$regex: new RegExp('^JEFE DE DEPARTAMENTO$', 'i') }}
-            ]
-        };
-        _position.findOne(query)
-            .select('name ascription')
-            .exec((err, data) => {
-                if (!err && data) {
-                    const query = {
-                        positions: {$elemMatch: {$and: [{position: data._id}, {status: 'ACTIVE'}]}}
-                    };
-                    _employee.findOne(query)
-                        .populate({path: 'positions.position', model: 'Position', select: 'name ascription'})
-                        .exec((err, data) => {
-                            if (!err && data) {
-                                const position = data.positions
-                                    .filter(({status, position}) => status === 'ACTIVE' && position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0].position;
-                                resolve(position);
-                            } else {
-                                resolve(null);
-                            }
-                        });
-                } else {
-                    resolve(null);
+            positions: {
+                $elemMatch: {
+                    $and: [
+                        { position: positionId },
+                        { status: 'ACTIVE' }
+                    ]
                 }
-            });
-    });
-};
-
-const _getDirector = (departmentId) => {
-    return new Promise(resolve => {
-        const query = {
-            $and: [
-                {ascription: departmentId},
-                {name: {$regex: new RegExp('^DIRECTOR$', 'i') }}
-            ]
+            }
         };
-        _position.findOne(query)
-            .select('name ascription')
-            .exec((err, data) => {
-                if (!err && data) {
-                    const query = {
-                        positions: {$elemMatch: {$and: [{position: data._id}, {status: 'ACTIVE'}]}}
-                    };
-                    _employee.findOne(query)
-                        .populate({path: 'positions.position', model: 'Position', select: 'name ascription'})
-                        .exec((err, data) => {
-                            if (!err && data) {
-                                const position = data.positions
-                                    .filter(({status, position}) => status === 'ACTIVE' && position.name.toUpperCase() === 'DIRECTOR')[0].position;
-                                resolve(position);
-                            } else {
-                                resolve(null);
-                            }
-                        });
+        _employee.findOne(query)
+            .populate({
+                path: 'positions.position',
+                model: 'Position',
+                select: 'name ascription'
+            })
+            .then(employee => {
+                if (employee && employee.positions && employee.positions.length) {
+                    resolve(true);
                 } else {
-                    resolve(null);
+                    resolve(false);
                 }
-            });
+            })
+            .catch(_ => resolve(true));
     });
-};
-
-const getPositionById = (req, res) => {
-    const {positionId} = req.params;
-    _position.findOne({_id: positionId})
-    .populate({
-        path: 'ascription',
-        model: 'Department',
-        populate: { path:'careers', model: 'Career' }
-    }).then(position =>
-        res.status(status.OK).json(position)
-    ).catch(err =>
-        res.status(status.INTERNAL_SERVER_ERROR).json({error:err.toString()})
-    )
 };
 
 module.exports = (Position, Employee) => {
@@ -213,7 +221,7 @@ module.exports = (Position, Employee) => {
         updatePosition,
         removePosition,
         updateDocumentAssign,
-        getPositionsForDepartment,
+        getPositionsByDepartment,
         getAvailablePositionsByDepartment,
         getPositionById,
     });
