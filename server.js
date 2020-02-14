@@ -71,7 +71,7 @@ const jwtOptions = {
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
-    /^\/escolares\/credenciales\/request\/.*/,
+    // /^\/escolares\/credenciales\/request\/.*/,
     // `${uri}graduationmail`,  
     // `${uri}inscription/updateStudent`, 
     // `${uri}inscription/sendmail`, 
