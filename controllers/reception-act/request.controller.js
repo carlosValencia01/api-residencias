@@ -532,7 +532,7 @@ const fileCheck = (req, res) => {
         const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
 
         // Documentos primera parte (CURP, ACTA, etc)
-        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === 'CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === 'ACTA_NACIMIENTO' || doc.type === 'CURP' || doc.type === 'CERTIFICADO_BACHILLERATO' || doc.type === 'CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
+        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === '4_CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === '2_ACTA_NACIMIENTO' || doc.type === '1_CURP' || doc.type === '3_CERTIFICADO_BACHILLERATO' || doc.type === '5_CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
         const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
         const docsReject = docs.filter(doc => doc.status === 'Reject');
         const numDocsAR = (docsAcept.length + docsReject.length);
@@ -543,8 +543,10 @@ const fileCheck = (req, res) => {
         const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
         const numDocsTitleAR = (docsTitleAcept.length + docsTitleReject.length);
 
-        if (numDocsTitleAR == 0) {
-            if (numDocsAR === docs.length) {
+        if (numDocsTitleAR === 0) {
+            console.log(numDocsAR+" de 10 documentos dictaminados");
+            if (numDocsAR === 10) {
+                console.log("Todos los documentos fueron dictaminados");
                 const email = request.email;
                 const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
                 const subject = 'Acto recepcional - Resultado de validación de documentos';
@@ -556,25 +558,25 @@ const fileCheck = (req, res) => {
                         case 'FOTOS':
                             documents += '<li>' + 'FOTOS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
-                        case 'CEDULA_TECNICA':
+                        case '4_CEDULA_TECNICA':
                             documents += '<li>' + 'CÉDULA TÉCNICA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'REVALIDACION':
                             documents += '<li>' + 'REVALIDACIÓN : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
-                        case 'ACTA_NACIMIENTO':
+                        case '2_ACTA_NACIMIENTO':
                             documents += '<li>' + 'ACTA DE NACIMIENTO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
-                        case 'CURP':
+                        case '1_CURP':
                             documents += '<li>' + 'CURP : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
-                        case 'CERTIFICADO_BACHILLERATO':
+                        case '3_CERTIFICADO_BACHILLERATO':
                             documents += '<li>' + 'CERTIFICADO DE BACHILLERATO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
-                        case 'CERTIFICADO_LICENCIATURA':
+                        case '5_CERTIFICADO_LICENCIATURA':
                             documents += '<li>' + 'CERTIFICADO DE LICENCIATURA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
-                        case 'SERVICIO SOCIAL':
+                        case 'SERVICIO_SOCIAL':
                             documents += '<li>' + 'SERVICIO SOCIAL : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
                             break;
                         case 'LIBERACION_INGLES':
@@ -595,7 +597,9 @@ const fileCheck = (req, res) => {
                 _sendEmail({ email: email, subject: subject, sender: sender, message: message });
             }
         } else {
-            if (numDocsTitleAR == docsTitle.length) {
+            console.log(numDocsTitleAR+" de 3 documentos dictaminados");
+            if (numDocsTitleAR === 3) {
+                console.log("Todos los documentos fueron dictaminados");
                 const email = request.email;
                 const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
                 const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
@@ -725,14 +729,16 @@ const releasedRequest = (req, res) => {
             }
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
-
-    const subtitle = 'Liberación de proyecto de acto protocolario';
-    const body = 'Su proyecto ha sido liberado';
-    const email = data.email;
-    const subject = 'Acto recepcional - Liberación de proyecto';
-    const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-    const message = mailTemplate(subtitle, body, '');
-    _sendEmail({ email: email, subject: subject, sender: sender, message: message });
+    
+    if(data.upload){
+        const subtitle = 'Liberación de proyecto de acto protocolario';
+        const body = 'Su proyecto ha sido liberado';
+        const email = data.email;
+        const subject = 'Acto recepcional - Liberación de proyecto';
+        const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+        const message = mailTemplate(subtitle, body, '');
+        _sendEmail({ email: email, subject: subject, sender: sender, message: message });
+    }
 };
 
 const updateRequest = (req, res) => {
@@ -845,10 +851,6 @@ const updateRequest = (req, res) => {
             }
             case eRequest.RELEASED: {
                 if (data.operation === eStatusRequest.REJECT) {
-                    subjectMail = 'Acto recepcional - Validación de liberación de proyecto';
-                    subtitleMail = 'Validación de formato de liberación de proyecto';
-                    bodyMail = 'Liberación rechazada';
-                    observationsMail = item.observation;
                     request.phase = eRequest.REGISTERED;
                     request.status = eStatusRequest.REJECT;
                     item.status = eStatusRequest.REJECT;
