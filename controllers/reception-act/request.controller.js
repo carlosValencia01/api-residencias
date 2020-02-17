@@ -15,6 +15,11 @@ let _student;
 
 const create = async (req, res) => {
     let request = req.body;
+    const _req = await _getRequest(req.params._id);
+    if (_req) {
+        req.params._id = _req._id;
+        return findOneRequest(req, res);
+    }
     request.lastModified = new Date();
     request.applicationDate = new Date();
     request.studentId = req.params._id;
@@ -103,7 +108,6 @@ const createTitled = (req, res) => {
 
 }
 
-
 const removeTitled = (req, res) => {
     const { id } = req.params;
     _request.deleteOne({ _id: id }, function (error) {
@@ -111,7 +115,7 @@ const removeTitled = (req, res) => {
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: 'Titulación no encontrada' });
         return res.status(200).json({ message: "Successful" });
     });
-}
+};
 
 const getAllRequest = (req, res) => {
     _request.find({ status: { $ne: 'Aprobado' } })
@@ -1387,6 +1391,33 @@ const changeJury = (req, res) => {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+const findOneRequest = (req, res) => {
+    const { _id } = req.params;
+    _request.findOne({ _id: _id }).populate({
+        path: 'studentId', model: 'Student',
+        select: {
+            fullName: 1,
+            controlNumber: 1,
+            career: 1
+        }
+    }).exec(handler.handleOne.bind(null, 'request', res));
+};
+
+const _getRequest = (studentId) => {
+    return new Promise(resolve => {
+        _request.findOne({ studentId: studentId })
+            .then(data => {
+                if (data) {
+                    resolve(data);
+                } else {
+                    resolve(null);
+                }
+            })
+            .catch(_ => resolve(null));
+    });
+};
+
 module.exports = (Request, Range, Folder, Student) => {
     _request = Request;
     _ranges = Range;
