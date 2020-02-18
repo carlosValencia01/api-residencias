@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 const superagent = require('superagent');
 const mongoose = require('mongoose');
-
+var https = require('https');
 
 let _student;
 let _request;
@@ -955,6 +955,47 @@ const sendNotification = (req,res)=>{
         }
     });
 };
+ /// endo notifications for app
+const isStudentForInscription = (req,res)=>{
+    const controlNumber = req.params.nc;
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/info/${controlNumber}`,
+        // authentication headers     
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    var studentNew = "";
+
+    https.get(options, function (apiInfo) {
+
+        apiInfo.on('data', function (data) {
+            studentNew += data;
+        });
+        apiInfo.on('end', () => {
+            //json con los datos del alumno
+            studentNew = JSON.parse(studentNew);
+            
+            const {income,semester} = studentNew;            
+            const st = studentNew.status;
+            console.log(income,'income');
+            console.log(st,'status');
+            console.log(semester,'semester');
+            
+            if ((semester == 1 || income == 2 || income == 3 || income == 4) || (semester == 1 && income == 1 )) {
+                return res.status(status.OK).json({controlNumber,inscription:true});
+            }else{
+                return res.status(status.NOT_FOUND).json({controlNumber,inscription:false});
+            }            
+        });
+        apiInfo.on('error', function (e) {
+            return res.status(status.NOT_FOUND).json({controlNumber,inscription:false});
+        });
+    });    
+};
 
 
 module.exports = (Student, Request, Role, Period) => {
@@ -995,5 +1036,6 @@ module.exports = (Student, Request, Role, Period) => {
         getStudentsInscriptionPendant,
         getStudentsInscriptionAcept,
         sendNotification,
+        isStudentForInscription,
     });
 };

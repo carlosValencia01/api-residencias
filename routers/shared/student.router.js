@@ -66,6 +66,9 @@ module.exports = (wagner) => {
     router.get('/get/career/:_id', (req, res) =>
         studentCtrl.getCareerDetail(req, res));
 
+    router.get('/get/inscription/ready/:nc', (req, res) =>
+        studentCtrl.isStudentForInscription(req, res));
+
 
 
     router.post('/', upload.single('image'), (req, res) => {

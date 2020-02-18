@@ -135,6 +135,11 @@ const login = (req, res) => {
                             select: {
                                 permissions: 1, name: 1, _id: 0
                             }
+                        }).populate({
+                            path: 'careerId', model: 'Career',
+                            select: {
+                                fullName: 1, shortName: 1, acronym: 1
+                            }
                         }).exec(async (error, oneUser) => {
                             // Hubo un error en la consulta
                             if (error) {
@@ -170,7 +175,7 @@ const login = (req, res) => {
                                             fullName: oneUser.fullName
                                         },
                                         email: oneUser.controlNumber,
-                                        career: oneUser.career,
+                                        career: oneUser.careerId.acronym,
                                         rol: {
                                             name: oneUser.idRole.name,
                                             permissions: oneUser.idRole.permissions
@@ -196,6 +201,11 @@ const login = (req, res) => {
                                                     select: {
                                                         permissions: 1, name: 1, _id: 0
                                                     }
+                                                }).populate({
+                                                    path: 'careerId', model: 'Career',
+                                                    select: {
+                                                        fullName: 1, shortName: 1, acronym: 1
+                                                    }
                                                 })
                                                 .exec(async (err, user) => {
                                                     // Se verifica si tiene aprobado el inglés
@@ -214,7 +224,7 @@ const login = (req, res) => {
                                                             fullName: user.fullName
                                                         },
                                                         email: user.controlNumber,
-                                                        career: user.career,
+                                                        career: oneUser.careerId.acronym,
                                                         rol: {
                                                             name: user.idRole.name,
                                                             permissions: user.idRole.permissions
@@ -298,17 +308,16 @@ const getStudentData = (email, password) => {
                 studentNew.originSchool = studentNew.originschool;
                 studentNew.nameOriginSchool = studentNew.nameoriginschool;
                 studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
-                studentNew.nip = password;
+                // studentNew.nip = password;
                 studentNew.controlNumber = email;
-                if (studentNew.semester == 1) {
+                const incomingType = studentNew.income;
+                if (studentNew.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
                     studentNew.stepWizard = 0;
                 }
                 const request = https.request(optionsPost, (apiLogin) => {
                     var careerN = "";
                     apiLogin.on('data', async (d) => {
                         careerN += d;
-
-
                     });
                     apiLogin.on('end', async () => {
                         careerN = JSON.parse(careerN);
