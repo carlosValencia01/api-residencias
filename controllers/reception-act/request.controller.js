@@ -862,10 +862,15 @@ const updateRequest = (req, res) => {
                     observationsMail = item.observation;
                     request.phase = eRequest.DELIVERED;
                     request.status = eStatusRequest.NONE;
-                    request.documents.push(
-                        {
-                            type: eFile.PHOTOS, dateRegister: new Date(), nameFile: 'Fotos', status: "Process"
-                        });
+                    const photos = await getRequestPhotos(_id);                    
+                    
+                    if(photos === undefined){
+                        request.documents.push(
+                            {
+                                type: eFile.PHOTOS, dateRegister: new Date(), nameFile: 'Fotos', status: "Process"
+                            });
+                    }
+                    
                     item.status = eStatusRequest.ACCEPT
                 }
                 break;
@@ -1121,6 +1126,16 @@ const updateRequest = (req, res) => {
                 return res.status(status.OK).json(json);
             });
         }
+    });
+};
+
+const getRequestPhotos = (_id) =>{
+    return new Promise((resolve)=>{
+        _request.findOne({ _id: _id },{documents:1}).then(
+            (request)=>resolve(request.documents.filter( (doc)=> doc.type === eFile.PHOTOS)[0])
+        ).catch(
+            (err)=>resolve(false)
+        );
     });
 };
 
