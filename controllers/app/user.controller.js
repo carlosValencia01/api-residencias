@@ -194,8 +194,9 @@ const login = (req, res) => {
                                     // No se encontró el registro en la base de datos local buscar en el sii                      
                                     _student.create(resApi)
                                         .then(created => {
-                                            console.log('Estudiant creado');
-                                            _student.findOne({ _id: created._id })
+                                            console.log('Estudiant creado');                                            
+                                            
+                                            _student.findOne({ controlNumber: email })
                                                 .populate({
                                                     path: 'idRole', model: 'Role',
                                                     select: {
@@ -215,6 +216,8 @@ const login = (req, res) => {
                                                     //     user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
                                                     // }
                                                     // Se contruye el token
+                                                    
+                                                    
                                                     const token = jwt.sign({ email: user.controlNumber }, config.secret);
                                                     let formatUser = {
                                                         _id: user._id,
@@ -224,7 +227,7 @@ const login = (req, res) => {
                                                             fullName: user.fullName
                                                         },
                                                         email: user.controlNumber,
-                                                        career: oneUser.careerId.acronym,
+                                                        career: user.careerId.acronym,
                                                         rol: {
                                                             name: user.idRole.name,
                                                             permissions: user.idRole.permissions
@@ -259,7 +262,7 @@ const login = (req, res) => {
         });
 };
 
-const getStudentData = (email, password) => {
+const getStudentData = (email, password) => {    
     const options = {
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
@@ -274,6 +277,8 @@ const getStudentData = (email, password) => {
         nc: email,
         nip: password
     });
+    console.log(dataStudent);
+    
     var optionsPost = {
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
@@ -299,6 +304,8 @@ const getStudentData = (email, password) => {
             apiInfo.on('end', () => {
                 //json con los datos del alumno
                 studentNew = JSON.parse(studentNew);
+                console.log(studentNew);
+                
                 studentNew.firstName = studentNew.firstname;
                 studentNew.fatherLastName = studentNew.fatherlastname;
                 studentNew.motherLastName = studentNew.motherlastname;
@@ -321,7 +328,8 @@ const getStudentData = (email, password) => {
                     });
                     apiLogin.on('end', async () => {
                         careerN = JSON.parse(careerN);
-
+                        console.log(careerN);
+                        
                         switch (careerN.carrera) {
                             case 'L01':
                                 studentNew.career = 'ARQUITECTURA';
@@ -357,10 +365,10 @@ const getStudentData = (email, password) => {
                                 studentNew.career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
                                 break;
                             case 'MTI':
-                                studentNew.career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
+                                studentNew.career = 'MAESTRÍA EN TECNOLOGÍAS DE LA INFORMACIÓN';
                                 break;
                             case 'P01':
-                                studentNew.career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
+                                studentNew.career = 'MAESTRÍA EN CIENCIAS DE ALIMENTOS';
                                 break;
                             case 'DCA':
                                 studentNew.career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
@@ -370,7 +378,11 @@ const getStudentData = (email, password) => {
                         }
                         // Obtener id del rol para estudiente
                         studentNew.estatus = careerN.estatus;
+                        console.log(2, studentNew.career);
+                        
                         const studentId = await getRoleId('Estudiante');
+                        console.log(3);
+                        
                         studentNew.idRole = studentId;
                         studentNew.careerId = await getCareerId(studentNew.career);
 
@@ -705,7 +717,9 @@ const studentLogin = async (req, res) => {
                     //no se encuentra en la bd
                     _student.create(studentNew)
                         .then(created => {
-                            console.log('Estudiant creado');
+                            // console.log('Estudiant creado',created);
+                            // console.log(nc);
+                            
                             _student.findOne({ controlNumber: nc }, { documents: 0, idRole: 0, fileName: 0, acceptedTerms: 0, dateAcceptedTerms: 0, stepWizard: 0, inscriptionStatus: 0, __v: 0 })
                                 .populate({
                                     path: 'careerId', model: 'Career',
@@ -795,11 +809,15 @@ const loginMiGraduacion = (req, res) => {
 
 const getCareerId = (careerName) => {
 
-
+    console.log(careerName);
+    
     return new Promise(async (resolve) => {
         await _career.findOne({ fullName: careerName }, (err, career) => {
             if (!err && career) {
                 resolve(career.id);
+            }else{
+                console.log(err);
+                
             }
         });
     });
