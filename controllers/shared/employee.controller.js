@@ -139,9 +139,14 @@ const createWithoutImage = (req, res) => {
         res.json(created);
     }).catch(err => {
         console.log(err);
-        res.status(status.INTERNAL_SERVER_ERROR).json({
-            error: err.toString()
-        })
+        let message;
+        if (err && err.code && err.code === 11000) {
+            message = 'El empleado ya está registrado';
+        } else {
+            message = 'Ocurrió un error al guardar el empleado';
+        }
+        res.status(status.INTERNAL_SERVER_ERROR)
+            .json({ error: message });
     });
 };
 
