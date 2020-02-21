@@ -122,10 +122,12 @@ const getAllRequest = (req, res) => {
         .populate
         ({
             path: 'studentId', model: 'Student',
+            populate: { path: 'careerId', model: 'Career' },
             select: {
                 fullName: 1,
                 controlNumber: 1,
-                career: 1
+                career: 1,
+                careerId: 1
             }
         }).sort({ applicationDate: 1 })
         .exec(handler.handleMany.bind(null, 'request', res));
@@ -139,10 +141,12 @@ const getRequestByStatus = (req, res) => {
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1
                     }
                 }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -153,10 +157,12 @@ const getRequestByStatus = (req, res) => {
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
                 }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -167,10 +173,12 @@ const getRequestByStatus = (req, res) => {
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
                 }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -181,10 +189,12 @@ const getRequestByStatus = (req, res) => {
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
                 }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -195,10 +205,12 @@ const getRequestByStatus = (req, res) => {
                 .populate
                 ({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
                 }).sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -225,10 +237,12 @@ const getById = (req, res) => {
     const { _id } = req.params;
     _request.find({ _id: _id }).populate({
         path: 'studentId', model: 'Student',
+        populate: { path: 'careerId', model: 'Career' },
         select: {
             fullName: 1,
             controlNumber: 1,
-            career: 1
+            career: 1,
+            careerId: 1,
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
 };
