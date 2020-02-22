@@ -1016,7 +1016,7 @@ const updateRequest = (req, res) => {
                         request.registry = data.registry;
                         item.status = eStatusRequest.ACCEPT;
                         item.phase = 'Realizado';                                           
-                        await updateStudentDegreeInSII(request.titulationOption.split(' ')[0],data.controlNumber,request.applicationDate);
+                        await updateStudentDegreeInSII(request.titulationOption.split(' ')[0],data.controlNumber,request.proposedDate);
                         await updateStudentStatus('TIT',request.studentId);
                         break;
                     }

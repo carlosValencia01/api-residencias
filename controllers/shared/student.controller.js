@@ -20,9 +20,13 @@ const getAll = (req, res) => {
 };
 
 const getStudentsInscription = (req, res) => {
-    _student.find({ "inscriptionStatus": { $exists: true } }).then(
-        students => {
-            const mapedDocs = mapDocuments(student.documents);
+    _student.find({ "inscriptionStatus": { $exists: true } }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
+        students => {            
             const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
@@ -66,9 +70,9 @@ const getStudentsInscription = (req, res) => {
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis,
                 documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber:mapedDocs.length,
-                documentsReviewNumber:mapedDocs.filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus:mapedDocs
+                totalDocumentsNumber:mapDocuments(student.documents).length,
+                documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus:mapDocuments(student.documents)
             }));
             res.status(status.OK).json({ students: newStudents });
         }
@@ -76,7 +80,7 @@ const getStudentsInscription = (req, res) => {
 };
 
 const mapDocuments = (documents) => {
-    return documents.map(
+    return documents.filter((st)=> st.status.length > 0).map(
         doc => {
             const stat = doc.status.filter(
                 st => st.active == true)[0];
@@ -88,14 +92,14 @@ const mapDocuments = (documents) => {
 
 
     ).filter(
-        docFiltered => docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+        docFiltered =>docFiltered.filename ? docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 : false && docFiltered.statusName !== null
     );
 };
 
 const documentsHaveChanges = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
+        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 : false).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -114,7 +118,7 @@ const documentsHaveChanges = (documents, status) => {
 const documentsHaveChangesAdmin = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
+        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 :false).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -136,7 +140,12 @@ const getStudentsInscriptionLogged = (req, res) => {
 };
 
 const getStudentsInscriptionProcess = (req, res) => {
-    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).then(
+    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
         students => {
             const newStudents = students.map(student => ({
                 "_id": student._id,
@@ -193,7 +202,12 @@ const getStudentsInscriptionProcess = (req, res) => {
 };
 
 const getStudentsInscriptionPendant = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).then(
+    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
         students => {
             const newStudents = students.map(student => ({
                 "_id": student._id,
@@ -247,7 +261,12 @@ const getStudentsInscriptionPendant = (req, res) => {
 };
 
 const getStudentsInscriptionAcept = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).then(
+    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
         students => {
             const newStudents = students.map(student => ({
                 "_id": student._id,
@@ -646,7 +665,7 @@ async function updateDocumentStatus(_id, docName, status) {
 }
 
 async function getActiveStatus(_id, filename) {
-    console.log(filename, '===fole', _id);
+    // console.log(filename, '===fole', _id);
     let id = mongoose.Types.ObjectId(_id);
     return await _student.aggregate([
         {
@@ -688,7 +707,7 @@ async function getActiveStatus(_id, filename) {
                 }
             }
         }]).then(docm => {
-            console.log('2', docm);
+            // console.log('2', docm);
 
             return docm;
 
@@ -1009,30 +1028,33 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
         _student.findOne({controlNumber},{documents:1}).then(
             (student)=>{
                 if(student){
-                    if(grade === 'lic'){
-
+                    if(grade === 'lic'){                                                
                         resolve(
-                            student.documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map((doc)=>
-                            {
-                                let name = doc.filename;                                
-                                name = 
-                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',position:6} 
+                            student.documents.filter((doc) =>doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            {                                
+                                
+                                const name = doc.filename;                                
+                                const file = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:6} 
                                 : name.indexOf(eInsFiles.CERTIFICATE_BACH) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO BACHILLERATO',filename:name,position:2} 
                                 :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:5}
-                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',position:3} 
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:3} 
                                 :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:4}  
-                                :name.indexOf(eInsFiles.LETTER_BACH) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO BACHILLERATO',filename:name,position:2}
+                                :name.indexOf(eInsFiles.LETTER_BACH) !== -1 ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO BACHILLERATO',filename:name,position:2}
                                 :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
                                 :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:7} 
                                 :'';
                                 const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                
+                                
                                 return {
-                                    file:name,
+                                    file,
                                     fileIdInDrive:doc.fileIdInDrive,
-                                    status: docStatus.name
+                                    status: docStatus ? docStatus.name : 'EN PROCESO'
                                     ,
-                                    observation: docStatus.observation ? docStatus.observation :'',
-                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''}))
+                                    observation: docStatus ? docStatus.observation ? docStatus.observation :'':'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''})),
+                                    checked:false
                                 };
                             }
                             )
@@ -1041,32 +1063,33 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 
                     if(grade === 'mas'){
                         resolve(
-                            student.documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map((doc)=>
+                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
                             {
-                                let name = doc.filename;                                
-                                name = 
+                                const name = doc.filename;                                
+                               const file = 
                                 name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:9} 
-                                : name.indexOf(eInsFiles.CERTIFICATE_LIC) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO LICENCIATURA',filename:name,position:2} 
+                                : name === controlNumber+'-'+eInsFiles.CERTIFICATE_LIC ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO LICENCIATURA',filename:name,position:2} 
                                 :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:8}
                                 :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:6} 
                                 :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:7}  
-                                :name.indexOf(eInsFiles.LETTER_CERT_LIC) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO LICENCIATURA',filename:name,position:2}
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CERT_LIC ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO LICENCIATURA',filename:name,position:2}
                                 :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
                                 :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:10} 
-                                :name.indexOf(eInsFiles.DEGREE_LIC)  !== -1?{shortName:'TÍTULO LICENCIATURA',fullName:'TÍTULO LICENCIATURA',position:3} 
-                                :name.indexOf(eInsFiles.CED_LIC)  !== -1?{shortName:'CEDULA',fullName:'CEDULA LICENCIATURA',filename:name,position:4} 
-                                :name.indexOf(eInsFiles.TEST_LIC)  !== -1?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN LICENCIATURA',position:5}                                 
-                                :name.indexOf(eInsFiles.LETTER_DEGREE_LIC)  !== -1?{shortName:'CARTA COMPROMISO TÍTULO LICENCIATURA',fullName:'CARTA COMPROMISO TÍTULO LICENCIATURA',filename:name,position:3} 
-                                :name.indexOf(eInsFiles.LETTER_CED_LIC)  !== -1?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA LICENCIATURA',filename:name,position:4} 
-                                :name.indexOf(eInsFiles.LETTER_TEST_LIC)  !== -1?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN LICENCIATURA',filename:name,position:5} 
+                                :name === controlNumber+'-'+eInsFiles.DEGREE_LIC?{shortName:'TÍTULO LICENCIATURA',fullName:'TÍTULO LICENCIATURA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.CED_LIC?{shortName:'CEDULA',fullName:'CEDULA LICENCIATURA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.TEST_LIC?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN LICENCIATURA',filename:name,position:5}                                 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_DEGREE_LIC?{shortName:'CARTA COMPROMISO TÍTULO LICENCIATURA',fullName:'CARTA COMPROMISO TÍTULO LICENCIATURA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CED_LIC?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA LICENCIATURA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_TEST_LIC?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN LICENCIATURA',filename:name,position:5} 
                                 :'';
                                 const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
                                 return {
-                                    file:name,
+                                    file,
                                     fileIdInDrive:doc.fileIdInDrive,
-                                    status: docStatus.name,
-                                    observation: docStatus.observation ? docStatus.observation :'',
-                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''}))
+                                    status: docStatus ? docStatus.name : 'EN PROCESO',
+                                    observation:docStatus ? docStatus.observation ? docStatus.observation :'':'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''})),
+                                    checked:false
                                 };
                             }
                             )
@@ -1075,32 +1098,35 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 
                     if(grade === 'doc'){
                         resolve(
-                            student.documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map((doc)=>
+                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
                             {
-                                let name = doc.filename;                                
-                                name = 
+                                
+                                
+                                const name = doc.filename;                                
+                                const file = 
                                 name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:9} 
-                                : name.indexOf(eInsFiles.CERTIFICATE_MA) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO MAESTRÍA',filename:name,position:2} 
+                                : name === controlNumber+'-'+eInsFiles.CERTIFICATE_MA ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO MAESTRÍA',filename:name,position:2} 
                                 :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:8}
                                 :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:6} 
                                 :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:7}  
-                                :name.indexOf(eInsFiles.LETTER_CERT_MA) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO MAESTRÍA',filename:name,position:2}
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CERT_MA ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO MAESTRÍA',filename:name,position:2}
                                 :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
                                 :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:10} 
-                                :name.indexOf(eInsFiles.DEGREE_MA)  !== -1?{shortName:'TÍTULO MAESTRÍA',fullName:'TÍTULO MAESTRÍA',filename:name,position:3} 
-                                :name.indexOf(eInsFiles.CED_MA)  !== -1?{shortName:'CEDULA',fullName:'CEDULA MAESTRÍA',filename:name,position:4} 
-                                :name.indexOf(eInsFiles.TEST_MA)  !== -1?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN MAESTRÍA',filename:name,position:5}                                 
-                                :name.indexOf(eInsFiles.LETTER_DEGREE_MA)  !== -1?{shortName:'CARTA COMPROMISO TÍTULO MAESTRÍA',fullName:'CARTA COMPROMISO TÍTULO MAESTRÍA',filename:name,position:3} 
-                                :name.indexOf(eInsFiles.LETTER_CED_MA)  !== -1?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA MAESTRÍA',filename:name,position:4} 
-                                :name.indexOf(eInsFiles.LETTER_TEST_MA)  !== -1?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN MAESTRÍA',filename:name,position:5} 
+                                :name === controlNumber+'-'+eInsFiles.DEGREE_MA?{shortName:'TÍTULO MAESTRÍA',fullName:'TÍTULO MAESTRÍA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.CED_MA?{shortName:'CEDULA',fullName:'CEDULA MAESTRÍA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.TEST_MA?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN MAESTRÍA',filename:name,position:5}                                 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_DEGREE_MA?{shortName:'CARTA COMPROMISO TÍTULO MAESTRÍA',fullName:'CARTA COMPROMISO TÍTULO MAESTRÍA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CED_MA?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA MAESTRÍA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_TEST_MA?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN MAESTRÍA',filename:name,position:5} 
                                 :'';
                                 const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
                                 return {
-                                    file:name,
+                                    file,
                                     fileIdInDrive:doc.fileIdInDrive,
-                                    status: docStatus.name,
-                                    observation: docStatus.observation ? docStatus.observation :'',
-                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''}))
+                                    status: docStatus ? docStatus.name : 'EN PROCESO',
+                                    observation: docStatus ? docStatus.observation ? docStatus.observation :'':'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''})),
+                                    checked:false
                                 };
                             }
                             )
@@ -1109,7 +1135,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
                 }
                 resolve(false);
             }
-        ).catch(err=>resolve(false));
+        ).catch(err=>{console.log(err);resolve(false)});
     });
 };
 
