@@ -7,6 +7,7 @@ const config = require('../../_config');
 const superagent = require('superagent');
 const mongoose = require('mongoose');
 var https = require('https');
+const { eInsFiles} = require('../../enumerators/reception-act/enums');
 
 let _student;
 let _request;
@@ -21,6 +22,7 @@ const getAll = (req, res) => {
 const getStudentsInscription = (req, res) => {
     _student.find({ "inscriptionStatus": { $exists: true } }).then(
         students => {
+            const mapedDocs = mapDocuments(student.documents);
             const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
@@ -64,9 +66,9 @@ const getStudentsInscription = (req, res) => {
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis,
                 documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents)
+                totalDocumentsNumber:mapedDocs.length,
+                documentsReviewNumber:mapedDocs.filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus:mapedDocs
             }));
             res.status(status.OK).json({ students: newStudents });
         }
@@ -751,7 +753,7 @@ const getDocumentsDrive = async (req, res) => {
         });
     } else {
         res.status(status.OK).json({
-            documents: documents,
+            documents: documents.reverse(),
             action: 'get documents'
         });
     }
@@ -997,7 +999,126 @@ const isStudentForInscription = (req,res)=>{
     });    
 };
 
+/**
+ * 
+ * @param {controlNumber: Número de control, ej. 15400001} controlNumber 
+ * @param {Grado: Grado, lic=licenciatura, mas=maestria, doc=doctorado, ndefault: lic} grade 
+ */
+const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
+    return new Promise((resolve)=>{
+        _student.findOne({controlNumber},{documents:1}).then(
+            (student)=>{
+                if(student){
+                    if(grade === 'lic'){
 
+                        resolve(
+                            student.documents.map((doc)=>
+                            {
+                                let name = doc.filename;                                
+                                name = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',position:6} 
+                                : name.indexOf(eInsFiles.CERTIFICATE_BACH) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO BACHILLERATO',filename:name,position:2} 
+                                :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:5}
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',position:3} 
+                                :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:4}  
+                                :name.indexOf(eInsFiles.LETTER_BACH) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO BACHILLERATO',filename:name,position:2}
+                                :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:7} 
+                                :'';
+                                const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                return {
+                                    file:name,
+                                    fileIdInDrive:doc.fileIdInDrive,
+                                    status: docStatus.name
+                                    ,
+                                    observation: docStatus.observation ? docStatus.observation :'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''}))
+                                };
+                            }
+                            )
+                        );
+                    }
+
+                    if(grade === 'mas'){
+                        resolve(
+                            student.documents.map((doc)=>
+                            {
+                                let name = doc.filename;                                
+                                name = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:9} 
+                                : name.indexOf(eInsFiles.CERTIFICATE_LIC) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO LICENCIATURA',filename:name,position:2} 
+                                :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:8}
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:6} 
+                                :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:7}  
+                                :name.indexOf(eInsFiles.LETTER_CERT_LIC) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO LICENCIATURA',filename:name,position:2}
+                                :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:10} 
+                                :name.indexOf(eInsFiles.DEGREE_LIC)  !== -1?{shortName:'TÍTULO LICENCIATURA',fullName:'TÍTULO LICENCIATURA',position:3} 
+                                :name.indexOf(eInsFiles.CED_LIC)  !== -1?{shortName:'CEDULA',fullName:'CEDULA LICENCIATURA',filename:name,position:4} 
+                                :name.indexOf(eInsFiles.TEST_LIC)  !== -1?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN LICENCIATURA',position:5}                                 
+                                :name.indexOf(eInsFiles.LETTER_DEGREE_LIC)  !== -1?{shortName:'CARTA COMPROMISO TÍTULO LICENCIATURA',fullName:'CARTA COMPROMISO TÍTULO LICENCIATURA',filename:name,position:3} 
+                                :name.indexOf(eInsFiles.LETTER_CED_LIC)  !== -1?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA LICENCIATURA',filename:name,position:4} 
+                                :name.indexOf(eInsFiles.LETTER_TEST_LIC)  !== -1?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN LICENCIATURA',filename:name,position:5} 
+                                :'';
+                                const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                return {
+                                    file:name,
+                                    fileIdInDrive:doc.fileIdInDrive,
+                                    status: docStatus.name,
+                                    observation: docStatus.observation ? docStatus.observation :'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''}))
+                                };
+                            }
+                            )
+                        );
+                    }
+
+                    if(grade === 'doc'){
+                        resolve(
+                            student.documents.map((doc)=>
+                            {
+                                let name = doc.filename;                                
+                                name = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:9} 
+                                : name.indexOf(eInsFiles.CERTIFICATE_MA) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO MAESTRÍA',filename:name,position:2} 
+                                :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:8}
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:6} 
+                                :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:7}  
+                                :name.indexOf(eInsFiles.LETTER_CERT_MA) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO MAESTRÍA',filename:name,position:2}
+                                :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:10} 
+                                :name.indexOf(eInsFiles.DEGREE_MA)  !== -1?{shortName:'TÍTULO MAESTRÍA',fullName:'TÍTULO MAESTRÍA',filename:name,position:3} 
+                                :name.indexOf(eInsFiles.CED_MA)  !== -1?{shortName:'CEDULA',fullName:'CEDULA MAESTRÍA',filename:name,position:4} 
+                                :name.indexOf(eInsFiles.TEST_MA)  !== -1?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN MAESTRÍA',filename:name,position:5}                                 
+                                :name.indexOf(eInsFiles.LETTER_DEGREE_MA)  !== -1?{shortName:'CARTA COMPROMISO TÍTULO MAESTRÍA',fullName:'CARTA COMPROMISO TÍTULO MAESTRÍA',filename:name,position:3} 
+                                :name.indexOf(eInsFiles.LETTER_CED_MA)  !== -1?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA MAESTRÍA',filename:name,position:4} 
+                                :name.indexOf(eInsFiles.LETTER_TEST_MA)  !== -1?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN MAESTRÍA',filename:name,position:5} 
+                                :'';
+                                const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                return {
+                                    file:name,
+                                    fileIdInDrive:doc.fileIdInDrive,
+                                    status: docStatus.name,
+                                    observation: docStatus.observation ? docStatus.observation :'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''}))
+                                };
+                            }
+                            )
+                        );
+                    }
+                }
+                resolve(false);
+            }
+        ).catch(err=>resolve(false));
+    });
+};
+
+const getInscriptionDocuments = async (req,res)=>{
+    const {nc,grade} = req.params;
+    const documents = await mapInscriptionDocuments(nc,grade.toLowerCase().trim());
+    const docs = documents.sort( (a,b)=> a.file.position - b.file.position);
+    res.status(status.OK).json({docs});
+};
 module.exports = (Student, Request, Role, Period) => {
     _student = Student;
     _request = Request;
@@ -1037,5 +1158,6 @@ module.exports = (Student, Request, Role, Period) => {
         getStudentsInscriptionAcept,
         sendNotification,
         isStudentForInscription,
+        getInscriptionDocuments
     });
 };

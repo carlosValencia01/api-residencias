@@ -2,7 +2,8 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
-
+const moment = require('moment');
+var https = require('https');
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
 const sendMail = require('../shared/mail.controller');
 const verifyCodeTemplate = require('../../templates/verifyCode');
@@ -1005,6 +1006,7 @@ const updateRequest = (req, res) => {
                         //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
                         //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
                         // }
+                        
                         subjectMail = 'Acto recepcional - Aprobación de acto protocolario';
                         subtitleMail = 'Aprobación de acto protocolario';
                         bodyMail = 'Su acto protocolario ha sido aprobado';
@@ -1013,7 +1015,9 @@ const updateRequest = (req, res) => {
                         request.status = eStatusRequest.NONE;
                         request.registry = data.registry;
                         item.status = eStatusRequest.ACCEPT;
-                        item.phase = 'Realizado';
+                        item.phase = 'Realizado';                                           
+                        await updateStudentDegreeInSII(request.titulationOption.split(' ')[0],data.controlNumber,request.applicationDate);
+                        await updateStudentStatus('TIT',request.studentId);
                         break;
                     }
                     case eStatusRequest.REJECT: {
@@ -1131,6 +1135,59 @@ const updateRequest = (req, res) => {
             });
         }
     });
+};
+
+const updateStudentDegreeInSII = (titulationOption, controlNumber,actRectDate)=>{
+    const date = moment(new Date(actRectDate)).format('YYYY-MM-DD');    
+    
+    const dataStudent = JSON.stringify({
+        option:titulationOption,
+        date
+    });    
+    var optionsPost = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/update/${controlNumber}`,
+        // authentication headers     
+        method: 'PUT',
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
+            'Content-Type': 'application/json',
+            'Content-Length': dataStudent.length
+        }
+
+    };
+    return new Promise( (resolve)=>{
+        const request = https.request(optionsPost, (postApi) => {
+            var response = "";
+            postApi.on('data', async (d) => {
+                response += d;
+            });
+            postApi.on('end', async () => {
+                response = JSON.parse(response);
+                if (response.error) {
+                    resolve(false);
+                }           
+                console.log(response);                
+                resolve(true);
+            });
+        });
+        request.on('error', (error) => {
+            resolve(false);
+        });
+
+        request.write(dataStudent);
+        request.end();
+    });
+};
+
+const updateStudentStatus = (studentStatus, _id) => {
+    return new Promise( (resolve) => {
+        _student.updateOne({_id},{$set:{status:studentStatus}})
+            .then( (updated) => resolve(true) )
+            .catch( (err) => resolve(false) );
+    } );
 };
 
 const getRequestPhotos = (_id) =>{
