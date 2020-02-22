@@ -142,9 +142,13 @@ const getRequestByStatus = (req, res) => {
     const { phase } = req.params;
     switch (phase) {
         case eRole.eSECRETARY: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
                     select: {
@@ -153,14 +157,19 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1
                     }
-                }).sort({ applicationDate: 1 })
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eHEADSCHOOLSERVICE: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
                     select: {
@@ -169,14 +178,19 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eCOORDINATION: {
-            _request.find({ phase: { $ne: 'Capturado' } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $ne: 'Capturado' } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
                     select: {
@@ -185,14 +199,19 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eCHIEFACADEMIC: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
                     select: {
@@ -201,14 +220,19 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eSTUDENTSERVICES: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
                     select: {
@@ -217,7 +241,8 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
