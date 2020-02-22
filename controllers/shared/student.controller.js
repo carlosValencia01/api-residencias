@@ -1012,7 +1012,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
                     if(grade === 'lic'){
 
                         resolve(
-                            student.documents.map((doc)=>
+                            student.documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map((doc)=>
                             {
                                 let name = doc.filename;                                
                                 name = 
@@ -1041,7 +1041,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 
                     if(grade === 'mas'){
                         resolve(
-                            student.documents.map((doc)=>
+                            student.documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map((doc)=>
                             {
                                 let name = doc.filename;                                
                                 name = 
@@ -1075,7 +1075,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 
                     if(grade === 'doc'){
                         resolve(
-                            student.documents.map((doc)=>
+                            student.documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map((doc)=>
                             {
                                 let name = doc.filename;                                
                                 name = 
@@ -1116,8 +1116,12 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 const getInscriptionDocuments = async (req,res)=>{
     const {nc,grade} = req.params;
     const documents = await mapInscriptionDocuments(nc,grade.toLowerCase().trim());
-    const docs = documents.sort( (a,b)=> a.file.position - b.file.position);
-    res.status(status.OK).json({docs});
+    
+    if(documents)    {
+        const docs = documents.sort( (a,b)=> a.file.position - b.file.position);
+        return res.status(status.OK).json({docs});
+    }
+    return res.status(status.NOT_FOUND).json({err:'El estudiante no esta registrado en la bd de credenciales'});
 };
 module.exports = (Student, Request, Role, Period) => {
     _student = Student;
