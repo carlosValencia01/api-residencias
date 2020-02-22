@@ -18,10 +18,10 @@ const requestSchema = new mongoose.Schema({
     lastModified: { type: Date, required: true },
     observation: { type: String, default: '' },
     doer: { type: String },
-    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String } },
+    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String, default: '' } },
     noIntegrants: { type: Number },
     jury: [
-        { name: { type: String }, title: { type: String }, cedula: { type: String } }
+        { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String, default: '' } }
     ],
     integrants: [
         { name: { type: String }, controlNumber: { type: Number }, career: { type: String } }

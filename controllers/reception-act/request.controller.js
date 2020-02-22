@@ -28,7 +28,12 @@ const create = async (req, res) => {
     request.status = eStatusRequest.PROCESS;
     //Add
     request.department = { name: request.department, boss: request.boss };
-    request.adviser = { name: request.adviserName, title: request.adviserTitle, cedula: request.adviserCedula };
+    request.adviser = {
+        name: request.adviserName,
+        title: request.adviserTitle,
+        cedula: request.adviserCedula,
+        email: request.adviserEmail
+    };
     request.grade = await _getGradeName(request.studentId);
     if (!request.grade) {
         return res.status(status.INTERNAL_SERVER_ERROR)
