@@ -18,7 +18,7 @@ const requestSchema = new mongoose.Schema({
     lastModified: { type: Date, required: true },
     observation: { type: String, default: '' },
     doer: { type: String },
-    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String, default: '' } },
+    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String } },
     noIntegrants: { type: Number },
     jury: [
         { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String, default: '' } }
