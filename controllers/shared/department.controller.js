@@ -70,6 +70,75 @@ const _getEmployeesByDepartment = (department) => {
   });
 };
 
+const getDepartmentBossSecretary = (req, res) => {
+  const departamento = req.params._department;
+  _department.find({ "careers.0": { "$exists": true } })
+    .populate('careers')
+    .exec(async (err, data) => {
+      if (!err && data) {
+        const departments = [];
+        for (let department of data) {
+          if(departamento === department.name){
+            const depto = await _getDepartmentWithBossSecretary(department.toObject());
+            departments.push(depto);
+          }
+        }
+        res.status(status.OK)
+          .json({ department: departments });
+      } else {
+        res.status(status.INTERNAL_SERVER_ERROR)
+          .json({ error: err ? err.toString() : 'Ocurrió un error' });
+      }
+    });
+};
+
+const _getDepartmentWithBossSecretary = depto => {
+  return new Promise(async resolve => {
+    const employeesDepto = await _getBossSecretaryByDepartment(depto);
+    depto.boss = employeesDepto.boss;
+    depto.secretary = employeesDepto.secretary;
+    resolve(depto);
+  })
+};
+
+const _getBossSecretaryByDepartment = (department) => {
+  return new Promise(resolve => {
+    _employee.find()
+      .populate({
+        path: 'positions.position', model: 'Position', select: 'name ascription',
+        populate: { path: 'ascription', model: 'Department', select: 'name shortName' }
+      })
+      .exec((err, data) => {
+        if (!err && data) {
+          let departmentBoss = {};
+          data.forEach(data => {
+            if (data.positions.length) {
+              const employee = data.toObject();
+              const activePositions = employee.positions
+                .filter(pos => pos.status === 'ACTIVE' && pos.position.ascription._id.toString() === department._id.toString());
+              const secretary = activePositions.filter(pos => pos.position.name.toUpperCase() === 'SECRETARIA')[0];
+              const boss = activePositions.filter(pos => pos.position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0];
+              if (boss) {
+                employee.positions.push(boss);
+                nameBoss = employee.name.fullName;
+                emailBoss = employee.email;
+              }
+              if (secretary) {
+                employee.positions.push(secretary);
+                nameSecretary = employee.name.fullName;
+                emailSecretary = employee.email;
+              }
+            }
+          });
+          resolve({
+            boss: {nameBoss,emailBoss},
+            secretary: {nameSecretary,emailSecretary}
+          });
+        }
+      });
+  });
+};
+
 const getAllDepartments = (req, res) => {
   _department.find({})
     .populate('careers')
@@ -178,6 +247,7 @@ module.exports = (Deparment, Employee, Position) => {
     createDepartment,
     updateDepartment,
     removeDepartment,
-    searchEmployeeByPosition
+    searchEmployeeByPosition,
+    getDepartmentBossSecretary
   });
 };
