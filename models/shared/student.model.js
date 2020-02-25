@@ -26,7 +26,7 @@ const studentSchema = new mongoose.Schema({
                     active: { type: Boolean },                    
                     message:{ type: String },  // Se envio, Se actualizo, se rechazo, se valido, se acepto                  
                     date:{ type: Date, default: new Date() },
-                    observation:{ type: String } // si fue rechazado
+                    observation:{ type: String } //solo si fue rechazado
                 }
             ]
         }
@@ -65,7 +65,8 @@ const studentSchema = new mongoose.Schema({
     inscriptionStatus: {type: String},
     observationsAnalysis: {type: String},
     warningAnalysis: {type: Boolean},
-    printCredential: {type: Boolean}
+    printCredential: {type: Boolean},
+    status: {type: String}
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');

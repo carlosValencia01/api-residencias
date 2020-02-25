@@ -2,7 +2,8 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
-
+const moment = require('moment');
+var https = require('https');
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
 const sendMail = require('../shared/mail.controller');
 const verifyCodeTemplate = require('../../templates/verifyCode');
@@ -380,14 +381,14 @@ const addIntegrants = (req, res) => {
 
 const omitFile = (req, res) => {
     const { _id } = req.params;
-    let data = req.body;
-    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
-        (error, request) => {
-            if (error) {
-                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
-            }
+    let data = req.body;    
+    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } }).then(
+        async (request) => {            
+            
+            let updatedRequest;
             if (!request) {
-                _request.update({ _id: _id }, {
+                updatedRequest = await new Promise( (resolve)=>{
+                    _request.updateOne({ _id: _id }, {
                     $set: {
                         status: eStatusRequest.PROCESS
                     },
@@ -397,63 +398,68 @@ const omitFile = (req, res) => {
                             type: data.Document, dateRegister: new Date(), nameFile: '', status: data.Status
                         }
                     }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                }).then(
+                    (updated)=> _request.findOne({_id}).then( (filteredRequest)=>  resolve(filteredRequest ? filteredRequest : false) ).catch( err=>resolve(false))
+                ).catch(
+                    err=>resolve(false)
+                )
+                });
             } else {
-                _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+                updatedRequest = await new Promise( (resolve)=>{
+                    _request.updateOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
                     $set: {
                         "documents.$": { type: data.Document, dateRegister: new Date(), nameFile: '', status: data.Status }
                     }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                }).then(
+                    (updated)=> _request.findOne({_id}).then( (filteredRequest)=>  resolve(filteredRequest ? filteredRequest : false) ).catch( err=>resolve(false))
+                ).catch(
+                    err=>resolve(false)
+                )
+                });                
             }
-        });
+            
+            
+            if(updatedRequest){
+                const result = updatedRequest.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+                const doer = updatedRequest.history[updatedRequest.history.length-1];
+                if (result.length === 14) {
+                    _request.updateOne({ _id: _id }, {
+                        $set: {                                    
+                            phase: eRequest.VALIDATED,
+                            status: eStatusRequest.NONE,
+                            lastModified: new Date(),
+                        },
+                        $addToSet: {
+                            history: {
+                                phase: eRequest.DELIVERED,
+                                achievementDate: new Date(),
+                                doer: doer.doer,
+                                observation: '',
+                                status: eStatusRequest.ACCEPT
+                            }
+                        }
+                    }).then(
+                        (updated)=> {
+                            _request.findOne({_id}).then( (filteredRequest)=>  res.status(status.OK).json({request:filteredRequest})).catch( err=> err=>res.status(status.BAD_REQUEST).json({err}))
+                            
+                        }
+                    ).catch(
+                        err=>res.status(status.BAD_REQUEST).json({err})
+                    )
+                }else{
+                    res.status(status.OK).json({request:updatedRequest})
+                }
+            }else{
+                return res.status(status.NOT_FOUND).json({err:'Request not found'});
+            }
+        }).catch(
+            err=>res.status(status.BAD_REQUEST).json({err})
+        );
 };
 
-// const uploadFile = (req, res) => {
-//     const { _id } = req.params;
-//     let data = req.body;
-//     const files = req.files;
-//     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
-//         async (error, request) => {
-//             if (error) {
-//                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
-//             }
-//             const docName = data.Document + path.extname(files.file.name);
-//             if (!request) {
-//                 let result = await _Drive.uploadFile(req, eOperation.NEW);
-//                 if (typeof (result) !== 'undefined' && result.isCorrect) {
-//                     _request.update({ _id: _id }, {
-//                         $set: {
-//                             status: eStatusRequest.PROCESS
-//                         },
-//                         $addToSet: {
-//                             documents:
-//                             {
-//                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
-//                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process'),
-//                                 driveId: result.fileId
-//                             }
-//                         }
-//                     }).exec(handler.handleOne.bind(null, 'request', res));
-//                 }
+/*
 
-//             } else {
-//                 const tmpDocument = request.documents.filter(doc => doc.type === data.Document);
-//                 req.body.fileId = tmpDocument[0].driveId;
-//                 let result = await _Drive.uploadFile(req, eOperation.EDIT);
-//                 if (typeof (result) !== 'undefined' && result.isCorrect) {
-//                     _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
-//                         $set: {
-//                             'documents.$': {
-//                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
-//                                 driveId: tmpDocument[0].driveId,
-//                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
-//                             }
-//                         }
-//                     }).exec(handler.handleOne.bind(null, 'request', res));
-//                 }
-//             }
-//         });
-// }
+*/
 
 const uploadFile = (req, res) => {
     const { _id } = req.params;
@@ -568,190 +574,210 @@ const getResourceLink = (req, res) => {
 const fileCheck = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    _request.findOneAndUpdate({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+    _request.updateOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
         $set: {
             'documents.$.status': data.Status,
             'documents.$.observation': data.Observation
         }
-    }, { new: true }, (error, request) => {
-        if (error)
-            return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
-        // console.log("reqq", request);
-        const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+    }).then ( (updated) => {
+        _request.findOne({_id}).then(
+            (request)=>{
+                const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
 
-        // Documentos primera parte (CURP, ACTA, etc)
-        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === '4_CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === '2_ACTA_NACIMIENTO' || doc.type === '1_CURP' || doc.type === '3_CERTIFICADO_BACHILLERATO' || doc.type === '5_CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
-        const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
-        const docsReject = docs.filter(doc => doc.status === 'Reject');
-        const numDocsAR = (docsAcept.length + docsReject.length);
-
-        // Documentos segunda parte (INE, CEDULA y XML)
-        const docsTitle = request.documents.filter(doc => doc.type === 'INE' || doc.type === 'CEDULA_PROFESIONAL' || doc.type === 'XML');
-        const docsTitleAcept = docsTitle.filter(doc => doc.status === 'Accept');
-        const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
-        const numDocsTitleAR = (docsTitleAcept.length + docsTitleReject.length);
-
-        if (numDocsTitleAR === 0) {
-            console.log(numDocsAR+" de 10 documentos dictaminados");
-            if (numDocsAR === 10) {
-                console.log("Todos los documentos fueron dictaminados");
-                const email = request.email;
-                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                const subject = 'Acto recepcional - Resultado de validación de documentos';
-                const subtitle = 'Acuse de documentos entregados';
-                var body = '';
-                var documents = '<ol style="text-align:left">';
-                for (var i = 0; i < docs.length; i++) {
-                    switch (docs[i].type) {
-                        case 'FOTOS':
-                            documents += '<li>' + 'FOTOS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '4_CEDULA_TECNICA':
-                            documents += '<li>' + 'CÉDULA TÉCNICA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'REVALIDACION':
-                            documents += '<li>' + 'REVALIDACIÓN : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '2_ACTA_NACIMIENTO':
-                            documents += '<li>' + 'ACTA DE NACIMIENTO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '1_CURP':
-                            documents += '<li>' + 'CURP : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '3_CERTIFICADO_BACHILLERATO':
-                            documents += '<li>' + 'CERTIFICADO DE BACHILLERATO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '5_CERTIFICADO_LICENCIATURA':
-                            documents += '<li>' + 'CERTIFICADO DE LICENCIATURA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'SERVICIO_SOCIAL':
-                            documents += '<li>' + 'SERVICIO SOCIAL : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'LIBERACION_INGLES':
-                            documents += '<li>' + 'LIBERACIÓN DE INGLÉS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'RECIBO':
-                            documents += '<li>' + 'RECIBO DE PAGO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
+                // Documentos primera parte (CURP, ACTA, etc)
+                const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === '4_CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === '2_ACTA_NACIMIENTO' || doc.type === '1_CURP' || doc.type === '3_CERTIFICADO_BACHILLERATO' || doc.type === '5_CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
+                const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+                const docsReject = docs.filter(doc => doc.status === 'Reject');
+                const numDocsAR = (docsAcept.length + docsReject.length);
+        
+                // Documentos segunda parte (INE, CEDULA y XML)
+                const docsTitle = request.documents.filter(doc => doc.type === 'INE' || doc.type === 'CEDULA_PROFESIONAL' || doc.type === 'XML');
+                const docsTitleAcept = docsTitle.filter(doc => doc.status === 'Accept');
+                const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
+                const numDocsTitleAR = (docsTitleAcept.length + docsTitleReject.length);
+        
+                if (numDocsTitleAR === 0) {
+                    console.log(numDocsAR+" de 10 documentos dictaminados");
+                    if (numDocsAR === 10) {
+                        console.log("Todos los documentos fueron dictaminados");
+                        const email = request.email;
+                        const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                        const subject = 'Acto recepcional - Resultado de validación de documentos';
+                        const subtitle = 'Acuse de documentos entregados';
+                        var body = '';
+                        var documents = '<ol style="text-align:left">';
+                        for (var i = 0; i < docs.length; i++) {
+                            switch (docs[i].type) {
+                                case 'FOTOS':
+                                    documents += '<li>' + 'FOTOS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '4_CEDULA_TECNICA':
+                                    documents += '<li>' + 'CÉDULA TÉCNICA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'REVALIDACION':
+                                    documents += '<li>' + 'REVALIDACIÓN : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '2_ACTA_NACIMIENTO':
+                                    documents += '<li>' + 'ACTA DE NACIMIENTO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '1_CURP':
+                                    documents += '<li>' + 'CURP : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '3_CERTIFICADO_BACHILLERATO':
+                                    documents += '<li>' + 'CERTIFICADO DE BACHILLERATO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '5_CERTIFICADO_LICENCIATURA':
+                                    documents += '<li>' + 'CERTIFICADO DE LICENCIATURA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'SERVICIO_SOCIAL':
+                                    documents += '<li>' + 'SERVICIO SOCIAL : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'LIBERACION_INGLES':
+                                    documents += '<li>' + 'LIBERACIÓN DE INGLÉS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'RECIBO':
+                                    documents += '<li>' + 'RECIBO DE PAGO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                            }
+                        }
+                        documents += '</ol>';
+                        if (docsReject.length === 0) {
+                            body = 'Su documentación fue aceptada, espera tu carta de no inconveniencia.';
+                        } else {
+                            body = 'Se encontraron errores en su documentación, favor de corregirlos:';
+                        }
+                        const message = mailTemplate(subtitle, body, documents);
+                        _sendEmail({ email: email, subject: subject, sender: sender, message: message });
                     }
-                }
-                documents += '</ol>';
-                if (docsReject.length === 0) {
-                    body = 'Su documentación fue aceptada, espera tu carta de no inconveniencia.';
                 } else {
-                    body = 'Se encontraron errores en su documentación, favor de corregirlos:';
-                }
-                const message = mailTemplate(subtitle, body, documents);
-                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-            }
-        } else {
-            console.log(numDocsTitleAR+" de 3 documentos dictaminados");
-            if (numDocsTitleAR === 3) {
-                console.log("Todos los documentos fueron dictaminados");
-                const email = request.email;
-                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
-                const subtitle = 'Resultado de validación de documentos';
-                var body = '';
-                var documents = '<ol style="text-align:left">';
-                for (var i = 0; i < docsTitle.length; i++) {
-                    switch (docsTitle[i].type) {
-                        case 'INE':
-                            documents += '<li>' + 'INE : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
-                            break;
-                        case 'CEDULA_PROFESIONAL':
-                            documents += '<li>' + 'CÉDULA PROFESIONAL : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
-                            break;
-                        case 'XML':
-                            documents += '<li>' + 'XML : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
-                            break;
+                    console.log(numDocsTitleAR+" de 3 documentos dictaminados");
+                    if (numDocsTitleAR === 3) {
+                        console.log("Todos los documentos fueron dictaminados");
+                        const email = request.email;
+                        const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                        const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
+                        const subtitle = 'Resultado de validación de documentos';
+                        var body = '';
+                        var documents = '<ol style="text-align:left">';
+                        for (var i = 0; i < docsTitle.length; i++) {
+                            switch (docsTitle[i].type) {
+                                case 'INE':
+                                    documents += '<li>' + 'INE : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
+                                    break;
+                                case 'CEDULA_PROFESIONAL':
+                                    documents += '<li>' + 'CÉDULA PROFESIONAL : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
+                                    break;
+                                case 'XML':
+                                    documents += '<li>' + 'XML : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
+                                    break;
+                            }
+                        }
+                        documents += '</ol>';
+        
+                        if (docsTitleReject.length === 0) {
+                            body = 'Su documentación fue aceptada. Para recoger tu título:';
+                            body += '<div style="text-align:center;">' +
+                                '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">' +
+                                '</div>'
+                        } else {
+                            body = 'Se encontraron errores en su documentación, favor de corregirlos:';
+                        }
+                        const message = mailTemplate(subtitle, body, documents);
+                        _sendEmail({ email: email, subject: subject, sender: sender, message: message });
                     }
                 }
-                documents += '</ol>';
-
-                if (docsTitleReject.length === 0) {
-                    body = 'Su documentación fue aceptada. Para recoger tu título:';
-                    body += '<div style="text-align:center;">' +
-                        '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">' +
-                        '</div>'
-                } else {
-                    body = 'Se encontraron errores en su documentación, favor de corregirlos:';
-                }
-                const message = mailTemplate(subtitle, body, documents);
-                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-            }
-        }
-
-        if (result.length === 14) {
-            _request.findOneAndUpdate({ _id: _id }, {
-                $set: {
-
-                    // phase: eRequest.ASSIGNED,
-                    phase: eRequest.VALIDATED,
-                    status: eStatusRequest.NONE,
-                    // phase: eRequest.DELIVERED,
-                    // status: result.length === 14 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
-                    lastModified: new Date(),
-                },
-                $addToSet: {
-                    history: {
-                        phase: eRequest.DELIVERED,
-                        achievementDate: new Date(),
-                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                        status: eStatusRequest.ACCEPT
-                    }
-                }
-            }).exec(handler.handleOne.bind(null, 'request', res));
-        } else {
-            if (result.length >= 14) {
-                console.log("es 20", result.length, result.length === 20);
-                if (result.length === 20) {
-                    _request.findOneAndUpdate({ _id: _id }, {
+        
+                if (result.length === 14) {
+                    _request.updateOne({ _id: _id }, {
                         $set: {
-                            phase: eRequest.TITLED,
-                            status: eStatusRequest.ACCEPT,
+        
+                            // phase: eRequest.ASSIGNED,
+                            phase: eRequest.VALIDATED,
+                            status: eStatusRequest.NONE,
+                            // phase: eRequest.DELIVERED,
+                            // status: result.length === 14 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
                             lastModified: new Date(),
                         },
                         $addToSet: {
                             history: {
-                                phase: eRequest.TITLED,
+                                phase: eRequest.DELIVERED,
                                 achievementDate: new Date(),
                                 doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
                                 observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                                status: eStatusRequest.PROCESS
+                                status: eStatusRequest.ACCEPT
                             }
                         }
                     }).exec(handler.handleOne.bind(null, 'request', res));
                 } else {
-                    if (request.documents.length === 19) {
-                        _request.findOneAndUpdate({ _id: _id }, {
+                    if (result.length > 14) {
+                        console.log("es 20", result.length, result.length === 20);
+                        if (result.length === 20) {
+                            _request.updateOne({ _id: _id }, {
+                                $set: {
+                                    phase: eRequest.TITLED,
+                                    status: eStatusRequest.ACCEPT,
+                                    lastModified: new Date(),
+                                },
+                                $addToSet: {
+                                    history: {
+                                        phase: eRequest.TITLED,
+                                        achievementDate: new Date(),
+                                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                                        status: eStatusRequest.PROCESS
+                                    }
+                                }
+                            }).exec(handler.handleOne.bind(null, 'request', res));
+                        } else {
+                            if (request.documents.length === 19) {
+                                _request.updateOne({ _id: _id }, {
+                                    $set: {
+                                        status: eStatusRequest.PROCESS,
+                                        lastModified: new Date(),
+                                    }
+                                }).exec(handler.handleOne.bind(null, 'request', res));
+                            } else {
+                                var json = {};
+                                json['request'] = request;
+                                return res.status(status.OK).json(json);
+                            }
+                        }
+                    }
+                    else {
+                        console.log(1);
+                        
+                        _request.updateOne({ _id: _id }, {
                             $set: {
+                                phase: eRequest.DELIVERED,
                                 status: eStatusRequest.PROCESS,
                                 lastModified: new Date(),
+                            },
+                            $addToSet: {
+                                history: {
+                                    phase:eRequest.DELIVERED,
+                                    achievementDate: new Date(),
+                                    doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                                    observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                                    status: eStatusRequest.PROCESS
+                                }
                             }
                         }).exec(handler.handleOne.bind(null, 'request', res));
-                    } else {
-                        var json = {};
-                        json['request'] = request;
-                        return res.status(status.OK).json(json);
+                        // var json = {};
+                        // json['request'] = request;
+                        // return res.status(status.OK).json(json);
                     }
                 }
-            }
-            else {
-                _request.findOneAndUpdate({ _id: _id }, {
-                    $set: {
-                        phase: eRequest.DELIVERED,
-                        status: eStatusRequest.PROCESS,
-                        lastModified: new Date(),
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
-                // var json = {};
-                // json['request'] = request;
-                // return res.status(status.OK).json(json);
-            }
-        }
-    });
+            },
+            (err)=> res.status(status.BAD_REQUEST).json({err})
+        ).catch(
+            err=>res.status(status.BAD_REQUEST).json({err})
+        );
+        
+    },
+    err=>res.status(status.BAD_REQUEST).json({err})
+    ).catch(
+        err=>res.status(status.BAD_REQUEST).json({err})
+    );
 };
 
 const releasedRequest = (req, res) => {
@@ -1049,6 +1075,7 @@ const updateRequest = (req, res) => {
                         //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
                         //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
                         // }
+                        
                         subjectMail = 'Acto recepcional - Aprobación de acto protocolario';
                         subtitleMail = 'Aprobación de acto protocolario';
                         bodyMail = 'Su acto protocolario ha sido aprobado';
@@ -1057,7 +1084,9 @@ const updateRequest = (req, res) => {
                         request.status = eStatusRequest.NONE;
                         request.registry = data.registry;
                         item.status = eStatusRequest.ACCEPT;
-                        item.phase = 'Realizado';
+                        item.phase = 'Realizado';                                           
+                        await updateStudentDegreeInSII(request.titulationOption.split(' ')[0],data.controlNumber,request.proposedDate);
+                        await updateStudentStatus('TIT',request.studentId);
                         break;
                     }
                     case eStatusRequest.REJECT: {
@@ -1175,6 +1204,59 @@ const updateRequest = (req, res) => {
             });
         }
     });
+};
+
+const updateStudentDegreeInSII = (titulationOption, controlNumber,actRectDate)=>{
+    const date = moment(new Date(actRectDate)).format('YYYY-MM-DD');    
+    
+    const dataStudent = JSON.stringify({
+        option:titulationOption,
+        date
+    });    
+    var optionsPost = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/update/${controlNumber}`,
+        // authentication headers     
+        method: 'PUT',
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
+            'Content-Type': 'application/json',
+            'Content-Length': dataStudent.length
+        }
+
+    };
+    return new Promise( (resolve)=>{
+        const request = https.request(optionsPost, (postApi) => {
+            var response = "";
+            postApi.on('data', async (d) => {
+                response += d;
+            });
+            postApi.on('end', async () => {
+                response = JSON.parse(response);
+                if (response.error) {
+                    resolve(false);
+                }           
+                console.log(response);                
+                resolve(true);
+            });
+        });
+        request.on('error', (error) => {
+            resolve(false);
+        });
+
+        request.write(dataStudent);
+        request.end();
+    });
+};
+
+const updateStudentStatus = (studentStatus, _id) => {
+    return new Promise( (resolve) => {
+        _student.updateOne({_id},{$set:{status:studentStatus}})
+            .then( (updated) => resolve(true) )
+            .catch( (err) => resolve(false) );
+    } );
 };
 
 const getRequestPhotos = (_id) =>{

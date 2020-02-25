@@ -314,10 +314,9 @@ const downloadFile = (req, res) => {
                 if (err) console.log(err);
                 file.data.
                     on('end', async () => {
-                        console.log('1');
 
                         await fs.readFile(path, (error, data) => {
-                            console.log('2');
+                            
 
                             if (error) {
                                 console.log(error, '-=-=-=-=-=-=-=-=-', data);
@@ -331,8 +330,7 @@ const downloadFile = (req, res) => {
                                 action: 'get file',
                                 file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                             });
-                        });
-                        console.log('3');
+                        });                        
                         // fs.unlinkSync(path);
                     }).on('error', (err) => {
                         console.log('===--==', err);
