@@ -13,6 +13,9 @@ module.exports = (wagner) => {
     router.get('/employee/:email', (req, res) =>
         userCtrl.getDataEmployee(req, res));
 
+    router.get('/student/status/:_id', (req, res) =>
+        userCtrl.getStatusDegree(req, res));
+
     router.post('/register', (req, res) =>
         userCtrl.register(req, res));
 
