@@ -150,6 +150,7 @@ const login = (req, res) => {
                                 // Se verifica si tiene aprobado el inglés                                        
                                 // Se verifica si es egresado
                                 let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
+                                const isTitled = resApi.estatus.toUpperCase() === 'TIT';
                                 // Si fue encontrado
                                 if (oneUser) {
                                     // Quitar permiso para acceder a la credencial
@@ -182,7 +183,8 @@ const login = (req, res) => {
                                         },
                                         english: englishApproved,
                                         graduate: isGraduate,
-                                        semester: resApi.semester
+                                        semester: resApi.semester,
+                                        titled:isTitled
                                     };
                                     // Se retorna el usuario y token
                                     return res.json({
@@ -267,8 +269,7 @@ const getStudentData = (email, password) => {
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
         port: 443,
-        path: `/alumnos/info/${email}`,
-        // authentication headers     
+        path: `/alumnos/info/${email}`,        
         headers: {
             'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
         }
@@ -869,7 +870,7 @@ const getStudentBySii = (email) => {
                         firstName: StudentJson.firstname,
                         nip: '',
                         controlNumber: email,
-                        estatus: StudentJson.status,//CareerJson.estatus,
+                        status: StudentJson.status,//CareerJson.estatus,
                         career: getFullCarrera(StudentJson.career)
                     };
                     const ROLE_ID = await getRoleId('Estudiante');
@@ -889,14 +890,11 @@ const getStudentBySii = (email) => {
 
 const titledRegister = async (req, res) => {
     const data = req.body;
-    // console.log("data", data);
+    
     const result = await getStudentBySii(data.controlNumber);
-    // getStudentData(data.controlNumber, data.nip);
-    // console.log(result);
-    // console.log("Api--", result);
+
     if (result.response) {
-        const StudentGet = result.data;
-        // res.status(status.OK).json({ response: true });
+        const StudentGet = result.data;        
         let queryNc = { controlNumber: data.controlNumber };
         // Buscamos sus datos en la BD local
         _student.findOne(queryNc).exec(async (error, student) => {
@@ -907,6 +905,7 @@ const titledRegister = async (req, res) => {
                 });
             } else {
                 let isGraduate = StudentGet.estatus.toUpperCase() === 'EGR';
+                const isTitled = StudentGet.estatus.toUpperCase() === 'TIT';
                 // Si fue encontrado
                 if (student) {
                     let englishApproved = await validateEnglishApproved(data.controlNumber);
@@ -922,7 +921,8 @@ const titledRegister = async (req, res) => {
                         career: student.career,
                         controlNumber: student.controlNumber,
                         isGraduate: isGraduate,
-                        englishApproved: englishApproved
+                        englishApproved: englishApproved,
+                        titled:isTitled
                     };
                     return res.json(
                         formatUser
@@ -1002,10 +1002,10 @@ function getFullCarrera(carrera) {
             career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
             break;
         case 'P01':
-            career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
+            career = 'MAESTRIA EN CIENCIAS EN ALIMENTOS';
             break;
         case 'DCA':
-            career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
+            career = 'DOCTORADO EN CIENCIAS EN ALIMENTOS';
             break;
         default:
             break;
