@@ -51,7 +51,12 @@ const requestSchema = new mongoose.Schema({
     verificationCode: { type: String, uppercase: true, trim: true },
     verificationStatus: { type: Boolean, default: false },
     sentVerificationCode: { type: Boolean },
-    registry: { type: Object },
+    registry: {
+        date: { type: Date, required: true },
+        bookNumber: { type: String, required: true, trim: true },
+        foja: { type: String, required: true, trim: true },
+        career: { type: String, required: true, trim: true }
+    },
     isIntegral: { type: Boolean, default: true }
 });
 
