@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+    periodId: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' },
     email: { type: String },
     applicationDate: { type: Date, required: true },
     projectName: { type: String, },

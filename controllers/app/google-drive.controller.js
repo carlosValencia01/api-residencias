@@ -867,7 +867,8 @@ module.exports = (Folder, Student, Period) => {
         createFolderFromServer,
         uploadFile,
         downloadToLocal,
-        getWebLink
+        getWebLink,
+        getActivePeriod
     });
 };
 

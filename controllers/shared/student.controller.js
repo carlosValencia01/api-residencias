@@ -15,7 +15,12 @@ let _role;
 let _period;
 
 const getAll = (req, res) => {
-    _student.find({})
+    _student.find({}).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    })
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 

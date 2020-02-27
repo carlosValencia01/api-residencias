@@ -13,6 +13,7 @@ let _Drive;
 let _request;
 let _ranges;
 let _student;
+let _period;
 
 const create = async (req, res) => {
     let request = req.body;
@@ -41,6 +42,7 @@ const create = async (req, res) => {
             .json({ error: 'Error al recuperar grado' });
     }
     request.verificationCode = _generateVerificationCode(6);
+    request.periodId = await _Drive.getActivePeriod()._id;
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -135,6 +137,14 @@ const getAllRequest = (req, res) => {
                 career: 1,
                 careerId: 1
             }
+        }).populate({
+            path: 'periodId', model: 'Period',                   
+            select: {
+                periodName: 1,
+                active: 1,
+                year: 1,
+                _id: 1
+            }
         }).sort({ applicationDate: 1 })
         .exec(handler.handleMany.bind(null, 'request', res));
 };
@@ -159,6 +169,15 @@ const getRequestByStatus = (req, res) => {
                         careerId: 1
                     }
                 })
+                .populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
+                })
                 .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
@@ -178,6 +197,14 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                    }
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
                     }
                 })
                 .sort({ applicationDate: 1 })
@@ -200,6 +227,14 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1,
                     }
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
                 })
                 .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -220,6 +255,14 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                    }
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
                     }
                 })
                 .sort({ applicationDate: 1 })
@@ -242,6 +285,14 @@ const getRequestByStatus = (req, res) => {
                         career: 1,
                         careerId: 1,
                     }
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
                 })
                 .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
@@ -261,6 +312,14 @@ const getAllRequestApproved = (req, res) => {
         select: {
             fullName: 1
         }
+    }).populate({
+        path: 'periodId', model: 'Period',                   
+        select: {
+            periodName: 1,
+            active: 1,
+            year: 1,
+            _id: 1
+        }
     }).exec(handler.handleMany.bind(null, 'request', res));
 };
 
@@ -274,6 +333,14 @@ const getById = (req, res) => {
             controlNumber: 1,
             career: 1,
             careerId: 1,
+        }
+    }).populate({
+        path: 'periodId', model: 'Period',                   
+        select: {
+            periodName: 1,
+            active: 1,
+            year: 1,
+            _id: 1
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
 };
@@ -707,7 +774,14 @@ const fileCheck = (req, res) => {
                                 status: eStatusRequest.ACCEPT
                             }
                         }
-                    }).exec(handler.handleOne.bind(null, 'request', res));
+                    }).then(
+                        (updated)=>{
+                            _request.findOne({_id}).then(
+                                requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                err=> res.status(status.NOT_FOUND).json({err})
+                            ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                        }
+                    );
                 } else {
                     if (result.length > 14) {
                         console.log("es 20", result.length, result.length === 20);
@@ -727,7 +801,14 @@ const fileCheck = (req, res) => {
                                         status: eStatusRequest.PROCESS
                                     }
                                 }
-                            }).exec(handler.handleOne.bind(null, 'request', res));
+                            }).then(
+                                (updated)=>{
+                                    _request.findOne({_id}).then(
+                                        requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                        err=> res.status(status.NOT_FOUND).json({err})
+                                    ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                                }
+                            );
                         } else {
                             if (request.documents.length === 19) {
                                 _request.updateOne({ _id: _id }, {
@@ -735,7 +816,14 @@ const fileCheck = (req, res) => {
                                         status: eStatusRequest.PROCESS,
                                         lastModified: new Date(),
                                     }
-                                }).exec(handler.handleOne.bind(null, 'request', res));
+                                }).then(
+                                    (updated)=>{
+                                        _request.findOne({_id}).then(
+                                            requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                            err=> res.status(status.NOT_FOUND).json({err})
+                                        ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                                    }
+                                );
                             } else {
                                 var json = {};
                                 json['request'] = request;
@@ -761,7 +849,14 @@ const fileCheck = (req, res) => {
                                     status: eStatusRequest.PROCESS
                                 }
                             }
-                        }).exec(handler.handleOne.bind(null, 'request', res));
+                        }).then(
+                            (updated)=>{
+                                _request.findOne({_id}).then(
+                                    requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                    err=> res.status(status.NOT_FOUND).json({err})
+                                ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                            }
+                        );
                         // var json = {};
                         // json['request'] = request;
                         // return res.status(status.OK).json(json);
@@ -1559,11 +1654,46 @@ const _getRequest = (studentId) => {
     });
 };
 
-module.exports = (Request, Range, Folder, Student) => {
+const updateRequestPeriod = (_id,periodId)=>{
+    return new Promise((resolve)=>{
+        _request.updateOne({_id},{$set:{
+            periodId
+        }}).then(
+            updated=>resolve({ok:true}),
+            err=> resolve({err})
+        ).catch(err=>resolve({err}))
+    });
+};
+const period = async (req,res)=>{    
+    const periodId = await _Drive.getActivePeriod();
+    // console.log(periodId);
+    
+    _request.find({periodId:{$exists:false}}).then(
+        async (requests)=>{
+            if(requests){
+                // console.log(requests);             
+                for await (const request of requests){
+                    const updated = await updateRequestPeriod(request._id,periodId._id);
+                    console.log(updated);
+                }
+                return res.status(status.OK).json({requestId:requests});
+            }
+        }
+    );        
+};
+const getPeriods = (req,res)=>{
+    _period.find({},{_id:1,periodName:1,year:1,active:1}).sort({code:-1}).limit(10).then(
+        (periods)=>{
+            res.status(status.OK).json({periods})
+        }
+    );
+};
+module.exports = (Request, Range, Folder, Student, Period) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
     _student = Student;
+    _period = Period;
     return ({
         create,
         createTitled,
@@ -1587,6 +1717,8 @@ module.exports = (Request, Range, Folder, Student) => {
         sendVerificationCode,
         removeTitled,
         getResourceLink,
-        changeJury
+        changeJury,
+        period,
+        getPeriods
     });
 };
