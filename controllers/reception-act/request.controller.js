@@ -950,7 +950,8 @@ const updateRequest = (req, res) => {
                 if (data.operation !== eStatusRequest.REJECT) {
                     subjectMail = 'Acto recepcional - Validación de solicitud';
                     subtitleMail = 'Validación de solicitud de acto protocolario';
-                    bodyMail = 'Su solicitud ha sido aceptada';
+                    bodyMail = 'Su solicitud ha sido aceptada<br>'+
+                    '<a href="https://drive.google.com/open?id=1fOItfyeVGiItdDHXvSNifvtABt6goe3I">Consultar hoja de requisitos</a><br>';
                     observationsMail = item.observation;
                     request.phase = eRequest.VERIFIED;
                     // request.status = eStatusRequest.PROCESS; 17/11
