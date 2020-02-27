@@ -66,7 +66,8 @@ const studentSchema = new mongoose.Schema({
     observationsAnalysis: {type: String},
     warningAnalysis: {type: Boolean},
     printCredential: {type: Boolean},
-    status: {type: String}
+    status: {type: String},
+    expStatus : {type: String},
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');
