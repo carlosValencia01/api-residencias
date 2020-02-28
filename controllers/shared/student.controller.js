@@ -6,7 +6,8 @@ const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 const superagent = require('superagent');
 const mongoose = require('mongoose');
-
+var https = require('https');
+const { eInsFiles} = require('../../enumerators/reception-act/enums');
 
 let _student;
 let _request;
@@ -14,13 +15,23 @@ let _role;
 let _period;
 
 const getAll = (req, res) => {
-    _student.find({})
+    _student.find({}).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    })
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
 const getStudentsInscription = (req, res) => {
-    _student.find({ "inscriptionStatus": { $exists: true } }).then(
-        students => {
+    _student.find({ "inscriptionStatus": { $exists: true } }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
+        students => {            
             const newStudents = students.map(student => ({
                 "_id": student._id,
                 "fullName": student.fullName,
@@ -64,9 +75,9 @@ const getStudentsInscription = (req, res) => {
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis,
                 documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents)
+                totalDocumentsNumber:mapDocuments(student.documents).length,
+                documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                documentsLastStatus:mapDocuments(student.documents)
             }));
             res.status(status.OK).json({ students: newStudents });
         }
@@ -74,7 +85,7 @@ const getStudentsInscription = (req, res) => {
 };
 
 const mapDocuments = (documents) => {
-    return documents.map(
+    return documents.filter((st)=> st.status.length > 0).map(
         doc => {
             const stat = doc.status.filter(
                 st => st.active == true)[0];
@@ -86,14 +97,14 @@ const mapDocuments = (documents) => {
 
 
     ).filter(
-        docFiltered => docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+        docFiltered =>docFiltered.filename ? docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 : false && docFiltered.statusName !== null
     );
 };
 
 const documentsHaveChanges = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
+        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 : false).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -112,7 +123,7 @@ const documentsHaveChanges = (documents, status) => {
 const documentsHaveChangesAdmin = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0).map(
+        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 :false).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -134,7 +145,12 @@ const getStudentsInscriptionLogged = (req, res) => {
 };
 
 const getStudentsInscriptionProcess = (req, res) => {
-    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).then(
+    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
         students => {
             const newStudents = students.map(student => ({
                 "_id": student._id,
@@ -191,7 +207,12 @@ const getStudentsInscriptionProcess = (req, res) => {
 };
 
 const getStudentsInscriptionPendant = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).then(
+    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
         students => {
             const newStudents = students.map(student => ({
                 "_id": student._id,
@@ -245,7 +266,12 @@ const getStudentsInscriptionPendant = (req, res) => {
 };
 
 const getStudentsInscriptionAcept = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).then(
+    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1
+        }
+    }).then(
         students => {
             const newStudents = students.map(student => ({
                 "_id": student._id,
@@ -644,7 +670,7 @@ async function updateDocumentStatus(_id, docName, status) {
 }
 
 async function getActiveStatus(_id, filename) {
-    console.log(filename, '===fole', _id);
+    // console.log(filename, '===fole', _id);
     let id = mongoose.Types.ObjectId(_id);
     return await _student.aggregate([
         {
@@ -686,7 +712,7 @@ async function getActiveStatus(_id, filename) {
                 }
             }
         }]).then(docm => {
-            console.log('2', docm);
+            // console.log('2', docm);
 
             return docm;
 
@@ -751,7 +777,7 @@ const getDocumentsDrive = async (req, res) => {
         });
     } else {
         res.status(status.OK).json({
-            documents: documents,
+            documents: documents.reverse(),
             action: 'get documents'
         });
     }
@@ -955,8 +981,179 @@ const sendNotification = (req,res)=>{
         }
     });
 };
+ /// endo notifications for app
+const isStudentForInscription = (req,res)=>{
+    const controlNumber = req.params.nc;
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/info/${controlNumber}`,
+        // authentication headers     
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    var studentNew = "";
 
+    https.get(options, function (apiInfo) {
 
+        apiInfo.on('data', function (data) {
+            studentNew += data;
+        });
+        apiInfo.on('end', () => {
+            //json con los datos del alumno
+            studentNew = JSON.parse(studentNew);
+            
+            const {income,semester} = studentNew;            
+            const st = studentNew.status;
+            console.log(income,'income');
+            console.log(st,'status');
+            console.log(semester,'semester');
+            
+            if ((semester == 1 || income == 2 || income == 3 || income == 4) || (semester == 1 && income == 1 )) {
+                return res.status(status.OK).json({controlNumber,inscription:true});
+            }else{
+                return res.status(status.NOT_FOUND).json({controlNumber,inscription:false});
+            }            
+        });
+        apiInfo.on('error', function (e) {
+            return res.status(status.NOT_FOUND).json({controlNumber,inscription:false});
+        });
+    });    
+};
+
+/**
+ * 
+ * @param {controlNumber: Número de control, ej. 15400001} controlNumber 
+ * @param {Grado: Grado, lic=licenciatura, mas=maestria, doc=doctorado, ndefault: lic} grade 
+ */
+const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
+    return new Promise((resolve)=>{
+        _student.findOne({controlNumber},{documents:1}).then(
+            (student)=>{
+                if(student){
+                    if(grade === 'lic'){                                                
+                        resolve(
+                            student.documents.filter((doc) =>doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            {                                
+                                
+                                const name = doc.filename;                                
+                                const file = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:6} 
+                                : name.indexOf(eInsFiles.CERTIFICATE_BACH) !== -1 ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO BACHILLERATO',filename:name,position:2} 
+                                :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:5}
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:3} 
+                                :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:4}  
+                                :name.indexOf(eInsFiles.LETTER_BACH) !== -1 ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO BACHILLERATO',filename:name,position:2}
+                                :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:7} 
+                                :'';
+                                const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                
+                                
+                                return {
+                                    file,
+                                    fileIdInDrive:doc.fileIdInDrive,
+                                    status: docStatus ? docStatus.name : 'EN PROCESO'
+                                    ,
+                                    observation: docStatus ? docStatus.observation ? docStatus.observation :'':'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''})),
+                                    checked:false
+                                };
+                            }
+                            )
+                        );
+                    }
+
+                    if(grade === 'mas'){
+                        resolve(
+                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            {
+                                const name = doc.filename;                                
+                               const file = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:9} 
+                                : name === controlNumber+'-'+eInsFiles.CERTIFICATE_LIC ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO LICENCIATURA',filename:name,position:2} 
+                                :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:8}
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:6} 
+                                :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:7}  
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CERT_LIC ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO LICENCIATURA',filename:name,position:2}
+                                :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:10} 
+                                :name === controlNumber+'-'+eInsFiles.DEGREE_LIC?{shortName:'TÍTULO LICENCIATURA',fullName:'TÍTULO LICENCIATURA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.CED_LIC?{shortName:'CEDULA',fullName:'CEDULA LICENCIATURA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.TEST_LIC?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN LICENCIATURA',filename:name,position:5}                                 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_DEGREE_LIC?{shortName:'CARTA COMPROMISO TÍTULO LICENCIATURA',fullName:'CARTA COMPROMISO TÍTULO LICENCIATURA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CED_LIC?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA LICENCIATURA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_TEST_LIC?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN LICENCIATURA',filename:name,position:5} 
+                                :'';
+                                const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                return {
+                                    file,
+                                    fileIdInDrive:doc.fileIdInDrive,
+                                    status: docStatus ? docStatus.name : 'EN PROCESO',
+                                    observation:docStatus ? docStatus.observation ? docStatus.observation :'':'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''})),
+                                    checked:false
+                                };
+                            }
+                            )
+                        );
+                    }
+
+                    if(grade === 'doc'){
+                        resolve(
+                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            {
+                                
+                                
+                                const name = doc.filename;                                
+                                const file = 
+                                name.indexOf(eInsFiles.PHOTO) !== -1 ? {shortName:'FOTO',fullName:'FOTO',filename:name,position:9} 
+                                : name === controlNumber+'-'+eInsFiles.CERTIFICATE_MA ? {shortName:'CERTIFICADO',fullName:'CERTIFICADO MAESTRÍA',filename:name,position:2} 
+                                :name.indexOf(eInsFiles.CLINIC) !== -1 ? {shortName:'CLÍNICOS',fullName:'ANÁLISIS CLÍNICOS',filename:name,position:8}
+                                :name.indexOf(eInsFiles.CURP) !== -1 ? {shortName:'CURP',fullName:'CURP',filename:name,position:6} 
+                                :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:7}  
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CERT_MA ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO MAESTRÍA',filename:name,position:2}
+                                :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:10} 
+                                :name === controlNumber+'-'+eInsFiles.DEGREE_MA?{shortName:'TÍTULO MAESTRÍA',fullName:'TÍTULO MAESTRÍA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.CED_MA?{shortName:'CEDULA',fullName:'CEDULA MAESTRÍA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.TEST_MA?{shortName:'ACTA DE EXAMEN',fullName:'ACTA DE EXAMEN MAESTRÍA',filename:name,position:5}                                 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_DEGREE_MA?{shortName:'CARTA COMPROMISO TÍTULO MAESTRÍA',fullName:'CARTA COMPROMISO TÍTULO MAESTRÍA',filename:name,position:3} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_CED_MA?{shortName:'CARTA COMPROMISO CEDULA',fullName:'CARTA COMPROMISO CEDULA MAESTRÍA',filename:name,position:4} 
+                                :name === controlNumber+'-'+eInsFiles.LETTER_TEST_MA?{shortName:'CARTA COMPROMISO ACTA DE EXAMEN',fullName:'CARTA COMPROMISO ACTA DE EXAMEN MAESTRÍA',filename:name,position:5} 
+                                :'';
+                                const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
+                                return {
+                                    file,
+                                    fileIdInDrive:doc.fileIdInDrive,
+                                    status: docStatus ? docStatus.name : 'EN PROCESO',
+                                    observation: docStatus ? docStatus.observation ? docStatus.observation :'':'',
+                                    history: doc.status.map( (st)=>({name:st.name,date:st.date,message:st.message,observation:st.observation ? st.observation :''})),
+                                    checked:false
+                                };
+                            }
+                            )
+                        );
+                    }
+                }
+                resolve(false);
+            }
+        ).catch(err=>{console.log(err);resolve(false)});
+    });
+};
+
+const getInscriptionDocuments = async (req,res)=>{
+    const {nc,grade} = req.params;
+    const documents = await mapInscriptionDocuments(nc,grade.toLowerCase().trim());
+    
+    if(documents)    {
+        const docs = documents.sort( (a,b)=> a.file.position - b.file.position);
+        return res.status(status.OK).json({docs});
+    }
+    return res.status(status.NOT_FOUND).json({err:'El estudiante no esta registrado en la bd de credenciales'});
+};
 module.exports = (Student, Request, Role, Period) => {
     _student = Student;
     _request = Request;
@@ -995,5 +1192,7 @@ module.exports = (Student, Request, Role, Period) => {
         getStudentsInscriptionPendant,
         getStudentsInscriptionAcept,
         sendNotification,
+        isStudentForInscription,
+        getInscriptionDocuments
     });
 };

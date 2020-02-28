@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+    periodId: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' },
     email: { type: String },
     applicationDate: { type: Date, required: true },
     projectName: { type: String, },
@@ -18,10 +19,10 @@ const requestSchema = new mongoose.Schema({
     lastModified: { type: Date, required: true },
     observation: { type: String, default: '' },
     doer: { type: String },
-    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String } },
+    adviser: { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String } },
     noIntegrants: { type: Number },
     jury: [
-        { name: { type: String }, title: { type: String }, cedula: { type: String } }
+        { name: { type: String }, title: { type: String }, cedula: { type: String }, email: { type: String, default: '' } }
     ],
     integrants: [
         { name: { type: String }, controlNumber: { type: Number }, career: { type: String } }

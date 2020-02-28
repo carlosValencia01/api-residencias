@@ -27,8 +27,8 @@ module.exports = (wagner) => {
     router.get('/inscription', (req, res) =>
         studentCtrl.getStudentsInscription(req, res));
 
-    router.get('/inscription', (req, res) =>
-        studentCtrl.getStudentsInscription(req, res));
+    router.get('/inscription/docs/:nc/:grade', (req, res) =>
+        studentCtrl.getInscriptionDocuments(req, res));
 
     router.get('/:_id', (req, res) =>
         studentCtrl.getById(req, res));
@@ -65,6 +65,9 @@ module.exports = (wagner) => {
 
     router.get('/get/career/:_id', (req, res) =>
         studentCtrl.getCareerDetail(req, res));
+
+    router.get('/get/inscription/ready/:nc', (req, res) =>
+        studentCtrl.isStudentForInscription(req, res));
 
 
 

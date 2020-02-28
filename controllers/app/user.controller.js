@@ -135,6 +135,11 @@ const login = (req, res) => {
                             select: {
                                 permissions: 1, name: 1, _id: 0
                             }
+                        }).populate({
+                            path: 'careerId', model: 'Career',
+                            select: {
+                                fullName: 1, shortName: 1, acronym: 1
+                            }
                         }).exec(async (error, oneUser) => {
                             // Hubo un error en la consulta
                             if (error) {
@@ -145,6 +150,7 @@ const login = (req, res) => {
                                 // Se verifica si tiene aprobado el inglés                                        
                                 // Se verifica si es egresado
                                 let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
+                                const isTitled = resApi.estatus.toUpperCase() === 'TIT';
                                 // Si fue encontrado
                                 if (oneUser) {
                                     // Quitar permiso para acceder a la credencial
@@ -170,14 +176,15 @@ const login = (req, res) => {
                                             fullName: oneUser.fullName
                                         },
                                         email: oneUser.controlNumber,
-                                        career: oneUser.career,
+                                        career: oneUser.careerId.acronym,
                                         rol: {
                                             name: oneUser.idRole.name,
                                             permissions: oneUser.idRole.permissions
                                         },
                                         english: englishApproved,
                                         graduate: isGraduate,
-                                        semester: resApi.semester
+                                        semester: resApi.semester,
+                                        titled:isTitled
                                     };
                                     // Se retorna el usuario y token
                                     return res.json({
@@ -189,12 +196,18 @@ const login = (req, res) => {
                                     // No se encontró el registro en la base de datos local buscar en el sii                      
                                     _student.create(resApi)
                                         .then(created => {
-                                            console.log('Estudiant creado');
-                                            _student.findOne({ _id: created._id })
+                                            console.log('Estudiant creado');                                            
+                                            
+                                            _student.findOne({ controlNumber: email })
                                                 .populate({
                                                     path: 'idRole', model: 'Role',
                                                     select: {
                                                         permissions: 1, name: 1, _id: 0
+                                                    }
+                                                }).populate({
+                                                    path: 'careerId', model: 'Career',
+                                                    select: {
+                                                        fullName: 1, shortName: 1, acronym: 1
                                                     }
                                                 })
                                                 .exec(async (err, user) => {
@@ -205,6 +218,8 @@ const login = (req, res) => {
                                                     //     user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
                                                     // }
                                                     // Se contruye el token
+                                                    
+                                                    
                                                     const token = jwt.sign({ email: user.controlNumber }, config.secret);
                                                     let formatUser = {
                                                         _id: user._id,
@@ -214,7 +229,7 @@ const login = (req, res) => {
                                                             fullName: user.fullName
                                                         },
                                                         email: user.controlNumber,
-                                                        career: user.career,
+                                                        career: user.careerId.acronym,
                                                         rol: {
                                                             name: user.idRole.name,
                                                             permissions: user.idRole.permissions
@@ -249,13 +264,12 @@ const login = (req, res) => {
         });
 };
 
-const getStudentData = (email, password) => {
+const getStudentData = (email, password) => {    
     const options = {
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
         port: 443,
-        path: `/alumnos/info/${email}`,
-        // authentication headers     
+        path: `/alumnos/info/${email}`,        
         headers: {
             'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
         }
@@ -264,6 +278,8 @@ const getStudentData = (email, password) => {
         nc: email,
         nip: password
     });
+    console.log(dataStudent);
+    
     var optionsPost = {
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
@@ -289,6 +305,8 @@ const getStudentData = (email, password) => {
             apiInfo.on('end', () => {
                 //json con los datos del alumno
                 studentNew = JSON.parse(studentNew);
+                console.log(studentNew);
+                
                 studentNew.firstName = studentNew.firstname;
                 studentNew.fatherLastName = studentNew.fatherlastname;
                 studentNew.motherLastName = studentNew.motherlastname;
@@ -298,21 +316,21 @@ const getStudentData = (email, password) => {
                 studentNew.originSchool = studentNew.originschool;
                 studentNew.nameOriginSchool = studentNew.nameoriginschool;
                 studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
-                studentNew.nip = password;
+                // studentNew.nip = password;
                 studentNew.controlNumber = email;
-                if (studentNew.semester == 1) {
+                const incomingType = studentNew.income;
+                if (studentNew.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
                     studentNew.stepWizard = 0;
                 }
                 const request = https.request(optionsPost, (apiLogin) => {
                     var careerN = "";
                     apiLogin.on('data', async (d) => {
                         careerN += d;
-
-
                     });
                     apiLogin.on('end', async () => {
                         careerN = JSON.parse(careerN);
-
+                        console.log(careerN);
+                        
                         switch (careerN.carrera) {
                             case 'L01':
                                 studentNew.career = 'ARQUITECTURA';
@@ -348,10 +366,10 @@ const getStudentData = (email, password) => {
                                 studentNew.career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
                                 break;
                             case 'MTI':
-                                studentNew.career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
+                                studentNew.career = 'MAESTRÍA EN TECNOLOGÍAS DE LA INFORMACIÓN';
                                 break;
                             case 'P01':
-                                studentNew.career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
+                                studentNew.career = 'MAESTRÍA EN CIENCIAS DE ALIMENTOS';
                                 break;
                             case 'DCA':
                                 studentNew.career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
@@ -361,7 +379,11 @@ const getStudentData = (email, password) => {
                         }
                         // Obtener id del rol para estudiente
                         studentNew.estatus = careerN.estatus;
+                        console.log(2, studentNew.career);
+                        
                         const studentId = await getRoleId('Estudiante');
+                        console.log(3);
+                        
                         studentNew.idRole = studentId;
                         studentNew.careerId = await getCareerId(studentNew.career);
 
@@ -696,7 +718,9 @@ const studentLogin = async (req, res) => {
                     //no se encuentra en la bd
                     _student.create(studentNew)
                         .then(created => {
-                            console.log('Estudiant creado');
+                            // console.log('Estudiant creado',created);
+                            // console.log(nc);
+                            
                             _student.findOne({ controlNumber: nc }, { documents: 0, idRole: 0, fileName: 0, acceptedTerms: 0, dateAcceptedTerms: 0, stepWizard: 0, inscriptionStatus: 0, __v: 0 })
                                 .populate({
                                     path: 'careerId', model: 'Career',
@@ -786,11 +810,15 @@ const loginMiGraduacion = (req, res) => {
 
 const getCareerId = (careerName) => {
 
-
+    console.log(careerName);
+    
     return new Promise(async (resolve) => {
         await _career.findOne({ fullName: careerName }, (err, career) => {
             if (!err && career) {
                 resolve(career.id);
+            }else{
+                console.log(err);
+                
             }
         });
     });
@@ -842,7 +870,7 @@ const getStudentBySii = (email) => {
                         firstName: StudentJson.firstname,
                         nip: '',
                         controlNumber: email,
-                        estatus: StudentJson.status,//CareerJson.estatus,
+                        status: StudentJson.status,//CareerJson.estatus,
                         career: getFullCarrera(StudentJson.career)
                     };
                     const ROLE_ID = await getRoleId('Estudiante');
@@ -862,14 +890,11 @@ const getStudentBySii = (email) => {
 
 const titledRegister = async (req, res) => {
     const data = req.body;
-    // console.log("data", data);
+    
     const result = await getStudentBySii(data.controlNumber);
-    // getStudentData(data.controlNumber, data.nip);
-    // console.log(result);
-    // console.log("Api--", result);
+
     if (result.response) {
-        const StudentGet = result.data;
-        // res.status(status.OK).json({ response: true });
+        const StudentGet = result.data;        
         let queryNc = { controlNumber: data.controlNumber };
         // Buscamos sus datos en la BD local
         _student.findOne(queryNc).exec(async (error, student) => {
@@ -880,6 +905,7 @@ const titledRegister = async (req, res) => {
                 });
             } else {
                 let isGraduate = StudentGet.estatus.toUpperCase() === 'EGR';
+                const isTitled = StudentGet.estatus.toUpperCase() === 'TIT';
                 // Si fue encontrado
                 if (student) {
                     let englishApproved = await validateEnglishApproved(data.controlNumber);
@@ -895,7 +921,8 @@ const titledRegister = async (req, res) => {
                         career: student.career,
                         controlNumber: student.controlNumber,
                         isGraduate: isGraduate,
-                        englishApproved: englishApproved
+                        englishApproved: englishApproved,
+                        titled:isTitled
                     };
                     return res.json(
                         formatUser
@@ -975,10 +1002,10 @@ function getFullCarrera(carrera) {
             career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
             break;
         case 'P01':
-            career = 'MAESTRIA EN CIENCIAS DE ALIMENTOS';
+            career = 'MAESTRIA EN CIENCIAS EN ALIMENTOS';
             break;
         case 'DCA':
-            career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
+            career = 'DOCTORADO EN CIENCIAS EN ALIMENTOS';
             break;
         default:
             break;

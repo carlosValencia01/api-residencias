@@ -9,8 +9,8 @@ const UPLOAD_FILE = 'documents/';
 const UPLOAD_FILE_TEMP = 'tmpFile/';
 
 module.exports = (wagner) => {
-    const requestCtrl = wagner.invoke((Request, Range, Folder, Student) =>
-        require('../../controllers/reception-act/request.controller')(Request, Range, Folder, Student));
+    const requestCtrl = wagner.invoke((Request, Range, Folder, Student,Period) =>
+        require('../../controllers/reception-act/request.controller')(Request, Range, Folder, Student,Period));
 
     router.post('/create/:_id', (req, res) => {
         return requestCtrl.create(req, res);
@@ -25,6 +25,9 @@ module.exports = (wagner) => {
 
     router.get('/', (req, res) =>
         requestCtrl.getAllRequest(req, res));
+
+    router.get('/periods', (req, res) =>
+        requestCtrl.getPeriods(req, res));
 
     router.get('/phase/:phase', (req, res) =>
         requestCtrl.getRequestByStatus(req, res));
@@ -66,6 +69,9 @@ module.exports = (wagner) => {
 
     router.post('/:_id/file', (req, res) => {
         requestCtrl.uploadFile(req, res);
+    });
+    router.post('/period', (req, res) => {
+        requestCtrl.period(req, res);
     });
 
     router.post('/:_id/file/omit', (req, res) =>

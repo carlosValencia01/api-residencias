@@ -2,7 +2,8 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const path = require('path');
 const fs = require('fs');
-
+const moment = require('moment');
+var https = require('https');
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
 const sendMail = require('../shared/mail.controller');
 const verifyCodeTemplate = require('../../templates/verifyCode');
@@ -13,9 +14,15 @@ let _Drive;
 let _request;
 let _ranges;
 let _student;
+let _period;
 
 const create = async (req, res) => {
     let request = req.body;
+    const _req = await _getRequest(req.params._id);
+    if (_req) {
+        req.params._id = _req._id;
+        return findOneRequest(req, res);
+    }
     request.lastModified = new Date();
     request.applicationDate = new Date();
     request.studentId = req.params._id;
@@ -24,13 +31,19 @@ const create = async (req, res) => {
     request.status = eStatusRequest.PROCESS;
     //Add
     request.department = { name: request.department, boss: request.boss };
-    request.adviser = { name: request.adviserName, title: request.adviserTitle, cedula: request.adviserCedula };
+    request.adviser = {
+        name: request.adviserName,
+        title: request.adviserTitle,
+        cedula: request.adviserCedula,
+        email: request.adviserEmail
+    };
     request.grade = await _getGradeName(request.studentId);
     if (!request.grade) {
         return res.status(status.INTERNAL_SERVER_ERROR)
             .json({ error: 'Error al recuperar grado' });
     }
     request.verificationCode = _generateVerificationCode(6);
+    request.periodId = await _Drive.getActivePeriod()._id;
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -104,7 +117,6 @@ const createTitled = (req, res) => {
 
 }
 
-
 const removeTitled = (req, res) => {
     const { id } = req.params;
     _request.deleteOne({ _id: id }, function (error) {
@@ -112,17 +124,27 @@ const removeTitled = (req, res) => {
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: 'Titulación no encontrada' });
         return res.status(200).json({ message: "Successful" });
     });
-}
+};
 
 const getAllRequest = (req, res) => {
     _request.find({ status: { $ne: 'Aprobado' } })
         .populate
         ({
             path: 'studentId', model: 'Student',
+            populate: { path: 'careerId', model: 'Career' },
             select: {
                 fullName: 1,
                 controlNumber: 1,
-                career: 1
+                career: 1,
+                careerId: 1
+            }
+        }).populate({
+            path: 'periodId', model: 'Period',                   
+            select: {
+                periodName: 1,
+                active: 1,
+                year: 1,
+                _id: 1
             }
         }).sort({ applicationDate: 1 })
         .exec(handler.handleMany.bind(null, 'request', res));
@@ -132,72 +154,148 @@ const getRequestByStatus = (req, res) => {
     const { phase } = req.params;
     switch (phase) {
         case eRole.eSECRETARY: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1
                     }
-                }).sort({ applicationDate: 1 })
+                })
+                .populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eHEADSCHOOLSERVICE: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eCOORDINATION: {
-            _request.find({ phase: { $ne: 'Capturado' } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $ne: 'Capturado' } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eCHIEFACADEMIC: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
         case eRole.eSTUDENTSERVICES: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } })
-                .populate
-                ({
+            _request.find({
+                    $and: [
+                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } },
+                        { isIntegral: true }
+                    ]
+                })
+                .populate({
                     path: 'studentId', model: 'Student',
+                    populate: { path: 'careerId', model: 'Career' },
                     select: {
                         fullName: 1,
                         controlNumber: 1,
-                        career: 1
+                        career: 1,
+                        careerId: 1,
                     }
-                }).sort({ applicationDate: 1 })
+                }).populate({
+                    path: 'periodId', model: 'Period',                   
+                    select: {
+                        periodName: 1,
+                        active: 1,
+                        year: 1,
+                        _id: 1
+                    }
+                })
+                .sort({ applicationDate: 1 })
                 .exec(handler.handleMany.bind(null, 'request', res));
             break;
         }
@@ -215,6 +313,14 @@ const getAllRequestApproved = (req, res) => {
         select: {
             fullName: 1
         }
+    }).populate({
+        path: 'periodId', model: 'Period',                   
+        select: {
+            periodName: 1,
+            active: 1,
+            year: 1,
+            _id: 1
+        }
     }).exec(handler.handleMany.bind(null, 'request', res));
 };
 
@@ -222,10 +328,20 @@ const getById = (req, res) => {
     const { _id } = req.params;
     _request.find({ _id: _id }).populate({
         path: 'studentId', model: 'Student',
+        populate: { path: 'careerId', model: 'Career' },
         select: {
             fullName: 1,
             controlNumber: 1,
-            career: 1
+            career: 1,
+            careerId: 1,
+        }
+    }).populate({
+        path: 'periodId', model: 'Period',                   
+        select: {
+            periodName: 1,
+            active: 1,
+            year: 1,
+            _id: 1
         }
     }).exec(handler.handleOne.bind(null, 'request', res));
 };
@@ -333,14 +449,14 @@ const addIntegrants = (req, res) => {
 
 const omitFile = (req, res) => {
     const { _id } = req.params;
-    let data = req.body;
-    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
-        (error, request) => {
-            if (error) {
-                return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
-            }
+    let data = req.body;    
+    _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } }).then(
+        async (request) => {            
+            
+            let updatedRequest;
             if (!request) {
-                _request.update({ _id: _id }, {
+                updatedRequest = await new Promise( (resolve)=>{
+                    _request.updateOne({ _id: _id }, {
                     $set: {
                         status: eStatusRequest.PROCESS
                     },
@@ -350,63 +466,68 @@ const omitFile = (req, res) => {
                             type: data.Document, dateRegister: new Date(), nameFile: '', status: data.Status
                         }
                     }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                }).then(
+                    (updated)=> _request.findOne({_id}).then( (filteredRequest)=>  resolve(filteredRequest ? filteredRequest : false) ).catch( err=>resolve(false))
+                ).catch(
+                    err=>resolve(false)
+                )
+                });
             } else {
-                _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+                updatedRequest = await new Promise( (resolve)=>{
+                    _request.updateOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
                     $set: {
                         "documents.$": { type: data.Document, dateRegister: new Date(), nameFile: '', status: data.Status }
                     }
-                }).exec(handler.handleOne.bind(null, 'request', res));
+                }).then(
+                    (updated)=> _request.findOne({_id}).then( (filteredRequest)=>  resolve(filteredRequest ? filteredRequest : false) ).catch( err=>resolve(false))
+                ).catch(
+                    err=>resolve(false)
+                )
+                });                
             }
-        });
+            
+            
+            if(updatedRequest){
+                const result = updatedRequest.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+                const doer = updatedRequest.history[updatedRequest.history.length-1];
+                if (result.length === 14) {
+                    _request.updateOne({ _id: _id }, {
+                        $set: {                                    
+                            phase: eRequest.VALIDATED,
+                            status: eStatusRequest.NONE,
+                            lastModified: new Date(),
+                        },
+                        $addToSet: {
+                            history: {
+                                phase: eRequest.DELIVERED,
+                                achievementDate: new Date(),
+                                doer: doer.doer,
+                                observation: '',
+                                status: eStatusRequest.ACCEPT
+                            }
+                        }
+                    }).then(
+                        (updated)=> {
+                            _request.findOne({_id}).then( (filteredRequest)=>  res.status(status.OK).json({request:filteredRequest})).catch( err=> err=>res.status(status.BAD_REQUEST).json({err}))
+                            
+                        }
+                    ).catch(
+                        err=>res.status(status.BAD_REQUEST).json({err})
+                    )
+                }else{
+                    res.status(status.OK).json({request:updatedRequest})
+                }
+            }else{
+                return res.status(status.NOT_FOUND).json({err:'Request not found'});
+            }
+        }).catch(
+            err=>res.status(status.BAD_REQUEST).json({err})
+        );
 };
 
-// const uploadFile = (req, res) => {
-//     const { _id } = req.params;
-//     let data = req.body;
-//     const files = req.files;
-//     _request.findOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } },
-//         async (error, request) => {
-//             if (error) {
-//                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
-//             }
-//             const docName = data.Document + path.extname(files.file.name);
-//             if (!request) {
-//                 let result = await _Drive.uploadFile(req, eOperation.NEW);
-//                 if (typeof (result) !== 'undefined' && result.isCorrect) {
-//                     _request.update({ _id: _id }, {
-//                         $set: {
-//                             status: eStatusRequest.PROCESS
-//                         },
-//                         $addToSet: {
-//                             documents:
-//                             {
-//                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
-//                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process'),
-//                                 driveId: result.fileId
-//                             }
-//                         }
-//                     }).exec(handler.handleOne.bind(null, 'request', res));
-//                 }
+/*
 
-//             } else {
-//                 const tmpDocument = request.documents.filter(doc => doc.type === data.Document);
-//                 req.body.fileId = tmpDocument[0].driveId;
-//                 let result = await _Drive.uploadFile(req, eOperation.EDIT);
-//                 if (typeof (result) !== 'undefined' && result.isCorrect) {
-//                     _request.update({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
-//                         $set: {
-//                             'documents.$': {
-//                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
-//                                 driveId: tmpDocument[0].driveId,
-//                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
-//                             }
-//                         }
-//                     }).exec(handler.handleOne.bind(null, 'request', res));
-//                 }
-//             }
-//         });
-// }
+*/
 
 const uploadFile = (req, res) => {
     const { _id } = req.params;
@@ -521,186 +642,238 @@ const getResourceLink = (req, res) => {
 const fileCheck = (req, res) => {
     const { _id } = req.params;
     let data = req.body;
-    _request.findOneAndUpdate({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
+    _request.updateOne({ _id: _id, documents: { $elemMatch: { type: data.Document } } }, {
         $set: {
             'documents.$.status': data.Status,
             'documents.$.observation': data.Observation
         }
-    }, { new: true }, (error, request) => {
-        if (error)
-            return handler.handleError(res, status.NOT_FOUND, { message: "Solicitud no procesada" });
-        // console.log("reqq", request);
-        const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+    }).then ( (updated) => {
+        _request.findOne({_id}).then(
+            (request)=>{
+                const result = request.documents.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
 
-        // Documentos primera parte (CURP, ACTA, etc)
-        const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === '4_CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === '2_ACTA_NACIMIENTO' || doc.type === '1_CURP' || doc.type === '3_CERTIFICADO_BACHILLERATO' || doc.type === '5_CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
-        const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
-        const docsReject = docs.filter(doc => doc.status === 'Reject');
-        const numDocsAR = (docsAcept.length + docsReject.length);
-
-        // Documentos segunda parte (INE, CEDULA y XML)
-        const docsTitle = request.documents.filter(doc => doc.type === 'INE' || doc.type === 'CEDULA_PROFESIONAL' || doc.type === 'XML');
-        const docsTitleAcept = docsTitle.filter(doc => doc.status === 'Accept');
-        const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
-        const numDocsTitleAR = (docsTitleAcept.length + docsTitleReject.length);
-
-        if (numDocsTitleAR === 0) {
-            if (numDocsAR === 10) {
-                const email = request.email;
-                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                const subject = 'Acto recepcional - Resultado de validación de documentos';
-                const subtitle = 'Acuse de documentos entregados';
-                var body = '';
-                var documents = '<ol style="text-align:left">';
-                for (var i = 0; i < docs.length; i++) {
-                    switch (docs[i].type) {
-                        case 'FOTOS':
-                            documents += '<li>' + 'FOTOS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '4_CEDULA_TECNICA':
-                            documents += '<li>' + 'CÉDULA TÉCNICA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'REVALIDACION':
-                            documents += '<li>' + 'REVALIDACIÓN : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '2_ACTA_NACIMIENTO':
-                            documents += '<li>' + 'ACTA DE NACIMIENTO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '1_CURP':
-                            documents += '<li>' + 'CURP : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '3_CERTIFICADO_BACHILLERATO':
-                            documents += '<li>' + 'CERTIFICADO DE BACHILLERATO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case '5_CERTIFICADO_LICENCIATURA':
-                            documents += '<li>' + 'CERTIFICADO DE LICENCIATURA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'SERVICIO_SOCIAL':
-                            documents += '<li>' + 'SERVICIO SOCIAL : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'LIBERACION_INGLES':
-                            documents += '<li>' + 'LIBERACIÓN DE INGLÉS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
-                        case 'RECIBO':
-                            documents += '<li>' + 'RECIBO DE PAGO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
-                            break;
+                // Documentos primera parte (CURP, ACTA, etc)
+                const docs = request.documents.filter(doc => doc.type === 'FOTOS' || doc.type === '4_CEDULA_TECNICA' || doc.type === 'REVALIDACION' || doc.type === '2_ACTA_NACIMIENTO' || doc.type === '1_CURP' || doc.type === '3_CERTIFICADO_BACHILLERATO' || doc.type === '5_CERTIFICADO_LICENCIATURA' || doc.type === 'SERVICIO_SOCIAL' || doc.type === 'LIBERACION_INGLES' || doc.type === 'RECIBO');
+                const docsAcept = docs.filter(doc => doc.status === 'Accept' || doc.status === 'Omit');
+                const docsReject = docs.filter(doc => doc.status === 'Reject');
+                const numDocsAR = (docsAcept.length + docsReject.length);
+        
+                // Documentos segunda parte (INE, CEDULA y XML)
+                const docsTitle = request.documents.filter(doc => doc.type === 'INE' || doc.type === 'CEDULA_PROFESIONAL' || doc.type === 'XML');
+                const docsTitleAcept = docsTitle.filter(doc => doc.status === 'Accept');
+                const docsTitleReject = docsTitle.filter(doc => doc.status === 'Reject');
+                const numDocsTitleAR = (docsTitleAcept.length + docsTitleReject.length);
+        
+                if (numDocsTitleAR === 0) {
+                    console.log(numDocsAR+" de 10 documentos dictaminados");
+                    if (numDocsAR === 10) {
+                        console.log("Todos los documentos fueron dictaminados");
+                        const email = request.email;
+                        const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                        const subject = 'Acto recepcional - Resultado de validación de documentos';
+                        const subtitle = 'Acuse de documentos entregados';
+                        var body = '';
+                        var documents = '<ol style="text-align:left">';
+                        for (var i = 0; i < docs.length; i++) {
+                            switch (docs[i].type) {
+                                case 'FOTOS':
+                                    documents += '<li>' + 'FOTOS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '4_CEDULA_TECNICA':
+                                    documents += '<li>' + 'CÉDULA TÉCNICA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'REVALIDACION':
+                                    documents += '<li>' + 'REVALIDACIÓN : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '2_ACTA_NACIMIENTO':
+                                    documents += '<li>' + 'ACTA DE NACIMIENTO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '1_CURP':
+                                    documents += '<li>' + 'CURP : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '3_CERTIFICADO_BACHILLERATO':
+                                    documents += '<li>' + 'CERTIFICADO DE BACHILLERATO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case '5_CERTIFICADO_LICENCIATURA':
+                                    documents += '<li>' + 'CERTIFICADO DE LICENCIATURA : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'SERVICIO_SOCIAL':
+                                    documents += '<li>' + 'SERVICIO SOCIAL : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'LIBERACION_INGLES':
+                                    documents += '<li>' + 'LIBERACIÓN DE INGLÉS : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                                case 'RECIBO':
+                                    documents += '<li>' + 'RECIBO DE PAGO : ' + (docs[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docs[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docs[i].observation) + '</li>';
+                                    break;
+                            }
+                        }
+                        documents += '</ol>';
+                        if (docsReject.length === 0) {
+                            body = 'Su documentación fue aceptada, espera tu carta de no inconveniencia.';
+                        } else {
+                            body = 'Se encontraron errores en su documentación, favor de corregirlos:';
+                        }
+                        const message = mailTemplate(subtitle, body, documents);
+                        _sendEmail({ email: email, subject: subject, sender: sender, message: message });
                     }
-                }
-                documents += '</ol>';
-                if (docsReject.length === 0) {
-                    body = 'Su documentación fue aceptada, espera tu carta de no inconveniencia.';
                 } else {
-                    body = 'Se encontraron errores en su documentación, favor de corregirlos:';
-                }
-                const message = mailTemplate(subtitle, body, documents);
-                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-            }
-        } else {
-            if (numDocsTitleAR === 3) {
-                const email = request.email;
-                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
-                const subtitle = 'Resultado de validación de documentos';
-                var body = '';
-                var documents = '<ol style="text-align:left">';
-                for (var i = 0; i < docsTitle.length; i++) {
-                    switch (docsTitle[i].type) {
-                        case 'INE':
-                            documents += '<li>' + 'INE : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
-                            break;
-                        case 'CEDULA_PROFESIONAL':
-                            documents += '<li>' + 'CÉDULA PROFESIONAL : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
-                            break;
-                        case 'XML':
-                            documents += '<li>' + 'XML : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
-                            break;
+                    console.log(numDocsTitleAR+" de 3 documentos dictaminados");
+                    if (numDocsTitleAR === 3) {
+                        console.log("Todos los documentos fueron dictaminados");
+                        const email = request.email;
+                        const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                        const subject = 'Acto recepcional - Resultado de validación de documentos para recoger título';
+                        const subtitle = 'Resultado de validación de documentos';
+                        var body = '';
+                        var documents = '<ol style="text-align:left">';
+                        for (var i = 0; i < docsTitle.length; i++) {
+                            switch (docsTitle[i].type) {
+                                case 'INE':
+                                    documents += '<li>' + 'INE : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
+                                    break;
+                                case 'CEDULA_PROFESIONAL':
+                                    documents += '<li>' + 'CÉDULA PROFESIONAL : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
+                                    break;
+                                case 'XML':
+                                    documents += '<li>' + 'XML : ' + (docsTitle[i].status == 'Accept' ? '<span style = "color:green">ACEPTADO</span>' : docsTitle[i].status == 'Omit' ? '<span style = "color:#87807E">OMITIDO</span>' : '<span style = "color:red">RECHAZADO</span> - ' + docsTitle[i].observation) + '</li>';
+                                    break;
+                            }
+                        }
+                        documents += '</ol>';
+        
+                        if (docsTitleReject.length === 0) {
+                            body = 'Su documentación fue aceptada. Para recoger tu título:';
+                            body += '<div style="text-align:center;">' +
+                                '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">' +
+                                '</div>'
+                        } else {
+                            body = 'Se encontraron errores en su documentación, favor de corregirlos:';
+                        }
+                        const message = mailTemplate(subtitle, body, documents);
+                        _sendEmail({ email: email, subject: subject, sender: sender, message: message });
                     }
                 }
-                documents += '</ol>';
-
-                if (docsTitleReject.length === 0) {
-                    body = 'Su documentación fue aceptada. Para recoger tu título:';
-                    body += '<div style="text-align:center;">' +
-                        '<img src="https://i.ibb.co/nwG8LSP/tabla-Requisitos-Titulo.png" width="100%">' +
-                        '</div>'
-                } else {
-                    body = 'Se encontraron errores en su documentación, favor de corregirlos:';
-                }
-                const message = mailTemplate(subtitle, body, documents);
-                _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-            }
-        }
-
-        if (result.length === 14) {
-            _request.findOneAndUpdate({ _id: _id }, {
-                $set: {
-
-                    // phase: eRequest.ASSIGNED,
-                    phase: eRequest.VALIDATED,
-                    status: eStatusRequest.NONE,
-                    // phase: eRequest.DELIVERED,
-                    // status: result.length === 14 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
-                    lastModified: new Date(),
-                },
-                $addToSet: {
-                    history: {
-                        phase: eRequest.DELIVERED,
-                        achievementDate: new Date(),
-                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
-                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                        status: eStatusRequest.ACCEPT
-                    }
-                }
-            }).exec(handler.handleOne.bind(null, 'request', res));
-        } else {
-            if (result.length >= 14) {
-                console.log("es 20", result.length, result.length === 20);
-                if (result.length === 20) {
-                    _request.findOneAndUpdate({ _id: _id }, {
+        
+                if (result.length === 14) {
+                    _request.updateOne({ _id: _id }, {
                         $set: {
-                            phase: eRequest.TITLED,
-                            status: eStatusRequest.ACCEPT,
+        
+                            // phase: eRequest.ASSIGNED,
+                            phase: eRequest.VALIDATED,
+                            status: eStatusRequest.NONE,
+                            // phase: eRequest.DELIVERED,
+                            // status: result.length === 14 ? eStatusRequest.ACCEPT : eStatusRequest.PROCESS,//eStatusRequest.ACCEPT,
                             lastModified: new Date(),
                         },
                         $addToSet: {
                             history: {
-                                phase: eRequest.TITLED,
+                                phase: eRequest.DELIVERED,
                                 achievementDate: new Date(),
                                 doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
                                 observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
-                                status: eStatusRequest.PROCESS
+                                status: eStatusRequest.ACCEPT
                             }
                         }
-                    }).exec(handler.handleOne.bind(null, 'request', res));
+                    }).then(
+                        (updated)=>{
+                            _request.findOne({_id}).then(
+                                requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                err=> res.status(status.NOT_FOUND).json({err})
+                            ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                        }
+                    );
                 } else {
-                    if (request.documents.length === 19) {
-                        _request.findOneAndUpdate({ _id: _id }, {
+                    if (result.length > 14) {
+                        console.log("es 20", result.length, result.length === 20);
+                        if (result.length === 20) {
+                            _request.updateOne({ _id: _id }, {
+                                $set: {
+                                    phase: eRequest.TITLED,
+                                    status: eStatusRequest.ACCEPT,
+                                    lastModified: new Date(),
+                                },
+                                $addToSet: {
+                                    history: {
+                                        phase: eRequest.TITLED,
+                                        achievementDate: new Date(),
+                                        doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                                        observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                                        status: eStatusRequest.PROCESS
+                                    }
+                                }
+                            }).then(
+                                (updated)=>{
+                                    _request.findOne({_id}).then(
+                                        requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                        err=> res.status(status.NOT_FOUND).json({err})
+                                    ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                                }
+                            );
+                        } else {
+                            if (request.documents.length === 19) {
+                                _request.updateOne({ _id: _id }, {
+                                    $set: {
+                                        status: eStatusRequest.PROCESS,
+                                        lastModified: new Date(),
+                                    }
+                                }).then(
+                                    (updated)=>{
+                                        _request.findOne({_id}).then(
+                                            requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                            err=> res.status(status.NOT_FOUND).json({err})
+                                        ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                                    }
+                                );
+                            } else {
+                                var json = {};
+                                json['request'] = request;
+                                return res.status(status.OK).json(json);
+                            }
+                        }
+                    }
+                    else {
+                        console.log(1);
+                        
+                        _request.updateOne({ _id: _id }, {
                             $set: {
+                                phase: eRequest.DELIVERED,
                                 status: eStatusRequest.PROCESS,
                                 lastModified: new Date(),
+                            },
+                            $addToSet: {
+                                history: {
+                                    phase:eRequest.DELIVERED,
+                                    achievementDate: new Date(),
+                                    doer: typeof (data.Doer) !== 'undefined' ? data.Doer : '',
+                                    observation: typeof (data.observation) !== 'undefined' ? data.observation : '',
+                                    status: eStatusRequest.PROCESS
+                                }
                             }
-                        }).exec(handler.handleOne.bind(null, 'request', res));
-                    } else {
-                        var json = {};
-                        json['request'] = request;
-                        return res.status(status.OK).json(json);
+                        }).then(
+                            (updated)=>{
+                                _request.findOne({_id}).then(
+                                    requestUpdated=> res.status(status.OK).json({request:requestUpdated}),
+                                    err=> res.status(status.NOT_FOUND).json({err})
+                                ).catch( err=>res.status(status.BAD_REQUEST).json({err}))
+                            }
+                        );
+                        // var json = {};
+                        // json['request'] = request;
+                        // return res.status(status.OK).json(json);
                     }
                 }
-            }
-            else {
-                _request.findOneAndUpdate({ _id: _id }, {
-                    $set: {
-                        phase: eRequest.DELIVERED,
-                        status: eStatusRequest.PROCESS,
-                        lastModified: new Date(),
-                    }
-                }).exec(handler.handleOne.bind(null, 'request', res));
-                // var json = {};
-                // json['request'] = request;
-                // return res.status(status.OK).json(json);
-            }
-        }
-    });
+            },
+            (err)=> res.status(status.BAD_REQUEST).json({err})
+        ).catch(
+            err=>res.status(status.BAD_REQUEST).json({err})
+        );
+        
+    },
+    err=>res.status(status.BAD_REQUEST).json({err})
+    ).catch(
+        err=>res.status(status.BAD_REQUEST).json({err})
+    );
 };
 
 const releasedRequest = (req, res) => {
@@ -778,7 +951,8 @@ const updateRequest = (req, res) => {
                 if (data.operation !== eStatusRequest.REJECT) {
                     subjectMail = 'Acto recepcional - Validación de solicitud';
                     subtitleMail = 'Validación de solicitud de acto protocolario';
-                    bodyMail = 'Su solicitud ha sido aceptada';
+                    bodyMail = 'Su solicitud ha sido aceptada<br>'+
+                    '<a href="https://drive.google.com/open?id=1fOItfyeVGiItdDHXvSNifvtABt6goe3I">Consultar hoja de requisitos</a><br>';
                     observationsMail = item.observation;
                     request.phase = eRequest.VERIFIED;
                     // request.status = eStatusRequest.PROCESS; 17/11
@@ -859,10 +1033,15 @@ const updateRequest = (req, res) => {
                     observationsMail = item.observation;
                     request.phase = eRequest.DELIVERED;
                     request.status = eStatusRequest.NONE;
-                    request.documents.push(
-                        {
-                            type: eFile.PHOTOS, dateRegister: new Date(), nameFile: 'Fotos', status: "Process"
-                        });
+                    const photos = await getRequestPhotos(_id);                    
+                    
+                    if(photos === undefined){
+                        request.documents.push(
+                            {
+                                type: eFile.PHOTOS, dateRegister: new Date(), nameFile: 'Fotos', status: "Process"
+                            });
+                    }
+                    
                     item.status = eStatusRequest.ACCEPT
                 }
                 break;
@@ -1044,6 +1223,7 @@ const updateRequest = (req, res) => {
                         //     // return res.status(status.BAD_REQUEST).json({ message: 'Operación no válida: Evento no realizado aún' });
                         //     return handler.handleError(res, status.BAD_REQUEST, { message: 'Operación no válida: Evento no realizado aún' });
                         // }
+                        
                         subjectMail = 'Acto recepcional - Aprobación de acto protocolario';
                         subtitleMail = 'Aprobación de acto protocolario';
                         bodyMail = 'Su acto protocolario ha sido aprobado';
@@ -1052,7 +1232,9 @@ const updateRequest = (req, res) => {
                         request.status = eStatusRequest.NONE;
                         request.registry = data.registry;
                         item.status = eStatusRequest.ACCEPT;
-                        item.phase = 'Realizado';
+                        item.phase = 'Realizado';                                           
+                        await updateStudentDegreeInSII(request.titulationOption.split(' ')[0],data.controlNumber,request.proposedDate);
+                        await updateStudentStatus('TIT',request.studentId);
                         break;
                     }
                     case eStatusRequest.REJECT: {
@@ -1169,6 +1351,69 @@ const updateRequest = (req, res) => {
                 return res.status(status.OK).json(json);
             });
         }
+    });
+};
+
+const updateStudentDegreeInSII = (titulationOption, controlNumber,actRectDate)=>{
+    const date = moment(new Date(actRectDate)).format('YYYY-MM-DD');    
+    
+    const dataStudent = JSON.stringify({
+        option:titulationOption,
+        date
+    });    
+    var optionsPost = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/update/${controlNumber}`,
+        // authentication headers     
+        method: 'PUT',
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
+            'Content-Type': 'application/json',
+            'Content-Length': dataStudent.length
+        }
+
+    };
+    return new Promise( (resolve)=>{
+        const request = https.request(optionsPost, (postApi) => {
+            var response = "";
+            postApi.on('data', async (d) => {
+                response += d;
+            });
+            postApi.on('end', async () => {
+                response = JSON.parse(response);
+                if (response.error) {
+                    resolve(false);
+                }           
+                console.log(response);                
+                resolve(true);
+            });
+        });
+        request.on('error', (error) => {
+            resolve(false);
+        });
+
+        request.write(dataStudent);
+        request.end();
+    });
+};
+
+const updateStudentStatus = (studentStatus, _id) => {
+    return new Promise( (resolve) => {
+        _student.updateOne({_id},{$set:{status:studentStatus}})
+            .then( (updated) => resolve(true) )
+            .catch( (err) => resolve(false) );
+    } );
+};
+
+const getRequestPhotos = (_id) =>{
+    return new Promise((resolve)=>{
+        _request.findOne({ _id: _id },{documents:1}).then(
+            (request)=>resolve(request.documents.filter( (doc)=> doc.type === eFile.PHOTOS)[0])
+        ).catch(
+            (err)=>resolve(false)
+        );
     });
 };
 
@@ -1436,11 +1681,73 @@ const changeJury = (req, res) => {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-module.exports = (Request, Range, Folder, Student) => {
+
+const findOneRequest = (req, res) => {
+    const { _id } = req.params;
+    _request.findOne({ _id: _id }).populate({
+        path: 'studentId', model: 'Student',
+        select: {
+            fullName: 1,
+            controlNumber: 1,
+            career: 1
+        }
+    }).exec(handler.handleOne.bind(null, 'request', res));
+};
+
+const _getRequest = (studentId) => {
+    return new Promise(resolve => {
+        _request.findOne({ studentId: studentId })
+            .then(data => {
+                if (data) {
+                    resolve(data);
+                } else {
+                    resolve(null);
+                }
+            })
+            .catch(_ => resolve(null));
+    });
+};
+
+const updateRequestPeriod = (_id,periodId)=>{
+    return new Promise((resolve)=>{
+        _request.updateOne({_id},{$set:{
+            periodId
+        }}).then(
+            updated=>resolve({ok:true}),
+            err=> resolve({err})
+        ).catch(err=>resolve({err}))
+    });
+};
+const period = async (req,res)=>{    
+    const periodId = await _Drive.getActivePeriod();
+    // console.log(periodId);
+    
+    _request.find({periodId:{$exists:false}}).then(
+        async (requests)=>{
+            if(requests){
+                // console.log(requests);             
+                for await (const request of requests){
+                    const updated = await updateRequestPeriod(request._id,periodId._id);
+                    console.log(updated);
+                }
+                return res.status(status.OK).json({requestId:requests});
+            }
+        }
+    );        
+};
+const getPeriods = (req,res)=>{
+    _period.find({},{_id:1,periodName:1,year:1,active:1}).sort({code:-1}).limit(10).then(
+        (periods)=>{
+            res.status(status.OK).json({periods})
+        }
+    );
+};
+module.exports = (Request, Range, Folder, Student, Period) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
     _student = Student;
+    _period = Period;
     return ({
         create,
         createTitled,
@@ -1464,6 +1771,8 @@ module.exports = (Request, Range, Folder, Student) => {
         sendVerificationCode,
         removeTitled,
         getResourceLink,
-        changeJury
+        changeJury,
+        period,
+        getPeriods
     });
 };
