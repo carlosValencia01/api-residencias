@@ -71,71 +71,72 @@ const _getEmployeesByDepartment = (department) => {
 };
 
 const getDepartmentBossSecretary = (req, res) => {
-  const departamento = req.params._department;
-  _department.find({ "careers.0": { "$exists": true } })
+  const {_departmentName} = req.params;
+  const query = {
+    name: { $regex: new RegExp(`^${_departmentName}$`) }
+  };
+  _department.findOne(query)
     .populate('careers')
-    .exec(async (err, data) => {
-      if (!err && data) {
-        const departments = [];
-        for (let department of data) {
-          if(departamento === department.name){
-            const depto = await _getDepartmentWithBossSecretary(department.toObject());
-            departments.push(depto);
-          }
+    .then(async (department) => {
+      if (department) {
+        const positions = await _getPositionsByAscription(department._id);
+        const employees = [];
+        for (const position of positions) {
+          employees.push(await _getEmployeeByPosition(position._id));
         }
         res.status(status.OK)
-          .json({ department: departments });
+          .json({ department: employees });
       } else {
-        res.status(status.INTERNAL_SERVER_ERROR)
-          .json({ error: err ? err.toString() : 'Ocurrió un error' });
+        res.status(status.NOT_FOUND)
+          .json({ error: 'Ocurrió un error' });
       }
-    });
+    })
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR)
+      .json({ error: 'Ocurrió un error' }));
 };
 
-const _getDepartmentWithBossSecretary = depto => {
-  return new Promise(async resolve => {
-    const employeesDepto = await _getBossSecretaryByDepartment(depto);
-    depto.boss = employeesDepto.boss;
-    depto.secretary = employeesDepto.secretary;
-    resolve(depto);
-  })
-};
-
-const _getBossSecretaryByDepartment = (department) => {
+const _getPositionsByAscription = (departmentId) => {
   return new Promise(resolve => {
-    _employee.find()
-      .populate({
-        path: 'positions.position', model: 'Position', select: 'name ascription',
-        populate: { path: 'ascription', model: 'Department', select: 'name shortName' }
-      })
-      .exec((err, data) => {
-        if (!err && data) {
-          let departmentBoss = {};
-          data.forEach(data => {
-            if (data.positions.length) {
-              const employee = data.toObject();
-              const activePositions = employee.positions
-                .filter(pos => pos.status === 'ACTIVE' && pos.position.ascription._id.toString() === department._id.toString());
-              const secretary = activePositions.filter(pos => pos.position.name.toUpperCase() === 'SECRETARIA')[0];
-              const boss = activePositions.filter(pos => pos.position.name.toUpperCase() === 'JEFE DE DEPARTAMENTO')[0];
-              if (boss) {
-                employee.positions.push(boss);
-                nameBoss = employee.name.fullName;
-                emailBoss = employee.email;
-              }
-              if (secretary) {
-                employee.positions.push(secretary);
-                nameSecretary = employee.name.fullName;
-                emailSecretary = employee.email;
-              }
-            }
-          });
-          resolve({
-            boss: {nameBoss,emailBoss},
-            secretary: {nameSecretary,emailSecretary}
-          });
+    const query = {
+      $and: [
+        { ascription: departmentId },
+        {
+          $or: [
+            { name: {$regex: new RegExp(`^JEFE DE DEPARTAMENTO$`)}},
+            { name: {$regex: new RegExp(`^SECRETARIA$`)}},
+          ]
         }
-      });
+      ]
+    };
+    _position.find(query)
+      .then(positions => {
+        if (positions && positions.length) {
+          resolve(positions);
+        } else {
+          resolve([]);
+        }
+      })
+      .catch(_ => resolve([]));
+  });
+};
+
+const _getEmployeeByPosition = (positionId) => {
+  return new Promise(resolve => {
+    const query = {
+      $and: [
+        { 'positions.position': positionId },
+        { positions: { $elemMatch: { status: 'ACTIVE' } } }
+      ]
+    };
+    _employee.findOne(query)
+      .then(employee => {
+        if (employee) {
+          resolve(employee);
+        } else {
+          resolve(null);
+        }
+      })
+      .catch(_ => resolve(null));
   });
 };
 

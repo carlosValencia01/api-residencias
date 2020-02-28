@@ -945,64 +945,53 @@ const updateRequest = (req, res) => {
                         break;
                     }
                     case eStatusRequest.ACCEPT: {
-                        for(let i = 0; i < 6; i++){
-                            // Enviar correo  sinoidales
-                            if(i<4){
-                                if(data.jurado[i].email){
-                                    const subtitle = 'Estimada/o '+data.jurado[i].name;
-                                    const body = 'Por este conducto le informo que el Acto de Recepción Profesional de C. <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br>Por lo que se le pide su puntual asistencia.<br><br>Integrantes del jurado<br>'+
-                                    '<ol style="text-align:left">'+
-                                    '<li><b>Presidente/a:</b>	'+data.jurado[0].name+'</li><br>'+
-                                    '<li><b>Secretaria/o:</b>	'+data.jurado[1].name+'</li><br>'+
-                                    '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
-                                    '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
-                                    '</ol>';
-                                    const email = data.jurado[i].email;
-                                    const subject = 'Acto recepcional - Aviso de titulación';
-                                    const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                                    const message = mailTemplateSinodales(subtitle, body);
-                                    _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-                                }
-                            }
-                            // Enviar correo a jefe y srecretaria del departamento
-                            if (i == 4){
-                                if(data.jefeDepartamento.emailBoss){
-                                    const subtitle = '';
-                                    const body = 'Por este conducto le informo que el Acto de Recepción Profesional de C. <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br><br>Integrantes del jurado<br>'+
-                                    '<ol style="text-align:left">'+
-                                    '<li><b>Presidente/a:</b>	'+data.jurado[0].name+'</li><br>'+
-                                    '<li><b>Secretaria/o:</b>	'+data.jurado[1].name+'</li><br>'+
-                                    '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
-                                    '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
-                                    '</ol>';
-                                    const email = data.jefeDepartamento.emailBoss;
-                                    const subject = 'Acto recepcional - Aviso de titulación';
-                                    const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                                    const message = mailTemplateSinodales(subtitle, body);
-                                    _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-                                }
-                            }
-                            if (i == 5){
-                                if(data.secretariaDepartamento.emailSecretary){
-                                    const subtitle = '';
-                                    const body = 'Por este conducto le informo que el Acto de Recepción Profesional de C. <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br><br>Integrantes del jurado<br>'+
-                                    '<ol style="text-align:left">'+
-                                    '<li><b>Presidente/a:</b>	'+data.jurado[0].name+'</li><br>'+
-                                    '<li><b>Secretaria/o:</b>	'+data.jurado[1].name+'</li><br>'+
-                                    '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
-                                    '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
-                                    '</ol>';
-                                    const email = data.secretariaDepartamento.emailSecretary;
-                                    const subject = 'Acto recepcional - Aviso de titulación';
-                                    const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-                                    const message = mailTemplateSinodales(subtitle, body);
-                                    _sendEmail({ email: email, subject: subject, sender: sender, message: message });
-                                }
+                        // Enviar correo  sinoidales
+                        for(let i = 0; i < 4; i++){
+                            if(data.jurado[i].email){
+                                const subtitle = 'Estimada/o '+data.jurado[i].name;
+                                const body = 'Por este conducto le informo que el Acto de Recepción Profesional de C. <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br>Por lo que se le pide su puntual asistencia.<br><br>Integrantes del jurado<br>'+
+                                '<ol style="text-align:left">'+
+                                '<li><b>Presidente/a:</b>	'+data.jurado[0].name+'</li><br>'+
+                                '<li><b>Secretaria/o:</b>	'+data.jurado[1].name+'</li><br>'+
+                                '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
+                                '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
+                                '</ol>';
+                                const email = data.jurado[i].email;
+                                const subject = 'Acto recepcional - Aviso de titulación';
+                                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                                const message = mailTemplateSinodales(subtitle, body);
+                                await _sendEmail({ email: email, subject: subject, sender: sender, message: message }).then(
+                                    result => {console.log("Correo enviado a: "+data.jurado[i].email);}
+                                );
+                                
                             }
                         }
+                        // Enviar correo a jefe y srecretaria del departamento
+                        for (let i = 0; i <2; i++) {
+                            if(data.departamentoEmail[i].email){
+                                const subtitle = '';
+                                const body = 'Por este conducto le informo que el Acto de Recepción Profesional de C. <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br><br>Integrantes del jurado<br>'+
+                                '<ol style="text-align:left">'+
+                                '<li><b>Presidente/a:</b>	'+data.jurado[0].name+'</li><br>'+
+                                '<li><b>Secretaria/o:</b>	'+data.jurado[1].name+'</li><br>'+
+                                '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
+                                '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
+                                '</ol>';
+                                const email = data.departamentoEmail[i].email;
+                                const subject = 'Acto recepcional - Aviso de titulación';
+                                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                                const message = mailTemplateSinodales(subtitle, body);
+                                await _sendEmail({ email: email, subject: subject, sender: sender, message: message }).then(
+                                    result => {console.log("Correo enviado a: "+data.departamentoEmail[i].email);}
+                                ).catch(err => {
+                                    console.log("Error al enviar correo enviado a: "+data.departamentoEmail[i].email);
+                                });
+                            }
+                        }
+
                         subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
                         subtitleMail = 'Confirmación de fecha de titulación';
-                        bodyMail = 'El evento se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br>'+
+                        bodyMail = 'Tu acto recepcional se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br>'+
                         'Integrantes del jurado'+
                         '<ol style="text-align:left">'+
                         '<li><b>Presidente/a:</b>	'+data.jurado[0].name+'</li><br>'+
@@ -1018,7 +1007,7 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.REJECT: {
                         subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
                         subtitleMail = 'Confirmación de fecha de titulación';
-                        bodyMail = 'Tu fecha solicitada ha sido rechazada';
+                        bodyMail = 'Tu fecha solicitada ha sido rechazada, favor de ingresar al sistema para elegir una nueva fecha.';
                         observationsMail = item.observation;
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
