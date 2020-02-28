@@ -1673,7 +1673,7 @@ const period = async (req,res)=>{
         async (requests)=>{
             if(requests){
                 // console.log(requests);             
-                for await (const request of requests){
+                for (const request of requests){
                     const updated = await updateRequestPeriod(request._id,periodId._id);
                     console.log(updated);
                 }

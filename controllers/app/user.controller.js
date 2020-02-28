@@ -44,7 +44,6 @@ const getSecretaries = async (req, res) => {
                 }
             );
     }
-
 };
 
 const register = (req, res) => {
@@ -67,7 +66,8 @@ const register = (req, res) => {
 };
 
 const login = (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    email = (email || '').toString().trim();
     let query = { email: email };
     _user.findOne(query)
         .populate({
@@ -92,7 +92,6 @@ const login = (req, res) => {
                 console.log("exist user");
                 user.validatePasswd(password, user.password, invalid => {
                     // Password inválido
-                    console.log("inva", invalid);
                     if (invalid) {
                         return res.status(status.FORBIDDEN).json({
                             error: 'password is invalid'
@@ -114,7 +113,6 @@ const login = (req, res) => {
                             permissions: user.idRole.permissions
                         }
                     };
-                    console.log("oko")
                     //Se retorna el usuario y token
                     return res.json({
                         user: formatUser,
@@ -123,6 +121,11 @@ const login = (req, res) => {
                     });
                 });
             } else {
+                if (/.@./.test(email)) {
+                    return res.status(status.NOT_FOUND).json({
+                        error: 'El usuario es incorrecto'
+                    });
+                }
                 // Validar si es alumno y su nc y NIP son válidos
                 const resApi = await getStudentData(email, password);
 
@@ -264,7 +267,8 @@ const login = (req, res) => {
         });
 };
 
-const getStudentData = (email, password) => {    
+const getStudentData = (email, password) => {
+    email = (email || '').toString().trim();
     const options = {
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
@@ -298,7 +302,6 @@ const getStudentData = (email, password) => {
         var studentNew = "";
 
         https.get(options, function (apiInfo) {
-
             apiInfo.on('data', function (data) {
                 studentNew += data;
             });
@@ -306,7 +309,9 @@ const getStudentData = (email, password) => {
                 //json con los datos del alumno
                 studentNew = JSON.parse(studentNew);
                 console.log(studentNew);
-                
+                if (studentNew.error) {
+                    resolve(false);
+                }
                 studentNew.firstName = studentNew.firstname;
                 studentNew.fatherLastName = studentNew.fatherlastname;
                 studentNew.motherLastName = studentNew.motherlastname;
@@ -664,8 +669,6 @@ const validateEnglishApproved = (controlNumber) => {
 };
 
 const getRoleId = (roleName) => {
-
-
     return new Promise(async (resolve) => {
         await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
             if (!err && role) {
@@ -762,6 +765,7 @@ const studentLogin = async (req, res) => {
         });
     }
 };
+
 const loginMiGraduacion = (req, res) => {
     const { email, password } = req.body;
     let query = { email: email };
@@ -805,13 +809,10 @@ const loginMiGraduacion = (req, res) => {
             }
         });
 };
-
 // end for app movile
 
 const getCareerId = (careerName) => {
-
     console.log(careerName);
-    
     return new Promise(async (resolve) => {
         await _career.findOne({ fullName: careerName }, (err, career) => {
             if (!err && career) {
@@ -890,7 +891,6 @@ const getStudentBySii = (email) => {
 
 const titledRegister = async (req, res) => {
     const data = req.body;
-    
     const result = await getStudentBySii(data.controlNumber);
 
     if (result.response) {
@@ -904,8 +904,8 @@ const titledRegister = async (req, res) => {
                     error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                 });
             } else {
-                let isGraduate = StudentGet.estatus.toUpperCase() === 'EGR';
-                const isTitled = StudentGet.estatus.toUpperCase() === 'TIT';
+                let isGraduate = (StudentGet.status || '').toUpperCase() === 'EGR';
+                const isTitled = (StudentGet.status || '').toUpperCase() === 'TIT';
                 // Si fue encontrado
                 if (student) {
                     let englishApproved = await validateEnglishApproved(data.controlNumber);
@@ -1012,6 +1012,7 @@ function getFullCarrera(carrera) {
     }
     return career;
 }
+
 module.exports = (User, Student, Employee, Role, Career, English) => {
     _user = User;
     _student = Student;
