@@ -15,6 +15,9 @@ module.exports = (wagner) => {
 
     router.get('/getAllActive', (req, res) =>
         minuteBookCtrl.getAllActiveMinuteBooks(req, res));
+
+    router.get('/active/:_careerId/:titleOption', (req, res) =>
+        minuteBookCtrl.getActiveBookByCareer(req, res));
         
     return router;
 };

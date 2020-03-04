@@ -53,13 +53,35 @@ const getAllActiveMinuteBooks = (req, res) => {
         })
 };
 
+const getActiveBookByCareer = (req, res) => {
+    const { _careerId,titleOption } = req.params;
+    const query = {
+        $and: [
+            { careers: _careerId },
+            { status: true },
+            {titleOption}
+        ]
+    };
+    _minuteBook.findOne(query)
+        .then(book => {
+            if (book) {
+                return res.status(status.OK).json(book);
+            }
+            return res.status(status.NOT_FOUND).json({ message: 'No existe libro activo' });
+        })
+        .catch(_ => (
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ message: 'Error al buscar libro' })));
+};
+
 module.exports = (MinuteBook) => {
     _minuteBook = MinuteBook;
     return ({
         getAllMinuteBooks,
         createMinuteBook,
         changeMinuteBookStatus,
-        getAllActiveMinuteBooks
+        getAllActiveMinuteBooks,
+        getActiveBookByCareer
     });
 };
 
