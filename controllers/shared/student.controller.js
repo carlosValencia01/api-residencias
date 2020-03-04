@@ -74,6 +74,7 @@ const getStudentsInscription = (req, res) => {
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis,
+                "expStatus":student.expStatus,
                 documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
                 totalDocumentsNumber:mapDocuments(student.documents).length,
                 documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
@@ -193,8 +194,8 @@ const getStudentsInscriptionProcess = (req, res) => {
                 "acceptedTerms": student.acceptedTerms,
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis
-                ,
+                "warningAnalysis": student.warningAnalysis,
+                "expStatus":student.expStatus,
                 documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
                 totalDocumentsNumber: mapDocuments(student.documents).length,
                 documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
@@ -256,6 +257,7 @@ const getStudentsInscriptionPendant = (req, res) => {
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis,
+                "expStatus":student.expStatus,
                 totalDocumentsNumber: mapDocuments(student.documents).length,
                 documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
                 documentsLastStatus: mapDocuments(student.documents)
@@ -315,6 +317,7 @@ const getStudentsInscriptionAcept = (req, res) => {
                 "dateAcceptedTerms": student.dateAcceptedTerms,
                 "printCredential": student.printCredential,
                 "warningAnalysis": student.warningAnalysis,
+                "expStatus":student.expStatus,
                 totalDocumentsNumber: mapDocuments(student.documents).length,
                 documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
                 documentsLastStatus: mapDocuments(student.documents)
@@ -322,6 +325,16 @@ const getStudentsInscriptionAcept = (req, res) => {
             res.status(status.OK).json({ students: newStudents });
         }
     );
+};
+
+const getIntegratedExpedient = (req, res) => {
+    _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Integrado" }] })
+        .exec(handler.handleMany.bind(null, 'expedients', res));
+};
+
+const getArchivedExpedient = (req, res) => {
+    _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Archivado" }] })
+        .exec(handler.handleMany.bind(null, 'expedients', res));
 };
 
 const getById = (req, res) => {
@@ -1386,6 +1399,8 @@ module.exports = (Student, Request, Role, Period, Career) => {
         isStudentForInscription,
         getInscriptionDocuments,
         createStudentFromSII,
-        getStatus
+        getStatus,
+        getIntegratedExpedient,
+        getArchivedExpedient
     });
 };

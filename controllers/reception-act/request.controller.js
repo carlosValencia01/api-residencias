@@ -43,8 +43,7 @@ const create = async (req, res) => {
             .json({ error: 'Error al recuperar grado' });
     }
     request.verificationCode = _generateVerificationCode(6);
-    request.periodId = await _Drive.getActivePeriod();
-    request.periodId = request.periodId._id;
+    request.periodId = (await _Drive.getActivePeriod())._id;    
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -96,8 +95,7 @@ const createTitled = async (req, res) => {
     let request = req.body;
     request.applicationDate = new Date();
     request.lastModified = new Date();
-    request.periodId = await _Drive.getActivePeriod();
-    request.periodId = request.periodId._id;
+    request.periodId = (await _Drive.getActivePeriod())._id;
     request.grade = await _getGradeName(request.studentId);
     const student = await getStudent(request.studentId); 
     request.email = student.email;
@@ -1655,7 +1653,7 @@ const period = async (req,res)=>{
         async (requests)=>{
             if(requests){
                 // console.log(requests);             
-                for(const request of requests){
+                for (const request of requests){
                     const updated = await updateRequestPeriod(request._id,periodId._id);
                     console.log(updated);
                 }
