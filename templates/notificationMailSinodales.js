@@ -1,4 +1,4 @@
-module.exports = (SUBTITULO,MENSAJE,OBSERVACIONES) => {
+module.exports = (SUBTITULO,MENSAJE) => {
     const template = `
     <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
@@ -188,7 +188,7 @@ module.exports = (SUBTITULO,MENSAJE,OBSERVACIONES) => {
  
     <body>
        <div class="block">
-          <table width="150%" bgcolor="#f6f4f5" cellpadding="0" cellspacing="0" border="0" id="backgroundTable"
+          <table width="100%" bgcolor="#f6f4f5" cellpadding="0" cellspacing="0" border="0" id="backgroundTable"
              st-sortable="preheader">
              <tbody>
                 <tr>
@@ -248,20 +248,15 @@ module.exports = (SUBTITULO,MENSAJE,OBSERVACIONES) => {
                                            </td>
                                         </tr>
                                         <tr>
-                                           <td align="center" style="font-family: Helvetica, arial, sans-serif; color: rgb(60, 0, 64); font-size:19px; line-height: 24px;"
+                                           <td style="font-family: Helvetica, arial, sans-serif; color: rgb(60, 0, 64); font-size:19px; text-align:center; line-height: 24px;"
                                               st-content="rightimage-paragraph">
                                               <b>${SUBTITULO}</b>
                                            </td>
                                         </tr>
                                         <tr>
-                                           <td width="100%" height="20"></td>
-                                        </tr>
-                                        <tr>
-                                           <td align="center" style="font-family: Helvetica, arial, sans-serif; color: rgb(60, 0, 64); font-size:15px; line-height: 24px;"
+                                           <td style="font-family: Helvetica, arial, sans-serif; color: rgb(60, 0, 64); font-size:15px; text-align:left; line-height: 24px;"
                                               st-content="rightimage-paragraph">
-                                              ${MENSAJE}<br>
-                                              <b>${OBSERVACIONES}</b><br>
-                                              <a href="https://mitec.ittepic.edu.mx/graduation">Revisa tu avance</a>
+                                              ${MENSAJE}
                                            </td>
                                         </tr>
                                         <tr>
