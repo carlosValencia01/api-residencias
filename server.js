@@ -34,6 +34,7 @@ const employee = require('./routers/shared/employee.router')(wagner);
 const position = require('./routers/shared/position.router')(wagner);
 const student = require('./routers/shared/student.router')(wagner);
 const career = require('./routers/shared/career.router')(wagner);
+const imss = require('./routers/shared/imss.router')(wagner);
 
 let app = express();
 
@@ -124,5 +125,6 @@ app.use(uri + 'document', document);
 app.use(uri + 'employee', employee);
 app.use(uri + 'position', position);
 app.use(uri + 'student', student);
+app.use(uri + 'imss', imss);
 
 module.exports = app;

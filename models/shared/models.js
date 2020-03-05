@@ -33,6 +33,7 @@ module.exports = (wagner) => {
     const Position = require('./position.model');
     const Student = require('./student.model');
     const Career = require('./career.model');
+    const IMSS = require('./imss.model');
     
     const models = {
         // App
@@ -57,6 +58,7 @@ module.exports = (wagner) => {
         Position,
         Student,
         Career,
+        IMSS
     };
 
     _.each(models, (v, k) => {

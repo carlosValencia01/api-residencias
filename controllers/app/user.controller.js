@@ -12,6 +12,7 @@ let _employee;
 let _role;
 let _career;
 let _english;
+let _imss;
 
 const getAll = (req, res) => {
     _user.find({})
@@ -162,6 +163,7 @@ const login = (req, res) => {
                                     // }
                                     // Se verifica si tiene aprobado el inglés
                                     let englishApproved = await validateEnglishApproved(email);
+                                    let insuretStudent = await validateInsuredStudent(email);
                                     console.log('1');
                                     // verificar si se cambio de semestre
                                     if (resApi.semester > oneUser.semester) {
@@ -187,7 +189,8 @@ const login = (req, res) => {
                                         english: englishApproved,
                                         graduate: isGraduate,
                                         semester: resApi.semester,
-                                        titled:isTitled
+                                        titled:isTitled,
+                                        insured: insuretStudent
                                     };
                                     // Se retorna el usuario y token
                                     return res.json({
@@ -216,6 +219,7 @@ const login = (req, res) => {
                                                 .exec(async (err, user) => {
                                                     // Se verifica si tiene aprobado el inglés
                                                     let englishApproved = await validateEnglishApproved(email);
+                                                    let insuretStudent = await validateInsuredStudent(email);
                                                     // Quitar permiso para acceder a la credencial
                                                     // if (isGraduate) {
                                                     //     user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
@@ -239,7 +243,8 @@ const login = (req, res) => {
                                                         },
                                                         english: englishApproved,
                                                         graduate: isGraduate,
-                                                        semester: user.semester
+                                                        semester: user.semester,
+                                                        insured: insuretStudent
                                                     };
                                                     // Se retorna el usuario y token
                                                     return res.json({
@@ -668,6 +673,68 @@ const validateEnglishApproved = (controlNumber) => {
     });
 };
 
+const validateInsuredStudent = (controlNumber) => {
+    return new Promise((resolve) => {
+        const query = {
+            controlNumber: controlNumber,
+            documents: {
+                $elemMatch: {
+                    type: 'IMSS'
+                }
+            }
+        };
+        _student
+            .findOne(query)
+            .then(student => {
+                if (student) {
+                    resolve(true);
+                }
+                _imss
+                    .findOne({ controlNumber: controlNumber })
+                    .then(data => {
+                        console.log(controlNumber);
+                        if (data) {
+                            console.log(data);
+                            const doc = {
+                                registerDate: data.registerDate,
+                                type: 'IMSS',
+                                status: [
+                                    {
+                                        name: 'ACTIVO',
+                                        active: true,
+                                        message: 'Alumno Asegurado',
+                                        date: data.registerDate
+                                    }
+                                ]
+                            };
+                            _student
+                                .updateOne({ controlNumber: data.controlNumber }, { $addToSet: { documents: doc } })
+                                .then(updated => {
+                                    if (updated.nModified) {
+                                        _imss.deleteOne({ _id: data._id })
+                                            .then(deleted => {
+                                                if (deleted.deletedCount) {
+                                                    resolve(true);
+                                                } else {
+                                                    resolve(false);
+                                                }
+                                            })
+                                            .catch(_ => resolve(false));
+                                    } else {
+                                        resolve(false);
+                                    }
+                                })
+                                .catch(_ => resolve(false));
+                        } else {
+                            resolve(false);
+                        }
+                    })
+                    .catch(_ => resolve(false));
+            })
+            .catch(_ => resolve(false));
+    });
+};
+
 const getRoleId = (roleName) => {
     return new Promise(async (resolve) => {
         await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
@@ -1013,13 +1080,14 @@ function getFullCarrera(carrera) {
     return career;
 }
 
-module.exports = (User, Student, Employee, Role, Career, English) => {
+module.exports = (User, Student, Employee, Role, Career, English, IMSS) => {
     _user = User;
     _student = Student;
     _employee = Employee;
     _role = Role;
     _career = Career;
     _english = English;
+    _imss = IMSS;
     return ({
         register,
         login,
