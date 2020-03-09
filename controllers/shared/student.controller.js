@@ -8,11 +8,12 @@ const superagent = require('superagent');
 const mongoose = require('mongoose');
 var https = require('https');
 const { eInsFiles} = require('../../enumerators/reception-act/enums');
-
+const _ = require('underscore');
 let _student;
 let _request;
 let _role;
 let _period;
+let _activeStudents;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -994,7 +995,7 @@ const sendNotification = (req,res)=>{
         }
     });
 };
- /// endo notifications for app
+ /// end notifications for app
 const isStudentForInscription = (req,res)=>{
     const controlNumber = req.params.nc;
     const options = {
@@ -1167,13 +1168,75 @@ const getInscriptionDocuments = async (req,res)=>{
     }
     return res.status(status.NOT_FOUND).json({err:'El estudiante no esta registrado en la bd de credenciales'});
 };
-module.exports = (Student, Request, Role, Period) => {
+
+const getControlNumberStudents = ()=>{
+    return new Promise((resolve)=>{
+        _student.find({},{controlNumber:1,_id:1}).then(
+            (sts)=>{
+                if(sts) return resolve({students:sts});
+                return resolve({err:'No hay alumnos registrados'});
+            }
+        ).catch( err=> resolve({err}));
+    });
+};
+
+const getActiveStudentsFromSii = async ()=>{
+    const periodCode = await getPeriod();
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/inscritos/20201`,
+        // authentication headers     
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    var students= "";
+    return new Promise((resolve)=>{
+        https.get(options, function (apiInfo) {
+
+            apiInfo.on('data', function (data) {
+                students += data;
+            });
+            apiInfo.on('end', () => {
+                //json con los datos del alumno
+                students = JSON.parse(students);
+                return resolve({students});
+            });
+            apiInfo.on('error', function (e) {
+                return resolve({err:e});
+            });
+        });
+    });
+    
+};
+
+const operation = (list1, list2, isUnion = true) =>
+    list1.filter(
+        (set => a => isUnion === set.has(a.controlNumber))(new Set(list2.map(b => b.nocontrol)))
+    );
+
+const insertActiveStudents = async (req,res)=>{
+    const activeStudents = await getActiveStudentsFromSii();
+    const localStudents = await getControlNumberStudents();
+    if(activeStudents.err){
+        return res.status(status.BAD_REQUEST).json({err:activeStudents.err});
+    }
+    if(localStudents.err){
+        return res.status(status.BAD_REQUEST).json({err:localStudents.err});
+    }
+    return res.status(status.OK).json({students:operation(localStudents.students,activeStudents.students)});
+        // _.intersection(activeStudents.students.map( sts=>sts.nocontrol),localStudents.students.map(lsts=>lsts.controlNumber))}
+};
+
+module.exports = (Student, Request, Role, Period, ActiveStudents) => {
     _student = Student;
     _request = Request;
     
     _role = Role;
     _period = Period;
-    
+    _activeStudents = ActiveStudents;
     return ({
         create,
         getOne,
@@ -1208,6 +1271,7 @@ module.exports = (Student, Request, Role, Period) => {
         isStudentForInscription,
         getInscriptionDocuments,
         getIntegratedExpedient,
-        getArchivedExpedient
+        getArchivedExpedient,
+        insertActiveStudents
     });
 };
