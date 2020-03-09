@@ -68,9 +68,12 @@ const getActiveBookByCareer = (req, res) => {
             }
             return res.status(status.NOT_FOUND).json({ message: 'No existe libro activo' });
         })
-        .catch(_ => (
+        .catch(_ => {
+            console.log(_);
+            
             res.status(status.INTERNAL_SERVER_ERROR)
-                .json({ message: 'Error al buscar libro' })));
+                .json({ message: 'Error al buscar libro' })
+        })       ;
 };
 
 module.exports = (MinuteBook) => {

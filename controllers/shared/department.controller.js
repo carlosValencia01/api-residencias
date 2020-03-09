@@ -5,22 +5,34 @@ let _department;
 let _employee;
 let _position;
 
-const getAll = (req, res) => {
-  _department.find({ "careers.0": { "$exists": true } })
+const getAll = async (req, res) => {
+  const departments = await consultAll();
+  if(departments.err){
+    res.status(status.INTERNAL_SERVER_ERROR)
+    .json({ error: departments.err ? departments.err.toString() : 'Ocurrió un error' });
+  }
+  return res.status(status.OK)
+          .json({ departments});  
+};
+
+const consultAll = (careerAcronym = '') => {
+  return new Promise ((resolve)=>{
+    _department.find({ "careers.0": { "$exists": true } })
     .populate('careers')
     .exec(async (err, data) => {
-      if (!err && data) {
-        const departments = [];
-        for (let department of data) {
-          const depto = await _getDepartmentWithEmployees(department.toObject());
-          departments.push(depto);
+        if (!err && data) {
+          const departments = [];
+          for (let department of data) {
+            const depto = await _getDepartmentWithEmployees(department.toObject());
+            departments.push(depto);
+          }
+          res.status(status.OK)
+            .json({ departments: departments });
+        } else {
+          res.status(status.INTERNAL_SERVER_ERROR)
+            .json({ error: err ? err.toString() : 'Ocurrió un error' });
         }
-        res.status(status.OK)
-          .json({ departments: departments });
-      } else {
-        res.status(status.INTERNAL_SERVER_ERROR)
-          .json({ error: err ? err.toString() : 'Ocurrió un error' });
-      }
+      });
     });
 };
 

@@ -14,7 +14,7 @@ let _request;
 let _ranges;
 let _student;
 let _period;
-
+let _employee;
 const create = async (req, res) => {
     let request = req.body;
     const _req = await _getRequest(req.params._id);
@@ -1689,10 +1689,122 @@ const getPeriods = (req,res)=>{
         }
     );
 };
-module.exports = (Request, Range, Folder, Student, Period) => {
+
+
+const getStudent = (_id)=>{
+    return new Promise((resolve)=>{
+        _student.findOne({_id})
+        .populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        })  
+        .then(
+            (st)=>{
+                if(st){
+                 return  resolve(st);
+                }
+                return resolve(false);
+            },
+            err=>resolve(false)
+        ).catch(err=>resolve(false));
+    });
+};
+
+const getDepartmentBoss = (acronym)=>{
+    
+    return new Promise( async (resolve) => {
+        const departments = await _Departments.consultAll(acronym ? acronym :'');
+        if(departments.err){
+            return resolve(false);
+        }
+        return resolve({boss:departments[0].boss.name.fullName,name:departments[0].name});        
+    } );
+    
+};
+
+const completeTitledRequest =  (req,res) => {    
+    _request.find({$and:[ {isIntegral:false},{adviser:{$exists:false}}]}).then(
+        (requests)=>{
+            if(requests){
+                requests.forEach( async (rq) =>{
+                    const tmpReq = rq;
+                    const student = await getStudent(rq.studentId);
+                    const acronym = student.careerId.acronym;
+                    tmpReq.department = await getDepartmentBoss(acronym);
+                    tmpReq.grade = await _getGradeName(rq.studentId);
+                    tmpReq.adviser = {
+                        name: rq.jury[0].name,
+                        title: rq.jury[0].title,
+                        cedula: rq.jury[0].cedula
+                    };
+                    tmpReq.email = student.email;
+                    tmpReq.telephone = student.phone;
+                    tmpReq.noIntegrants = 1;
+                    tmpReq.doer = 'ANA GUADALUPE RAMÍREZ LÓPEZ';
+                    await new Promise ((resolve)=>{
+                        _request.updateOne({_id:rq._id},{$set:tmpReq}).then(
+                            updated=>resolve(true),
+                            err=>resolve(err)
+                        );
+                    }); 
+                                        
+                });
+                return res.status(status.OK)
+                    .json({ msg:'Tarea comppletada' });
+            }
+            return res.status(status.OK)
+                .json({ msg:'No hay solicitudes' });
+        }
+    );
+    
+};
+const getEmployeeGender = (req,res)=>{
+    const {email} = req.params;    
+    
+    _employee.findOne( {email}).then(
+        (emp)=>{                        
+            if(emp){
+                return res.status(status.OK).json({gender:emp.gender});
+            }
+            _employee.findOne({"name.fullName":email}).then(
+                (employee)=>{
+                    if(employee){
+                        return res.status(status.OK).json({gender:employee.gender});
+                    }
+                    return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+                }
+            ).catch( 
+                err=> res.status(status.BAD_REQUEST).json({err})
+                );
+        }
+    ).catch( 
+        err=> res.status(status.BAD_REQUEST).json({err})
+        );
+};
+
+const getEmployeeGradeAndGender = (req,res)=>{
+    const {email} = req.params;    
+    
+    _employee.findOne( {email}).then(
+        (emp)=>{                        
+            if(emp){
+                return res.status(status.OK).json({gender:emp.gender,grade:emp.grade.reverse()[0].abbreviation});
+            }
+            return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+        }
+    ).catch( 
+        err=> res.status(status.BAD_REQUEST).json({err})
+        );
+};
+
+module.exports = (Request, Range, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
+    _Departments = require('../shared/department.controller')(Department, Employee, Position);
+    _employee = Employee;
     _student = Student;
     _period = Period;
     return ({
@@ -1720,6 +1832,9 @@ module.exports = (Request, Range, Folder, Student, Period) => {
         getResourceLink,
         changeJury,
         period,
-        getPeriods
+        getPeriods,
+        completeTitledRequest,
+        getEmployeeGender,
+        getEmployeeGradeAndGender
     });
 };
