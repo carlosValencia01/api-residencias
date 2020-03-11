@@ -1743,22 +1743,14 @@ const completeTitledRequest =  (req,res) => {
 const getEmployeeGender = (req,res)=>{
     const {email} = req.params;    
     
-    _employee.findOne( {email}).then(
+    _employee.findOne( {$or:[{email},{"name.fullName":email}]}).then(
         (emp)=>{                        
             if(emp){
                 return res.status(status.OK).json({gender:emp.gender});
             }
-            _employee.findOne({"name.fullName":email}).then(
-                (employee)=>{
-                    if(employee){
-                        return res.status(status.OK).json({gender:employee.gender});
-                    }
-                    return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
-                }
-            ).catch( 
-                err=> res.status(status.BAD_REQUEST).json({err})
-                );
-        }
+            return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+        },
+        err=>res.status(status.BAD_REQUEST).json({err})
     ).catch( 
         err=> res.status(status.BAD_REQUEST).json({err})
         );
@@ -1767,7 +1759,7 @@ const getEmployeeGender = (req,res)=>{
 const getEmployeeGradeAndGender = (req,res)=>{
     const {email} = req.params;    
     
-    _employee.findOne( {email}).then(
+    _employee.findOne( {$or:[{email},{"name.fullName":email}]}).then(
         (emp)=>{                        
             if(emp){
                 return res.status(status.OK).json({gender:emp.gender,grade:emp.grade.reverse()[0].abbreviation});
