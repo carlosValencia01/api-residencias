@@ -170,6 +170,73 @@ const insuredCsv = (req, res) => {
     });
 };
 
+const regularizeNSS = async (req, res) => {
+  const students = await _getAllStudents();
+  const _getNewNss = (student) => {
+    const {nss} = student;
+    const studentNss = (nss || '').replace(/\D/g, '');
+    let newNss = '';
+    if (nss) {
+      switch (studentNss.length) {
+        case 10: {
+          if (studentNss.indexOf('0') === 0) {
+            newNss = '';
+            break;
+          }
+          newNss = `0${studentNss}`;
+          break;
+        }
+        case 11: {
+          newNss = studentNss;
+          break;
+        }
+        default: {
+          newNss = '';
+        }
+      }
+      if (nss !== newNss) {
+        return _student
+          .updateOne({_id: student._id}, {$set:{nss: newNss}});
+      }
+      return null
+    }
+    return null;
+  };
+
+  const actions = students.map(_getNewNss);
+  const results = Promise.all(actions);
+
+  results
+    .then((_) => (
+      res
+        .status(status.OK)
+        .json({ message: 'Nss regularizados' })
+    ))
+    .catch((_) => (
+      res
+        .status(status.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Ocurrió un error al regularizar nss' })
+    ));
+};
+
+const convertCSV = async (req, res) => {
+  const data = req.body;
+  const allStudents = await _getAllStudents();
+  const dataWithControlNumber = [];
+  
+  if (!allStudents || !allStudents.length) {
+    return res.status(status.INTERNAL_SERVER_ERROR).json({ error: 'Ocurrió un error' });
+  }
+  for (const student of data) {
+    const _student = allStudents.filter((studentData) => studentData.nss === student.nss)[0];
+    if (_student) {
+      student.controlNumber = _student.controlNumber;
+      dataWithControlNumber.push(student);
+    }
+  }
+  res.status(status.OK).json(dataWithControlNumber);
+};
+
 const _getAllStudents = () => {
   return new Promise(resolve => {
     _student.find({}, { controlNumber: 1, fullName: 1, career: 1, nss: 1 })
@@ -188,5 +255,7 @@ module.exports = (Student, Imss) => {
     getAllUninsured,
     insuredStudent,
     insuredCsv,
+    regularizeNSS,
+    convertCSV,
   });
 };
