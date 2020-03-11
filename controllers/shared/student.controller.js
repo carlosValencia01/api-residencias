@@ -14,6 +14,7 @@ let _request;
 let _role;
 let _period;
 let _activeStudents;
+let _career;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -1212,11 +1213,86 @@ const getActiveStudentsFromSii = async ()=>{
     
 };
 
-const operation = (list1, list2, isUnion = true) =>
-    list1.filter(
-        (set => a => isUnion === set.has(a.controlNumber))(new Set(list2.map(b => b.nocontrol)))
-    );
+const getFullCarrera = (carrera)=>{
+    var career = "";
+    switch (carrera) {
+        case 'L01':
+            career = 'ARQUITECTURA';
+            break;
+        case 'L02':
+            career = 'INGENIERÍA CIVIL';
+            break;
+        case 'L03':
+            career = 'INGENIERÍA ELÉCTRICA';
+            break;
+        case 'L04':
+            career = 'INGENIERÍA INDUSTRIAL';
+            break;
+        case 'L05':
+            career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
+            break;
+        case 'L06':
+            career = 'INGENIERÍA BIOQUÍMICA';
+            break;
+        case 'L07':
+            career = 'INGENIERÍA QUÍMICA';
+            break;
+        case 'L08':
+            career = 'LICENCIATURA EN ADMINISTRACIÓN';
+            break;
+        case 'L12':
+            career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
+            break;
+        case 'L11':
+            career = 'INGENIERÍA MECATRÓNICA';
+            break;
+        case 'ITI':
+            career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
+            break;
+        case 'MTI':
+            career = 'MAESTRÍA EN TECNOLOGÍAS DE LA INFORMACIÓN';
+            break;
+        case 'P01':
+            career = 'MAESTRÍA EN CIENCIAS EN ALIMENTOS';
+            break;
+        case 'DCA':
+            career = 'DOCTORADO EN CIENCIAS EN ALIMENTOS';
+            break;
+        default:
+            break;
+    }    
+    
+    return career;
+};
 
+const difference = (list1, list2) =>
+    list1.filter(
+        (set => a => !set.has(a.nocontrol))(new Set(list2.map(b => b.controlNumber)))
+    );
+//
+const getRoleId = (roleName) => {
+    return new Promise(async (resolve) => {
+        await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
+            if (!err && role) {
+                resolve(role.id);
+            }
+        });
+    });
+};
+const getCareerId = (careerName) => {    
+    return new Promise(async (resolve) => {
+        await _career.findOne({ fullName: careerName }, (err, career) => {
+            if (!err && career) {
+                resolve(career.id);
+            }else{
+                console.log(careerName,'carr',career);
+                      
+                resolve(false);
+                
+            }
+        });
+    });
+};
 const insertActiveStudents = async (req,res)=>{
     const activeStudents = await getActiveStudentsFromSii();
     const localStudents = await getControlNumberStudents();
@@ -1226,17 +1302,92 @@ const insertActiveStudents = async (req,res)=>{
     if(localStudents.err){
         return res.status(status.BAD_REQUEST).json({err:localStudents.err});
     }
-    return res.status(status.OK).json({students:operation(localStudents.students,activeStudents.students)});
-        // _.intersection(activeStudents.students.map( sts=>sts.nocontrol),localStudents.students.map(lsts=>lsts.controlNumber))}
+    // First check students that don't have register in the database
+    const studentsNotRegistered = difference(activeStudents.students,localStudents.students);
+    let mapedStudents;
+    if(studentsNotRegistered.length > 0){ // then create user
+        mapedStudents = await Promise.all(
+            studentsNotRegistered.map( async st=>
+            {
+                    try{
+                        const idRole = await getRoleId('Estudiante');
+                        const career = getFullCarrera(st.career);
+                        const careerId = await getCareerId(career);
+                        let stepWizard;
+                        const incomingType = st.income;
+                        if (st.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
+                            stepWizard = 0;
+                        }
+                        const student = {
+                            controlNumber: st.nocontrol,
+                            firstName:st.firstname,
+                            fatherLastName:st.fatherlastname,
+                            motherLastName:st.motherlastname,
+                            birthPlace:st.birthplace,
+                            dateBirth:st.datebirth,
+                            civilStatus:st.civilstatus,
+                            originSchool:st.originschool,
+                            nameOriginSchool:st.nameoriginschool,
+                            fullName:`${st.firstname} ${st.fatherlastname} ${st.motherlastname}`,
+                            stepWizard,
+                            status:st.status,
+                            idRole,
+                            careerId,
+                            career,
+                            semester:st.semester
+                        };                    
+                        
+                        return student;
+                    }catch(e){                                        
+                        return e;
+                    }
+                    
+                }
+            )
+        );
+        await new Promise((resolve)=>{
+            _student.insertMany(mapedStudents).then(
+                created=>{console.log(created,'new students');
+                    resolve(true);
+                },
+                err=>{resolve(err); console.log(err);
+                }
+            ).catch(err=>{resolve(err); console.log(err);
+            });
+        });        
+    }
+    // Create activestudents collection
+    // first drop collection
+    mongoose.connection.db.dropCollection('activestudents')
+    .then(  droped=>{console.log(droped,'droped');},
+            err=>{}
+    ).catch(err=>{});
+
+    //Second insert active students
+    await new Promise((resolve)=>{
+        _activeStudents.insertMany(activeStudents.students.map( st=> ({controlNumber:st.nocontrol}))).then(
+            created=>{console.log(created,'active students'); resolve(true);},
+            err=>{resolve(err); console.log(err);}
+            ).catch(err=>{resolve(err); console.log(err);});        
+    });
+    
+    return res.status(status.OK).json({msg:'Se completo la operacion'});
+    
+};
+const getAllActiveStudents = (req,res)=>{
+    _activeStudents.find({}).then(
+        activeStudents=>res.status(status.OK).json({activeStudents}),
+        err=>res.status(status.BAD_REQUEST).json({err})
+    ).catch(err=>res.status(status.BAD_REQUEST).json({err}));
 };
 
-module.exports = (Student, Request, Role, Period, ActiveStudents) => {
-    _student = Student;
-    _request = Request;
-    
-    _role = Role;
-    _period = Period;
+module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _activeStudents = ActiveStudents;
+    _career = Career;
+    _period = Period;
+    _request = Request;
+    _role = Role;
+    _student = Student;        
     return ({
         create,
         getOne,
@@ -1272,6 +1423,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents) => {
         getInscriptionDocuments,
         getIntegratedExpedient,
         getArchivedExpedient,
-        insertActiveStudents
+        insertActiveStudents,
+        getAllActiveStudents
     });
 };

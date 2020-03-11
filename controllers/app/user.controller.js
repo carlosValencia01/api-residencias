@@ -313,7 +313,6 @@ const getStudentData = (email, password) => {
             apiInfo.on('end', () => {
                 //json con los datos del alumno
                 studentNew = JSON.parse(studentNew);
-                console.log(studentNew);
                 if (studentNew.error) {
                     resolve(false);
                 }
@@ -388,15 +387,10 @@ const getStudentData = (email, password) => {
                                 break;
                         }
                         // Obtener id del rol para estudiente
-                        studentNew.estatus = careerN.estatus;
-                        console.log(2, studentNew.career);
-                        
-                        const studentId = await getRoleId('Estudiante');
-                        console.log(3);
-                        
+                        studentNew.estatus = careerN.estatus;        
+                        const studentId = await getRoleId('Estudiante');                        
                         studentNew.idRole = studentId;
                         studentNew.careerId = await getCareerId(studentNew.career);
-
                         resolve(studentNew);
 
                     });
