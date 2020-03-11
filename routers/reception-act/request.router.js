@@ -26,6 +26,12 @@ module.exports = (wagner) => {
     router.get('/', (req, res) =>
         requestCtrl.getAllRequest(req, res));
 
+    router.get('/employee/gender/:email', (req, res) =>
+        requestCtrl.getEmployeeGender(req, res));
+
+    router.get('/employee/grade/gender/:email', (req, res) =>
+        requestCtrl.getEmployeeGradeAndGender(req, res));
+
     router.post('/settitled', (req, res) =>
         requestCtrl.completeTitledRequest(req, res));
 

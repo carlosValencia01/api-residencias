@@ -15,7 +15,7 @@ let _request;
 let _ranges;
 let _student;
 let _period;
-
+let _employee;
 const create = async (req, res) => {
     let request = req.body;
     const _req = await _getRequest(req.params._id);
@@ -1740,12 +1740,51 @@ const completeTitledRequest =  (req,res) => {
     );
     
 };
+const getEmployeeGender = (req,res)=>{
+    const {email} = req.params;    
+    
+    _employee.findOne( {email}).then(
+        (emp)=>{                        
+            if(emp){
+                return res.status(status.OK).json({gender:emp.gender});
+            }
+            _employee.findOne({"name.fullName":email}).then(
+                (employee)=>{
+                    if(employee){
+                        return res.status(status.OK).json({gender:employee.gender});
+                    }
+                    return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+                }
+            ).catch( 
+                err=> res.status(status.BAD_REQUEST).json({err})
+                );
+        }
+    ).catch( 
+        err=> res.status(status.BAD_REQUEST).json({err})
+        );
+};
+
+const getEmployeeGradeAndGender = (req,res)=>{
+    const {email} = req.params;    
+    
+    _employee.findOne( {email}).then(
+        (emp)=>{                        
+            if(emp){
+                return res.status(status.OK).json({gender:emp.gender,grade:emp.grade.reverse()[0].abbreviation});
+            }
+            return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+        }
+    ).catch( 
+        err=> res.status(status.BAD_REQUEST).json({err})
+        );
+};
 
 module.exports = (Request, Range, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
-    _Departments = require('../shared/department.controller')(Department, Employee, Position);   
+    _Departments = require('../shared/department.controller')(Department, Employee, Position);
+    _employee = Employee;
     _student = Student;
     _period = Period;
     return ({
@@ -1774,6 +1813,8 @@ module.exports = (Request, Range, Folder, Student, Period,Department, Employee, 
         changeJury,
         period,
         getPeriods,
-        completeTitledRequest
+        completeTitledRequest,
+        getEmployeeGender,
+        getEmployeeGradeAndGender
     });
 };
