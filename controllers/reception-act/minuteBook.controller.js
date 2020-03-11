@@ -54,11 +54,12 @@ const getAllActiveMinuteBooks = (req, res) => {
 };
 
 const getActiveBookByCareer = (req, res) => {
-    const { _careerId } = req.params;
+    const { _careerId,titleOption } = req.params;
     const query = {
         $and: [
             { careers: _careerId },
-            { status: true }
+            { status: true },
+            {titleOption}
         ]
     };
     _minuteBook.findOne(query)
@@ -80,7 +81,7 @@ module.exports = (MinuteBook) => {
         createMinuteBook,
         changeMinuteBookStatus,
         getAllActiveMinuteBooks,
-        getActiveBookByCareer,
+        getActiveBookByCareer
     });
 };
 

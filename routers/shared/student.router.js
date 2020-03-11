@@ -12,9 +12,9 @@ var storage = multer.diskStorage({
 let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
-
-    const studentCtrl = wagner.invoke((Student, Request, Role, Period, Folder) =>
-        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, Folder));
+    
+    const studentCtrl = wagner.invoke((Student, Request, Role, Period, Career) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, Career));
         const driveCtrl = wagner.invoke((Folder, Student, Period) =>  
         require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
 
@@ -69,7 +69,8 @@ module.exports = (wagner) => {
     router.get('/get/inscription/ready/:nc', (req, res) =>
         studentCtrl.isStudentForInscription(req, res));
 
-
+    router.get('/get/status/:controlNumber', (req, res) =>
+        studentCtrl.getStatus(req, res));
 
     router.post('/', upload.single('image'), (req, res) => {
         console.log('Creando Student con image!');
@@ -87,6 +88,9 @@ module.exports = (wagner) => {
 
     router.post('/notify', (req, res) =>
         studentCtrl.sendNotification(req, res));
+
+    router.post('/create/sii/:controlNumber', (req, res) =>
+        studentCtrl.createStudentFromSII(req, res));
 
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
