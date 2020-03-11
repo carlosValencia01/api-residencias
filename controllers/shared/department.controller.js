@@ -20,20 +20,21 @@ const consultAll = (careerAcronym = '') => {
     _department.find({ "careers.0": { "$exists": true } })
     .populate('careers')
     .exec(async (err, data) => {
-        if (!err && data) {
-          const departments = [];
-          for (let department of data) {
-            const depto = await _getDepartmentWithEmployees(department.toObject());
-            departments.push(depto);
-          }
-          res.status(status.OK)
-            .json({ departments: departments });
-        } else {
-          res.status(status.INTERNAL_SERVER_ERROR)
-            .json({ error: err ? err.toString() : 'Ocurrió un error' });
+      if (!err && data) {
+        const departments = [];
+        for (let department of data) {
+          const depto = await _getDepartmentWithEmployees(department.toObject());
+          departments.push(depto);
         }
-      });
-    });  
+        resolve(careerAcronym === '' ? departments : departments.filter(
+          dep=> dep.careers.filter(car=>car.acronym.toLowerCase() === careerAcronym.toLocaleLowerCase()).length > 0
+        ));
+      } else {
+        resolve({err});
+       
+      }
+    });
+  });
 };
 
 const _getDepartmentWithEmployees = depto => {

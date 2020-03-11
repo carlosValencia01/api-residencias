@@ -1,12 +1,5 @@
 const router = require('express').Router();
-const multer = require('multer');
-const mv = require('mv');
-const path = require('path');
-const uploads = require('../../utils/uploads');
-const handler = require('../../utils/handler');
-const status = require('http-status');
-const UPLOAD_FILE = 'documents/';
-const UPLOAD_FILE_TEMP = 'tmpFile/';
+
 
 module.exports = (wagner) => {
     const requestCtrl = wagner.invoke((Request, Range, Folder, Student,Period,Department, Employee, Position) =>
