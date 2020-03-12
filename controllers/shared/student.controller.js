@@ -428,7 +428,12 @@ const getByControlNumber = (req, res) => {
 
 const getStudentByControlNumber = (req, res) => {
     const { controlNumber } = req.body;
-    _student.find({ controlNumber: controlNumber }, { fullName: 1, career: 1, controlNumber: 1 }).exec(handler.handleOne.bind(null, 'student', res));
+    _student.find({ controlNumber: controlNumber }, { fullName: 1, career: 1, controlNumber: 1,careerId:1 }).populate({
+        path: 'careerId', model: 'Career',
+        select: {
+            fullName: 1, shortName: 1, acronym: 1,grade:1
+        }
+    }).exec(handler.handleOne.bind(null, 'student', res));
 };
 
 const search = (req, res) => {
@@ -1159,6 +1164,94 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
     });
 };
 
+const getStatusFromTotalSubjectsInSII = async (controlNumber)=>{
+    const periodCode = await getPeriod();
+    
+    console.log(periodCode);
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/total/${controlNumber}/${periodCode}`,        
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    
+    return new Promise(async (resolve) => {
+        var subjects = "";
+
+        https.get(options,function (apiInfo) {
+
+            apiInfo.on('data', function (data) {
+                subjects += data;
+            });
+            apiInfo.on('end', async () => {
+                //json con los datos del alumno
+                subjects = JSON.parse(subjects);
+                resolve(subjects.total > 0 ? 'ACTIVO': 'NO ACTIVO');
+            });
+            apiInfo.on('error', function (e) {
+                resolve(false);
+            });
+        });
+    });
+};
+
+const getStudentDataFromSII = (controlNumber) => {    
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/info/${controlNumber}`,        
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    
+    return new Promise(async (resolve) => {
+        var studentNew = "";
+
+        https.get(options,function (apiInfo) {
+
+            apiInfo.on('data', function (data) {
+                studentNew += data;
+            });
+            apiInfo.on('end', async () => {
+                //json con los datos del alumno
+                studentNew = JSON.parse(studentNew);    
+                                                            
+                studentNew.firstName = studentNew.firstname;
+                studentNew.fatherLastName = studentNew.fatherlastname;
+                studentNew.motherLastName = studentNew.motherlastname;
+                studentNew.birthPlace = studentNew.birthplace;
+                studentNew.dateBirth = studentNew.datebirth;
+                studentNew.civilStatus = studentNew.civilstatus;
+                studentNew.originSchool = studentNew.originschool;
+                studentNew.nameOriginSchool = studentNew.nameoriginschool;
+                studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;                
+                studentNew.controlNumber = controlNumber;
+                const incomingType = studentNew.income;
+                if (studentNew.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
+                    studentNew.stepWizard = 0;
+                }
+                studentNew.career = getFullCarrera(studentNew.career);                
+                // Obtener id del rol para estudiente                
+                const studentId = await getStudentRoleId();                                             
+                studentNew.idRole = studentId;
+                studentNew.careerId = await getCareerId(studentNew.career);
+
+                resolve(studentNew);
+            });
+            apiInfo.on('error', function (e) {
+                resolve(false);
+            });
+        });
+    });
+};
+
+
+
 const getInscriptionDocuments = async (req,res)=>{
     const {nc,grade} = req.params;
     const documents = await mapInscriptionDocuments(nc,grade.toLowerCase().trim());
@@ -1187,7 +1280,7 @@ const getActiveStudentsFromSii = async ()=>{
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
         port: 443,
-        path: `/alumnos/inscritos/20201`,
+        path: `/alumnos/inscritos/${periodCode}`,
         // authentication headers     
         headers: {
             'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
@@ -1279,16 +1372,41 @@ const getRoleId = (roleName) => {
         });
     });
 };
+
+const createStudentFromSII = async (req,res)=>{
+    const {controlNumber} = req.params;
+    const studentData = await getStudentDataFromSII(controlNumber);
+    const studentStatus = await getStatusFromTotalSubjectsInSII(controlNumber);
+    if(studentData){
+        _student.create(studentData).then(
+            created=>res.status(status.OK).json({student:studentData, status:studentStatus})
+        ).catch(
+            err=>res.status(status.BAD_REQUEST).json({err: err.code === 11000 ? 'El alumno ya se encuentra registrado': err})
+        );
+    }else{
+        res.status(status.BAD_REQUEST).json({err:'No encontrado'});
+    }
+    
+};
+
+const getStatus = async (req,res)=>{
+    const {controlNumber} = req.params;
+    const studentStatus = await getStatusFromTotalSubjectsInSII(controlNumber);
+    if(studentStatus){
+        res.status(status.OK).json({status:studentStatus})
+    }else{
+        res.status(status.BAD_REQUEST).json({err:'No encontrado'});
+    }
+};
 const getCareerId = (careerName) => {    
+    
     return new Promise(async (resolve) => {
         await _career.findOne({ fullName: careerName }, (err, career) => {
             if (!err && career) {
                 resolve(career.id);
             }else{
-                console.log(careerName,'carr',career);
-                      
+                console.log(err);
                 resolve(false);
-                
             }
         });
     });
@@ -1347,7 +1465,7 @@ const insertActiveStudents = async (req,res)=>{
         );
         await new Promise((resolve)=>{
             _student.insertMany(mapedStudents).then(
-                created=>{console.log(created,'new students');
+                created=>{
                     resolve(true);
                 },
                 err=>{resolve(err); console.log(err);
@@ -1359,19 +1477,19 @@ const insertActiveStudents = async (req,res)=>{
     // Create activestudents collection
     // first drop collection
     mongoose.connection.db.dropCollection('activestudents')
-    .then(  droped=>{console.log(droped,'droped');},
+    .then(  droped=>{},
             err=>{}
     ).catch(err=>{});
 
     //Second insert active students
-    await new Promise((resolve)=>{
+    const created = await new Promise((resolve)=>{
         _activeStudents.insertMany(activeStudents.students.map( st=> ({controlNumber:st.nocontrol}))).then(
-            created=>{console.log(created,'active students'); resolve(true);},
+            created=>{resolve(created.length);},
             err=>{resolve(err); console.log(err);}
             ).catch(err=>{resolve(err); console.log(err);});        
     });
     
-    return res.status(status.OK).json({msg:'Se completo la operacion'});
+    return res.status(status.OK).json({msg:'Se completo la operación', created});
     
 };
 const getAllActiveStudents = (req,res)=>{
@@ -1421,6 +1539,8 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
         sendNotification,
         isStudentForInscription,
         getInscriptionDocuments,
+        createStudentFromSII,
+        getStatus,
         getIntegratedExpedient,
         getArchivedExpedient,
         insertActiveStudents,

@@ -1093,6 +1093,6 @@ module.exports = (User, Student, Employee, Role, Career, English, IMSS) => {
         studentLogin,
         updateFullName,
         loginMiGraduacion,
-        titledRegister
+        titledRegister            
     });
 };

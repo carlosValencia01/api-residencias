@@ -1,16 +1,9 @@
 const router = require('express').Router();
-const multer = require('multer');
-const mv = require('mv');
-const path = require('path');
-const uploads = require('../../utils/uploads');
-const handler = require('../../utils/handler');
-const status = require('http-status');
-const UPLOAD_FILE = 'documents/';
-const UPLOAD_FILE_TEMP = 'tmpFile/';
+
 
 module.exports = (wagner) => {
-    const requestCtrl = wagner.invoke((Request, Range, Folder, Student,Period) =>
-        require('../../controllers/reception-act/request.controller')(Request, Range, Folder, Student,Period));
+    const requestCtrl = wagner.invoke((Request, Range, Folder, Student,Period,Department, Employee, Position) =>
+        require('../../controllers/reception-act/request.controller')(Request, Range, Folder, Student,Period,Department, Employee, Position));
 
     router.post('/create/:_id', (req, res) => {
         return requestCtrl.create(req, res);
@@ -25,6 +18,15 @@ module.exports = (wagner) => {
 
     router.get('/', (req, res) =>
         requestCtrl.getAllRequest(req, res));
+
+    router.get('/employee/gender/:email', (req, res) =>
+        requestCtrl.getEmployeeGender(req, res));
+
+    router.get('/employee/grade/gender/:email', (req, res) =>
+        requestCtrl.getEmployeeGradeAndGender(req, res));
+
+    router.post('/settitled', (req, res) =>
+        requestCtrl.completeTitledRequest(req, res));
 
     router.get('/periods', (req, res) =>
         requestCtrl.getPeriods(req, res));

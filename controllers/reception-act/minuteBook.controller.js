@@ -54,11 +54,12 @@ const getAllActiveMinuteBooks = (req, res) => {
 };
 
 const getActiveBookByCareer = (req, res) => {
-    const { _careerId } = req.params;
+    const { _careerId,titleOption } = req.params;
     const query = {
         $and: [
             { careers: _careerId },
-            { status: true }
+            { status: true },
+            {titleOption}
         ]
     };
     _minuteBook.findOne(query)
@@ -68,9 +69,12 @@ const getActiveBookByCareer = (req, res) => {
             }
             return res.status(status.NOT_FOUND).json({ message: 'No existe libro activo' });
         })
-        .catch(_ => (
+        .catch(_ => {
+            console.log(_);
+            
             res.status(status.INTERNAL_SERVER_ERROR)
-                .json({ message: 'Error al buscar libro' })));
+                .json({ message: 'Error al buscar libro' })
+        })       ;
 };
 
 module.exports = (MinuteBook) => {
@@ -80,7 +84,7 @@ module.exports = (MinuteBook) => {
         createMinuteBook,
         changeMinuteBookStatus,
         getAllActiveMinuteBooks,
-        getActiveBookByCareer,
+        getActiveBookByCareer
     });
 };
 

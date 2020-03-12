@@ -10,11 +10,12 @@ const verifyCodeTemplate = require('../../templates/verifyCode');
 const mailTemplate = require('../../templates/notificationMailReception');
 
 let _Drive;
+let _Departments;
 let _request;
 let _ranges;
 let _student;
 let _period;
-
+let _employee;
 const create = async (req, res) => {
     let request = req.body;
     const _req = await _getRequest(req.params._id);
@@ -42,7 +43,7 @@ const create = async (req, res) => {
             .json({ error: 'Error al recuperar grado' });
     }
     request.verificationCode = _generateVerificationCode(6);
-    request.periodId = await _Drive.getActivePeriod()._id;
+    request.periodId = (await _Drive.getActivePeriod())._id;    
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -90,10 +91,15 @@ const create = async (req, res) => {
 
 };
 
-const createTitled = (req, res) => {
+const createTitled = async (req, res) => {
     let request = req.body;
     request.applicationDate = new Date();
     request.lastModified = new Date();
+    request.periodId = (await _Drive.getActivePeriod())._id;
+    request.grade = await _getGradeName(request.studentId);
+    const student = await getStudent(request.studentId); 
+    request.email = student.email;
+    request.telephone = student.phone;
     _request.findOne({ studentId: request.studentId }, (error, titled) => {
         if (error) {
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -112,8 +118,7 @@ const createTitled = (req, res) => {
                 })
             });
         }
-    })
-
+    });
 }
 
 const removeTitled = (req, res) => {
@@ -153,12 +158,7 @@ const getRequestByStatus = (req, res) => {
     const { phase } = req.params;
     switch (phase) {
         case eRole.eSECRETARY: {
-            _request.find({
-                    $and: [
-                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } },
-                        { isIntegral: true }
-                    ]
-                })
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } })
                 .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
@@ -183,12 +183,7 @@ const getRequestByStatus = (req, res) => {
             break;
         }
         case eRole.eHEADSCHOOLSERVICE: {
-            _request.find({
-                    $and: [
-                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } },
-                        { isIntegral: true }
-                    ]
-                })
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } })
                 .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
@@ -212,12 +207,7 @@ const getRequestByStatus = (req, res) => {
             break;
         }
         case eRole.eCOORDINATION: {
-            _request.find({
-                    $and: [
-                        { phase: { $ne: 'Capturado' } },
-                        { isIntegral: true }
-                    ]
-                })
+            _request.find({ phase: { $ne: 'Capturado' } })
                 .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
@@ -241,12 +231,7 @@ const getRequestByStatus = (req, res) => {
             break;
         }
         case eRole.eCHIEFACADEMIC: {
-            _request.find({
-                    $and: [
-                        { phase: { $nin: ['Capturado', 'Enviado'] } },
-                        { isIntegral: true }
-                    ]
-                })
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
                 .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
@@ -270,12 +255,7 @@ const getRequestByStatus = (req, res) => {
             break;
         }
         case eRole.eSTUDENTSERVICES: {
-            _request.find({
-                    $and: [
-                        { phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } },
-                        { isIntegral: true }
-                    ]
-                })
+            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } })
                 .populate({
                     path: 'studentId', model: 'Student',
                     populate: { path: 'careerId', model: 'Career' },
@@ -1447,6 +1427,7 @@ const groupRequest = (req, res) => {
             {
                 $match: {
                     "proposedDate": { $gte: StartDate, $lte: EndDate }, $or: [
+                        { "phase": "Asignado", "status": "Process" },
                         { "phase": "Realizado", "status": "Process" },
                         { "phase": "Realizado", "status": "None" }]
                 }
@@ -1689,10 +1670,114 @@ const getPeriods = (req,res)=>{
         }
     );
 };
-module.exports = (Request, Range, Folder, Student, Period) => {
+
+
+const getStudent = (_id)=>{
+    return new Promise((resolve)=>{
+        _student.findOne({_id})
+        .populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        })  
+        .then(
+            (st)=>{
+                if(st){
+                 return  resolve(st);
+                }
+                return resolve(false);
+            },
+            err=>resolve(false)
+        ).catch(err=>resolve(false));
+    });
+};
+
+const getDepartmentBoss = (acronym)=>{
+    
+    return new Promise( async (resolve) => {
+        const departments = await _Departments.consultAll(acronym ? acronym :'');
+        if(departments.err){
+            return resolve(false);
+        }
+        return resolve({boss:departments[0].boss.name.fullName,name:departments[0].name});        
+    } );
+    
+};
+
+const completeTitledRequest =  (req,res) => {    
+    _request.find({$and:[ {isIntegral:false},{adviser:{$exists:false}}]}).then(
+        (requests)=>{
+            if(requests){
+                requests.forEach( async (rq) =>{
+                    const tmpReq = rq;
+                    const student = await getStudent(rq.studentId);
+                    const acronym = student.careerId.acronym;
+                    tmpReq.department = await getDepartmentBoss(acronym);
+                    tmpReq.grade = await _getGradeName(rq.studentId);
+                    tmpReq.adviser = {
+                        name: rq.jury[0].name,
+                        title: rq.jury[0].title,
+                        cedula: rq.jury[0].cedula
+                    };
+                    tmpReq.email = student.email;
+                    tmpReq.telephone = student.phone;
+                    tmpReq.noIntegrants = 1;
+                    tmpReq.doer = 'ANA GUADALUPE RAMÍREZ LÓPEZ';
+                    await new Promise ((resolve)=>{
+                        _request.updateOne({_id:rq._id},{$set:tmpReq}).then(
+                            updated=>resolve(true),
+                            err=>resolve(err)
+                        );
+                    }); 
+                                        
+                });
+                return res.status(status.OK)
+                    .json({ msg:'Tarea comppletada' });
+            }
+            return res.status(status.OK)
+                .json({ msg:'No hay solicitudes' });
+        }
+    );
+    
+};
+const getEmployeeGender = (req,res)=>{
+    const {email} = req.params;    
+    
+    _employee.findOne( {$or:[{email},{"name.fullName":email}]}).then(
+        (emp)=>{                        
+            if(emp){
+                return res.status(status.OK).json({gender:emp.gender});
+            }
+            return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+        },
+        err=>res.status(status.BAD_REQUEST).json({err})
+    ).catch( 
+        err=> res.status(status.BAD_REQUEST).json({err})
+        );
+};
+
+const getEmployeeGradeAndGender = (req,res)=>{
+    const {email} = req.params;    
+    
+    _employee.findOne( {$or:[{email},{"name.fullName":email}]}).then(
+        (emp)=>{                        
+            if(emp){
+                return res.status(status.OK).json({gender:emp.gender,grade:emp.grade.reverse()[0].abbreviation});
+            }
+            return res.status(status.NOT_FOUND).json({msg:'Usuario no encontrado'});
+        }
+    ).catch( 
+        err=> res.status(status.BAD_REQUEST).json({err})
+        );
+};
+
+module.exports = (Request, Range, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
     _ranges = Range;
     _Drive = require('../app/google-drive.controller')(Folder);
+    _Departments = require('../shared/department.controller')(Department, Employee, Position);
+    _employee = Employee;
     _student = Student;
     _period = Period;
     return ({
@@ -1720,6 +1805,9 @@ module.exports = (Request, Range, Folder, Student, Period) => {
         getResourceLink,
         changeJury,
         period,
-        getPeriods
+        getPeriods,
+        completeTitledRequest,
+        getEmployeeGender,
+        getEmployeeGradeAndGender
     });
 };

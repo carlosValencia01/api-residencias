@@ -72,13 +72,17 @@ module.exports = (wagner) => {
     router.get('/get/active/students', (req, res) =>
         studentCtrl.getAllActiveStudents(req, res));
 
+        
+    router.get('/get/status/sii/:controlNumber', (req, res) =>
+        studentCtrl.getStatus(req, res));
+        
+    router.post('/', upload.single('image'), (req, res) => {
+            console.log('Creando Student con image!');
+            studentCtrl.create(req, res);
+        });
+        
     router.post('/active/create', (req, res) =>
         studentCtrl.insertActiveStudents(req, res));
-
-    router.post('/', upload.single('image'), (req, res) => {
-        console.log('Creando Student con image!');
-        studentCtrl.create(req, res);
-    });
 
     router.post('/search/numero', (req, res) =>
         studentCtrl.getStudentByControlNumber(req, res));
@@ -91,6 +95,9 @@ module.exports = (wagner) => {
 
     router.post('/notify', (req, res) =>
         studentCtrl.sendNotification(req, res));
+
+    router.post('/create/sii/:controlNumber', (req, res) =>
+        studentCtrl.createStudentFromSII(req, res));
 
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
