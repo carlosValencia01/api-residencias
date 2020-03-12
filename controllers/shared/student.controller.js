@@ -1345,8 +1345,8 @@ const getStatus = async (req,res)=>{
         res.status(status.BAD_REQUEST).json({err:'No encontrado'});
     }
 };
+
 const getCareerId = (careerName) => {    
-    
     return new Promise(async (resolve) => {
         await _career.findOne({ fullName: careerName }, (err, career) => {
             if (!err && career) {
@@ -1358,6 +1358,76 @@ const getCareerId = (careerName) => {
         });
     });
 };
+
+const addCampaignStudent = async (req, res) => {
+    const {_controlNumber} = req.params;
+    const doc = req.body;
+    const activePeriod =  await getPeriod();
+    doc.status = [
+      {
+          name: 'IMPRESA',
+          active: false,
+          message: activePeriod,
+          date: new Date()
+      }
+    ];
+    _student.updateOne({controlNumber: _controlNumber}, {$addToSet: {documents: doc}})
+      .then(updated => {
+        if (updated.nModified) {
+          return res.status(status.OK).json({message: 'Estudiante agregado a campaña con éxito'});
+        }
+        return res.status(status.NOT_FOUND).json({error: 'No se encontró el estudiante'});
+      })
+      .catch(_ => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al agregar estudiante a campaña'});
+      })
+  };
+
+  const removeCampaignStudent = async (req, res) => {
+    const { _controlNumber } = req.params;
+    _student
+      .findOne({ controlNumber: _controlNumber, documents: { $elemMatch: { type: 'CREDENCIAL' } } })
+      .then(student => {
+        if (!student) {
+          return handler.handleError(res, status.NOT_FOUND, { message: 'Estudiante no encontrado' });
+        }
+        const index = student.documents.findIndex(item => item.type === 'CREDENCIAL');
+        student.documents.splice(index, 1);
+        student.save(function (error) {
+          if (error) {
+            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
+          }
+          return res.status(status.OK).json({ student: student });
+        })
+      })
+      .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({error: ''}));
+  };
+
+  const getAllCampaign = async  (req, res) => {
+    const activePeriod =  await getPeriod();
+    const query = {
+      $and: [
+        { documents: { $exists: true } },
+        { documents: { $elemMatch: {$and:[ {type: 'CREDENCIAL'},{'status.0.message':activePeriod}] } } }
+
+      ]
+    };
+    _student.find(query, {controlNumber: 1, fullName: 1, fatherLastName:1, motherLastName:1, firstName:1, curp:1, career: 1, nss: 1 , documents: 1 }).exec(handler.handleMany.bind(null, 'students', res));
+  };
+
+  const registerCretentialStudent = async (req, res) => {
+    const { _id } = req.params;
+    const _status = req.body.status;
+    _student
+      .updateOne({ _id: _id, documents: { $elemMatch: { type: 'CREDENCIAL' } } }, { $set: { 'documents.$.status.0.active': _status } })
+      .then(student => {
+        if (!student) {
+          return handler.handleError(res, status.NOT_FOUND, { message: 'Estudiante no encontrado' });
+        }
+        return res.status(status.OK).json({ student });
+      })
+      .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({error: ''}));
+  };
 
 module.exports = (Student, Request, Role, Period, Career) => {
     _student = Student;
@@ -1401,6 +1471,10 @@ module.exports = (Student, Request, Role, Period, Career) => {
         createStudentFromSII,
         getStatus,
         getIntegratedExpedient,
-        getArchivedExpedient
+        getArchivedExpedient,
+        addCampaignStudent,
+        removeCampaignStudent,
+        getAllCampaign,
+        registerCretentialStudent,
     });
 };

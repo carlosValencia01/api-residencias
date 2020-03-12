@@ -23,7 +23,7 @@ const search = (req, res) => {
       documents: { $elemMatch: { type: 'IMSS' } }
     };
   }
-  _student.find(query, { controlNumber: 1, fullName: 1, career: 1, nss: 1, 'documents.$': 1 }).exec(handler.handleMany.bind(null, 'students', res));
+  _student.find(query, { controlNumber: 1, fullName: 1, fatherLastName:1, motherLastName:1, firstName:1, curp:1, career: 1, nss: 1 , 'documents.$': 1 }).exec(handler.handleMany.bind(null, 'students', res));
 };
 
 const getAllInsured = (req, res) => {
@@ -33,7 +33,7 @@ const getAllInsured = (req, res) => {
       { documents: { $elemMatch: { type: 'IMSS' } } }
     ]
   };
-  _student.find(query, { controlNumber: 1, fullName: 1, career: 1, nss: 1, 'documents.$': 1 }).sort({ 'documents.$.registerDate': -1 }).exec(handler.handleMany.bind(null, 'students', res));
+  _student.find(query, {controlNumber: 1, fullName: 1, fatherLastName:1, motherLastName:1, firstName:1, curp:1, career: 1, nss: 1 , 'documents.$': 1 }).sort({ 'documents.$.registerDate': -1 }).exec(handler.handleMany.bind(null, 'students', res));
 };
 
 const getAllUninsured = async (req, res) => {
@@ -239,7 +239,7 @@ const convertCSV = async (req, res) => {
 
 const _getAllStudents = () => {
   return new Promise(resolve => {
-    _student.find({}, { controlNumber: 1, fullName: 1, career: 1, nss: 1 })
+    _student.find({}, { controlNumber: 1, fullName: 1, fatherLastName:1, motherLastName:1, firstName:1, curp:1, career: 1, nss: 1 })
       .then(data => resolve(data))
       .catch(_ => resolve([]));
   });

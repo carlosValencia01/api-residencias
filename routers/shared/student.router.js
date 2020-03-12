@@ -109,5 +109,17 @@ module.exports = (wagner) => {
     router.put('/document/status/:_id', (req, res) =>
         studentCtrl.updateDocumentLog(req, res));
 
+    router.put('/campaign/:_controlNumber', (req, res) =>
+        studentCtrl.addCampaignStudent(req, res));
+    
+    router.delete('/campaign/:_controlNumber', (req, res) =>
+        studentCtrl.removeCampaignStudent(req, res));
+
+    router.get('/campaign/students/all', (req, res) =>
+        studentCtrl.getAllCampaign(req, res));
+
+    router.put('/credential/:_id', (req, res) =>
+        studentCtrl.registerCretentialStudent(req, res));
+
     return router;
 };
