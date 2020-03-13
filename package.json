@@ -30,7 +30,7 @@
     "sendgrid": "^5.2.3",
     "stream-buffers": "^3.0.2",
     "superagent": "^4.0.0-beta.5",
-    "underscore": "^1.9.1",
+    "underscore": "^1.9.2",
     "wagner-core": "^0.2.0",
     "webpack": "^3.12.0"
   },

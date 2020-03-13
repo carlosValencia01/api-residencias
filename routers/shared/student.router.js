@@ -13,9 +13,9 @@ let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
     
-    const studentCtrl = wagner.invoke((Student, Request, Role, Period, Career) =>
-        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, Career));
-        const driveCtrl = wagner.invoke((Folder, Student, Period) =>  
+    const studentCtrl = wagner.invoke((Student, Request, Role, Period, ActiveStudents, Career) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, ActiveStudents, Career));
+    const driveCtrl = wagner.invoke((Folder, Student, Period) =>  
         require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
 
     router.get('/', (req, res) =>
@@ -69,13 +69,20 @@ module.exports = (wagner) => {
     router.get('/get/inscription/ready/:nc', (req, res) =>
         studentCtrl.isStudentForInscription(req, res));
 
-    router.get('/get/status/:controlNumber', (req, res) =>
-        studentCtrl.getStatus(req, res));
+    router.get('/get/active/students', (req, res) =>
+        studentCtrl.getAllActiveStudents(req, res));
 
+        
+    router.get('/get/status/sii/:controlNumber', (req, res) =>
+        studentCtrl.getStatus(req, res));
+        
     router.post('/', upload.single('image'), (req, res) => {
-        console.log('Creando Student con image!');
-        studentCtrl.create(req, res);
-    });
+            console.log('Creando Student con image!');
+            studentCtrl.create(req, res);
+        });
+        
+    router.post('/active/create', (req, res) =>
+        studentCtrl.insertActiveStudents(req, res));
 
     router.post('/search/numero', (req, res) =>
         studentCtrl.getStudentByControlNumber(req, res));

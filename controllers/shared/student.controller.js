@@ -8,12 +8,14 @@ const superagent = require('superagent');
 const mongoose = require('mongoose');
 var https = require('https');
 const { eInsFiles} = require('../../enumerators/reception-act/enums');
-
+const _ = require('underscore');
 let _student;
 let _request;
 let _role;
 let _period;
+let _activeStudents;
 let _career;
+
 const getAll = (req, res) => {
     _student.find({}).populate({
         path: 'careerId', model: 'Career',
@@ -999,7 +1001,7 @@ const sendNotification = (req,res)=>{
         }
     });
 };
- /// endo notifications for app
+ /// end notifications for app
 const isStudentForInscription = (req,res)=>{
     const controlNumber = req.params.nc;
     const options = {
@@ -1170,7 +1172,7 @@ const getStatusFromTotalSubjectsInSII = async (controlNumber)=>{
         "rejectUnauthorized": false,
         host: 'wsescolares.tepic.tecnm.mx',
         port: 443,
-        path: `/alumnos/total/${controlNumber}/20201`,        
+        path: `/alumnos/total/${controlNumber}/${periodCode}`,        
         headers: {
             'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
         }
@@ -1233,66 +1235,7 @@ const getStudentDataFromSII = (controlNumber) => {
                 if (studentNew.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
                     studentNew.stepWizard = 0;
                 }
-                switch (studentNew.career) {
-                    case 'L01':
-                        studentNew.career = 'ARQUITECTURA';
-                        studentNew.acronym = 'ARQ';
-                        break;
-                    case 'L02':
-                        studentNew.career = 'INGENIERÍA CIVIL';
-                        studentNew.acronym = 'IC';
-                        break;
-                    case 'L03':
-                        studentNew.career = 'INGENIERÍA ELÉCTRICA';
-                        studentNew.acronym = 'IE';
-                        break;
-                    case 'L04':
-                        studentNew.career = 'INGENIERÍA INDUSTRIAL';
-                        studentNew.acronym = 'II';
-                        break;
-                    case 'L05':
-                        studentNew.career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
-                        studentNew.acronym = 'ISC';
-                        break;
-                    case 'L06':
-                        studentNew.career = 'INGENIERÍA BIOQUÍMICA';
-                        studentNew.acronym = 'IBQ';
-                        break;
-                    case 'L07':
-                        studentNew.career = 'INGENIERÍA QUÍMICA';
-                        studentNew.acronym = 'IQ';
-                        break;
-                    case 'L08':
-                        studentNew.career = 'LICENCIATURA EN ADMINISTRACIÓN';
-                        studentNew.acronym = 'LA';
-                        break;
-                    case 'L12':
-                        studentNew.career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
-                        studentNew.acronym = 'IGE';
-                        break;
-                    case 'L11':
-                        studentNew.career = 'INGENIERÍA MECATRÓNICA';
-                        studentNew.acronym = 'IM';
-                        break;
-                    case 'ITI':
-                        studentNew.career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
-                        studentNew.acronym = 'ITIC';
-                        break;
-                    case 'MTI':
-                        studentNew.career = 'MAESTRÍA EN TECNOLOGÍAS DE LA INFORMACIÓN';
-                        studentNew.acronym = 'MTI';
-                        break;
-                    case 'P01':
-                        studentNew.career = 'MAESTRÍA EN CIENCIAS EN ALIMENTOS';
-                        studentNew.acronym = 'MCA';
-                        break;
-                    case 'DCA':
-                        studentNew.career = 'DOCTORADO EN CIENCIAS EN ALIMENTOS';
-                        studentNew.acronym = 'DCA';
-                        break;
-                    default:
-                        break;
-                }
+                studentNew.career = getFullCarrera(studentNew.career);                
                 // Obtener id del rol para estudiente                
                 const studentId = await getStudentRoleId();                                             
                 studentNew.idRole = studentId;
@@ -1318,6 +1261,116 @@ const getInscriptionDocuments = async (req,res)=>{
         return res.status(status.OK).json({docs});
     }
     return res.status(status.NOT_FOUND).json({err:'El estudiante no esta registrado en la bd de credenciales'});
+};
+
+const getControlNumberStudents = ()=>{
+    return new Promise((resolve)=>{
+        _student.find({},{controlNumber:1,_id:1}).then(
+            (sts)=>{
+                if(sts) return resolve({students:sts});
+                return resolve({err:'No hay alumnos registrados'});
+            }
+        ).catch( err=> resolve({err}));
+    });
+};
+
+const getActiveStudentsFromSii = async ()=>{
+    const periodCode = await getPeriod();
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/inscritos/${periodCode}`,
+        // authentication headers     
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    var students= "";
+    return new Promise((resolve)=>{
+        https.get(options, function (apiInfo) {
+
+            apiInfo.on('data', function (data) {
+                students += data;
+            });
+            apiInfo.on('end', () => {
+                //json con los datos del alumno
+                students = JSON.parse(students);
+                return resolve({students});
+            });
+            apiInfo.on('error', function (e) {
+                return resolve({err:e});
+            });
+        });
+    });
+    
+};
+
+const getFullCarrera = (carrera)=>{
+    var career = "";
+    switch (carrera) {
+        case 'L01':
+            career = 'ARQUITECTURA';
+            break;
+        case 'L02':
+            career = 'INGENIERÍA CIVIL';
+            break;
+        case 'L03':
+            career = 'INGENIERÍA ELÉCTRICA';
+            break;
+        case 'L04':
+            career = 'INGENIERÍA INDUSTRIAL';
+            break;
+        case 'L05':
+            career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
+            break;
+        case 'L06':
+            career = 'INGENIERÍA BIOQUÍMICA';
+            break;
+        case 'L07':
+            career = 'INGENIERÍA QUÍMICA';
+            break;
+        case 'L08':
+            career = 'LICENCIATURA EN ADMINISTRACIÓN';
+            break;
+        case 'L12':
+            career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
+            break;
+        case 'L11':
+            career = 'INGENIERÍA MECATRÓNICA';
+            break;
+        case 'ITI':
+            career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
+            break;
+        case 'MTI':
+            career = 'MAESTRÍA EN TECNOLOGÍAS DE LA INFORMACIÓN';
+            break;
+        case 'P01':
+            career = 'MAESTRÍA EN CIENCIAS EN ALIMENTOS';
+            break;
+        case 'DCA':
+            career = 'DOCTORADO EN CIENCIAS EN ALIMENTOS';
+            break;
+        default:
+            break;
+    }    
+    
+    return career;
+};
+
+const difference = (list1, list2) =>
+    list1.filter(
+        (set => a => !set.has(a.nocontrol))(new Set(list2.map(b => b.controlNumber)))
+    );
+//
+const getRoleId = (roleName) => {
+    return new Promise(async (resolve) => {
+        await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
+            if (!err && role) {
+                resolve(role.id);
+            }
+        });
+    });
 };
 
 const createStudentFromSII = async (req,res)=>{
@@ -1357,6 +1410,93 @@ const getCareerId = (careerName) => {
             }
         });
     });
+};
+const insertActiveStudents = async (req,res)=>{
+    const activeStudents = await getActiveStudentsFromSii();
+    const localStudents = await getControlNumberStudents();
+    if(activeStudents.err){
+        return res.status(status.BAD_REQUEST).json({err:activeStudents.err});
+    }
+    if(localStudents.err){
+        return res.status(status.BAD_REQUEST).json({err:localStudents.err});
+    }
+    // First check students that don't have register in the database
+    const studentsNotRegistered = difference(activeStudents.students,localStudents.students);
+    let mapedStudents;
+    if(studentsNotRegistered.length > 0){ // then create user
+        mapedStudents = await Promise.all(
+            studentsNotRegistered.map( async st=>
+            {
+                    try{
+                        const idRole = await getRoleId('Estudiante');
+                        const career = getFullCarrera(st.career);
+                        const careerId = await getCareerId(career);
+                        let stepWizard;
+                        const incomingType = st.income;
+                        if (st.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
+                            stepWizard = 0;
+                        }
+                        const student = {
+                            controlNumber: st.nocontrol,
+                            firstName:st.firstname,
+                            fatherLastName:st.fatherlastname,
+                            motherLastName:st.motherlastname,
+                            birthPlace:st.birthplace,
+                            dateBirth:st.datebirth,
+                            civilStatus:st.civilstatus,
+                            originSchool:st.originschool,
+                            nameOriginSchool:st.nameoriginschool,
+                            fullName:`${st.firstname} ${st.fatherlastname} ${st.motherlastname}`,
+                            stepWizard,
+                            status:st.status,
+                            idRole,
+                            careerId,
+                            career,
+                            semester:st.semester
+                        };                    
+                        
+                        return student;
+                    }catch(e){                                        
+                        return e;
+                    }
+                    
+                }
+            )
+        );
+        await new Promise((resolve)=>{
+            _student.insertMany(mapedStudents).then(
+                created=>{
+                    resolve(true);
+                },
+                err=>{resolve(err); console.log(err);
+                }
+            ).catch(err=>{resolve(err); console.log(err);
+            });
+        });        
+    }
+    // Create activestudents collection
+    // first drop collection
+    mongoose.connection.db.dropCollection('activestudents')
+    .then(  droped=>{},
+            err=>{}
+    ).catch(err=>{});
+
+    //Second insert active students
+    const created = await new Promise((resolve)=>{
+        _activeStudents.insertMany(activeStudents.students.map( st=> ({controlNumber:st.nocontrol}))).then(
+            created=>{resolve(created.length);},
+            err=>{resolve(err); console.log(err);}
+            ).catch(err=>{resolve(err); console.log(err);});        
+    });
+    
+    return res.status(status.OK).json({msg:'Se completo la operación', created});
+    
+};
+const getAllActiveStudents = (req,res)=>{
+    _activeStudents.find({}).then(
+        activeStudents=>res.status(status.OK).json({activeStudents}),
+        err=>res.status(status.BAD_REQUEST).json({err})
+    ).catch(err=>res.status(status.BAD_REQUEST).json({err}));
 };
 
 const addCampaignStudent = async (req, res) => {
@@ -1429,12 +1569,15 @@ const addCampaignStudent = async (req, res) => {
       .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({error: ''}));
   };
 
-module.exports = (Student, Request, Role, Period, Career) => {
+
+module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _student = Student;
+    _activeStudents = ActiveStudents;
+    _career = Career;
+    _period = Period;
     _request = Request;
-    _career = Career;    
     _role = Role;
-    _period = Period;    
+    _student = Student;        
     return ({
         create,
         getOne,
@@ -1476,5 +1619,7 @@ module.exports = (Student, Request, Role, Period, Career) => {
         removeCampaignStudent,
         getAllCampaign,
         registerCretentialStudent,
+        insertActiveStudents,
+        getAllActiveStudents
     });
 };
