@@ -145,10 +145,59 @@ const login = (req, res) => {
                                 fullName: 1, shortName: 1, acronym: 1
                             }
                         }).exec(async (error, oneUser) => {
-                            // Hubo un error en la consulta
-                            if (error) {
-                                return res.status(status.NOT_FOUND).json({
-                                    error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                        // Hubo un error en la consulta
+                        if (error) {
+                            return res.status(status.NOT_FOUND).json({
+                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
+                            });
+                        } else {
+                            // Se verifica si tiene aprobado el inglés
+                            // Se verifica si es egresado
+                            let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
+                            // Si fue encontrado
+                            if (oneUser) {
+                                // Quitar permiso para acceder a la credencial
+                                // if (isGraduate) {
+                                //     oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
+                                // }
+                                // Se verifica si tiene aprobado el inglés
+                                let englishApproved = await validateEnglishApproved(email);
+                                console.log('1');
+                                // verificar si se cambio de semestre
+                                if (resApi.semester > oneUser.semester) {
+                                    _student.updateOne(queryNc, {
+                                        $set: { semester: resApi.semester }
+                                    }).then(ok => { });
+                                }
+                                if (!oneUser.hasOwnProperty('status')) {
+                                    _student.updateOne(queryNc, { $set: { status : resApi.estatus.toUpperCase()} }).then(ok => {});
+                                } else if(oneUser.status !== isGraduate) {
+                                    _student.updateOne(queryNc, { $set: { status : resApi.estatus.toUpperCase()} }).then(ok => {});
+                                }
+                                // Se contruye el token
+                                const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
+                                let formatUser = {
+                                    _id: oneUser._id,
+                                    name: {
+                                        firstName: oneUser.firstName,
+                                        lastName: `${oneUser.fatherLastName} ${oneUser.motherLastName}`,
+                                        fullName: oneUser.fullName
+                                    },
+                                    email: oneUser.controlNumber,
+                                    career: oneUser.career,
+                                    rol: {
+                                        name: oneUser.idRole.name,
+                                        permissions: oneUser.idRole.permissions
+                                    },
+                                    english: englishApproved,
+                                    graduate: isGraduate,
+                                    semester: resApi.semester
+                                };
+                                // Se retorna el usuario y token
+                                return res.json({
+                                    user: formatUser,
+                                    token: token,
+                                    action: 'signin'
                                 });
                             } else {
                                 // Se verifica si tiene aprobado el inglés                                        
@@ -202,20 +251,20 @@ const login = (req, res) => {
                                     // No se encontró el registro en la base de datos local buscar en el sii                      
                                     _student.create(resApi)
                                         .then(created => {
-                                            console.log('Estudiant creado');                                            
-                                            
-                                            _student.findOne({ controlNumber: email })
+                                            console.log('Estudiant creado');
+
+                                            _student.findOne({controlNumber: email})
                                                 .populate({
                                                     path: 'idRole', model: 'Role',
                                                     select: {
                                                         permissions: 1, name: 1, _id: 0
                                                     }
                                                 }).populate({
-                                                    path: 'careerId', model: 'Career',
-                                                    select: {
-                                                        fullName: 1, shortName: 1, acronym: 1
-                                                    }
-                                                })
+                                                path: 'careerId', model: 'Career',
+                                                select: {
+                                                    fullName: 1, shortName: 1, acronym: 1
+                                                }
+                                            })
                                                 .exec(async (err, user) => {
                                                     // Se verifica si tiene aprobado el inglés
                                                     let englishApproved = await validateEnglishApproved(email);
@@ -225,9 +274,9 @@ const login = (req, res) => {
                                                     //     user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
                                                     // }
                                                     // Se contruye el token
-                                                    
-                                                    
-                                                    const token = jwt.sign({ email: user.controlNumber }, config.secret);
+
+
+                                                    const token = jwt.sign({email: user.controlNumber}, config.secret);
                                                     let formatUser = {
                                                         _id: user._id,
                                                         name: {
@@ -254,11 +303,12 @@ const login = (req, res) => {
                                                     });
                                                 });
                                         }).catch(err => {
-                                            console.log(err);
-                                            return res.status(status.NOT_FOUND).json({
-                                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                                            });
+                                        console.log(err);
+                                        return res.status(status.NOT_FOUND).json({
+                                            error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
                                         });
+                                    });
+                                }
                                 }
                             }
                         });
@@ -270,6 +320,40 @@ const login = (req, res) => {
                 }
             }
         });
+};
+
+const getStatusDegree = (req, res) => {
+    const { _id } = req.params;
+
+    _student.findOne({_id: _id}).then( async student => {
+       if (student) {
+           const canEnglish = !!student.documents.filter(doc => doc.type === 'Ingles')[0];
+           if (!student.hasOwnProperty('status') || student.status !== 'EGR') {
+               const studentSii = await getStudentBySii(student.controlNumber);
+               _student.updateOne({_id: student._id}, { $set: { status : studentSii.data.estatus } })
+                   .then( _ => res.status(status.OK).json({
+                       status: studentSii.data.estatus,
+                       english: canEnglish
+                   }))
+                   .catch( _ => res.status(status.INTERNAL_SERVER_ERROR).json({
+                       error: 'Error al actualizar status'
+                   }));
+           } else {
+               //
+               res.status(status.OK).json({
+                   status: student.status,
+                   english: canEnglish
+               });
+           }
+       } else {
+           res.status(status.NOT_FOUND).json({
+               error: 'No se encontró el estudiante'
+           });
+       }
+    }).catch( _ => res.status(status.NOT_FOUND).json({
+        error: 'Estudiante no encontrado'
+    }));
+
 };
 
 const getStudentData = (email, password) => {
@@ -1086,6 +1170,7 @@ module.exports = (User, Student, Employee, Role, Career, English, IMSS) => {
         register,
         login,
         getAll,
+        getStatusDegree,
         getDataEmployee,
         updateUserData,
         getSecretaries,
