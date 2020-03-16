@@ -330,9 +330,9 @@ const getStatusDegree = (req, res) => {
            const canEnglish = !!student.documents.filter(doc => doc.type === 'Ingles')[0];
            if (!student.hasOwnProperty('status') || student.status !== 'EGR') {
                const studentSii = await getStudentBySii(student.controlNumber);
-               _student.updateOne({_id: student._id}, { $set: { status : studentSii.data.estatus } })
+               _student.updateOne({_id: student._id}, { $set: { status : studentSii.data.status } })
                    .then( _ => res.status(status.OK).json({
-                       status: studentSii.data.estatus,
+                       status: studentSii.data.status,
                        english: canEnglish
                    }))
                    .catch( _ => res.status(status.INTERNAL_SERVER_ERROR).json({

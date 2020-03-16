@@ -1578,8 +1578,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _career = Career;
     _period = Period;
     _request = Request;
-    _role = Role;
-    _student = Student;        
+    _role = Role;     
     return ({
         create,
         getOne,
