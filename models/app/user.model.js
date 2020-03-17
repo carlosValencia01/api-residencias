@@ -7,6 +7,7 @@ let userSchema = new mongoose.Schema({
     role: { type: Number },
     idRole: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+    companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
     careers:[
         { careerId : {type: mongoose.Schema.Types.ObjectId, ref: 'Career' } }
     ]

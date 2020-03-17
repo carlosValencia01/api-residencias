@@ -26,6 +26,9 @@ module.exports = (wagner) => {
     const Request = require('../reception-act/request.model');
     const MinuteBook = require('../reception-act/minuteBook.model');
 
+    // Vinculation
+    const Company = require('../vinculation/company.model');
+
     // Shared
     const Department = require('./department.model');
     const Document = require('./document.model');
@@ -52,6 +55,9 @@ module.exports = (wagner) => {
         Request,
         MinuteBook,
 
+        // Vinculation
+        Company,
+
         // Shared
         Department,
         Document,
@@ -60,7 +66,7 @@ module.exports = (wagner) => {
         Student,
         Career,
         IMSS,
-        ActiveStudents
+        ActiveStudents,
     };
 
     _.each(models, (v, k) => {

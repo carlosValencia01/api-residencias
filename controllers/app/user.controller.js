@@ -2,9 +2,8 @@ const handler = require('../../utils/handler');
 const jwt = require('jsonwebtoken');
 const config = require('../../_config');
 const status = require('http-status');
-const superagent = require('superagent');
-
-var https = require('https');
+const https = require('https');
+const eCareers = require('../../enumerators/shared/careers.enum');
 
 let _user;
 let _student;
@@ -66,36 +65,26 @@ const register = (req, res) => {
         }));
 };
 
-const login = (req, res) => {
+const login = async (req, res) => {
     let { email, password } = req.body;
     email = (email || '').toString().trim();
-    let query = { email: email };
-    _user.findOne(query)
-        .populate({
-            path: 'idRole', model: 'Role',
-            select: {
-                permissions: 1, name: 1, _id: 0
-            }
-        })
-        .populate({
-            path: 'employeeId', model: 'Employee',
-            select: {
-                name: 1, _id: 0
-            }
-        })
-        .exec(async (err, user) => {
-            if (err) {
-                return res.status(status.INTERNAL_SERVER_ERROR).json({
-                    error: err.toString()
-                });
-            }
+
+    if (!email || !(password || '').trim()) {
+        return res.status(status.NOT_FOUND).json({
+            error: 'Usuario y/o contraseña son incorrectos'
+        });
+    }
+
+    if (/.@./.test(email)) {
+        const query = { email: email };
+        if (/.@ittepic.edu.mx$/.test(email)) {
+            const user = await _findUser(query);
             if (user) {
-                console.log("exist user");
-                user.validatePasswd(password, user.password, invalid => {
+                user.validatePasswd(password, user.password, (invalid) => {
                     // Password inválido
                     if (invalid) {
                         return res.status(status.FORBIDDEN).json({
-                            error: 'password is invalid'
+                            error: 'Usuario y/o contraseña incorrectos'
                         });
                     }
                     // Password válido, se genera el token
@@ -121,377 +110,195 @@ const login = (req, res) => {
                         action: 'signin'
                     });
                 });
-            } else {
-                if (/.@./.test(email)) {
-                    return res.status(status.NOT_FOUND).json({
-                        error: 'El usuario es incorrecto'
-                    });
-                }
-                // Validar si es alumno y su nc y NIP son válidos
-                const resApi = await getStudentData(email, password);
-
-                if (resApi) {
-                    let queryNc = { controlNumber: email };
-                    // Buscamos sus datos en la BD local
-                    _student.findOne(queryNc)
-                        .populate({
-                            path: 'idRole', model: 'Role',
-                            select: {
-                                permissions: 1, name: 1, _id: 0
-                            }
-                        }).populate({
-                            path: 'careerId', model: 'Career',
-                            select: {
-                                fullName: 1, shortName: 1, acronym: 1
-                            }
-                        }).exec(async (error, oneUser) => {
-                        // Hubo un error en la consulta
-                        if (error) {
-                            return res.status(status.NOT_FOUND).json({
-                                error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                            });
-                        } else {
-                            // Se verifica si tiene aprobado el inglés
-                            // Se verifica si es egresado
-                            let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
-                            // Si fue encontrado
-                            if (oneUser) {
-                                // Quitar permiso para acceder a la credencial
-                                // if (isGraduate) {
-                                //     oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
-                                // }
-                                // Se verifica si tiene aprobado el inglés
-                                let englishApproved = await validateEnglishApproved(email);
-                                console.log('1');
-                                // verificar si se cambio de semestre
-                                if (resApi.semester > oneUser.semester) {
-                                    _student.updateOne(queryNc, {
-                                        $set: { semester: resApi.semester }
-                                    }).then(ok => { });
-                                }
-                                if (!oneUser.hasOwnProperty('status')) {
-                                    _student.updateOne(queryNc, { $set: { status : resApi.estatus.toUpperCase()} }).then(ok => {});
-                                } else if(oneUser.status !== isGraduate) {
-                                    _student.updateOne(queryNc, { $set: { status : resApi.estatus.toUpperCase()} }).then(ok => {});
-                                }
-                                // Se contruye el token
-                                const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
-                                let formatUser = {
-                                    _id: oneUser._id,
-                                    name: {
-                                        firstName: oneUser.firstName,
-                                        lastName: `${oneUser.fatherLastName} ${oneUser.motherLastName}`,
-                                        fullName: oneUser.fullName
-                                    },
-                                    email: oneUser.controlNumber,
-                                    career: oneUser.career,
-                                    rol: {
-                                        name: oneUser.idRole.name,
-                                        permissions: oneUser.idRole.permissions
-                                    },
-                                    english: englishApproved,
-                                    graduate: isGraduate,
-                                    semester: resApi.semester
-                                };
-                                // Se retorna el usuario y token
-                                return res.json({
-                                    user: formatUser,
-                                    token: token,
-                                    action: 'signin'
-                                });
-                            } else {
-                                // Se verifica si tiene aprobado el inglés                                        
-                                // Se verifica si es egresado
-                                let isGraduate = resApi.estatus.toUpperCase() === 'EGR';
-                                const isTitled = resApi.estatus.toUpperCase() === 'TIT';
-                                // Si fue encontrado
-                                if (oneUser) {
-                                    // Quitar permiso para acceder a la credencial
-                                    // if (isGraduate) {
-                                    //     oneUser.idRole.permissions = oneUser.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
-                                    // }
-                                    // Se verifica si tiene aprobado el inglés
-                                    let englishApproved = await validateEnglishApproved(email);
-                                    let insuretStudent = await validateInsuredStudent(email);
-                                    console.log('1');
-                                    // verificar si se cambio de semestre
-                                    if (resApi.semester > oneUser.semester) {
-                                        _student.updateOne(queryNc, {
-                                            $set: { semester: resApi.semester }
-                                        }).then(ok => { });
-                                    }
-                                    // Se contruye el token
-                                    const token = jwt.sign({ email: oneUser.controlNumber }, config.secret);
-                                    let formatUser = {
-                                        _id: oneUser._id,
-                                        name: {
-                                            firstName: oneUser.firstName,
-                                            lastName: `${oneUser.fatherLastName} ${oneUser.motherLastName}`,
-                                            fullName: oneUser.fullName
-                                        },
-                                        email: oneUser.controlNumber,
-                                        career: oneUser.careerId.acronym,
-                                        rol: {
-                                            name: oneUser.idRole.name,
-                                            permissions: oneUser.idRole.permissions
-                                        },
-                                        english: englishApproved,
-                                        graduate: isGraduate,
-                                        semester: resApi.semester,
-                                        titled:isTitled,
-                                        insured: insuretStudent
-                                    };
-                                    // Se retorna el usuario y token
-                                    return res.json({
-                                        user: formatUser,
-                                        token: token,
-                                        action: 'signin'
-                                    });
-                                } else {
-                                    // No se encontró el registro en la base de datos local buscar en el sii                      
-                                    _student.create(resApi)
-                                        .then(created => {
-                                            console.log('Estudiant creado');
-
-                                            _student.findOne({controlNumber: email})
-                                                .populate({
-                                                    path: 'idRole', model: 'Role',
-                                                    select: {
-                                                        permissions: 1, name: 1, _id: 0
-                                                    }
-                                                }).populate({
-                                                path: 'careerId', model: 'Career',
-                                                select: {
-                                                    fullName: 1, shortName: 1, acronym: 1
-                                                }
-                                            })
-                                                .exec(async (err, user) => {
-                                                    // Se verifica si tiene aprobado el inglés
-                                                    let englishApproved = await validateEnglishApproved(email);
-                                                    let insuretStudent = await validateInsuredStudent(email);
-                                                    // Quitar permiso para acceder a la credencial
-                                                    // if (isGraduate) {
-                                                    //     user.idRole.permissions = user.idRole.permissions.filter(x => x.routerLink !== 'oneStudentPage');
-                                                    // }
-                                                    // Se contruye el token
-
-
-                                                    const token = jwt.sign({email: user.controlNumber}, config.secret);
-                                                    let formatUser = {
-                                                        _id: user._id,
-                                                        name: {
-                                                            firstName: user.firstName,
-                                                            lastName: `${user.fatherLastName} ${user.motherLastName}`,
-                                                            fullName: user.fullName
-                                                        },
-                                                        email: user.controlNumber,
-                                                        career: user.careerId.acronym,
-                                                        rol: {
-                                                            name: user.idRole.name,
-                                                            permissions: user.idRole.permissions
-                                                        },
-                                                        english: englishApproved,
-                                                        graduate: isGraduate,
-                                                        semester: user.semester,
-                                                        insured: insuretStudent
-                                                    };
-                                                    // Se retorna el usuario y token
-                                                    return res.json({
-                                                        user: formatUser,
-                                                        token: token,
-                                                        action: 'signin'
-                                                    });
-                                                });
-                                        }).catch(err => {
-                                        console.log(err);
-                                        return res.status(status.NOT_FOUND).json({
-                                            error: 'No se encuentra registrado en la base de datos de credenciales. Favor de acudir al departamento de Servicios Escolares a darse de alta'
-                                        });
-                                    });
-                                }
-                                }
-                            }
+            }  else {
+                return res.status(status.NOT_FOUND).json({
+                    error: 'Usuario y/o contraseña incorrectos'
+                });
+            }
+        } else {
+            const company = await _findCompany(query);
+            if (company) {
+                company.validatePasswd(password, company.password, (invalid) => {
+                    // Password inválido
+                    if (invalid) {
+                        return res.status(status.FORBIDDEN).json({
+                            error: 'Usuario y/o contraseña incorrectos'
                         });
-
-                } else {
-                    return res.status(status.NOT_FOUND).json({
-                        error: 'Usuario y/o contraseña incorrectos'
+                    }
+                    // Password válido, se genera el token
+                    const token = jwt.sign({ email: company.email }, config.secret);
+                    let formatUser = {
+                        _id: company._id,
+                        companyName: company.companyId.companyName,
+                        email: company.email,
+                        role: company.role,
+                        rol: {
+                            name: company.idRole.name,
+                            permissions: company.idRole.permissions
+                        }
+                    };
+                    //Se retorna el usuario y token
+                    return res.json({
+                        user: formatUser,
+                        token: token,
+                        action: 'signin'
+                    });
+                });
+            } else {
+                return res.status(status.NOT_FOUND).json({
+                    error: 'Usuario y/o contraseña incorrectos'
+                });
+            }
+        }
+    } else if (/^[A-Za-z]{0,1}[0-9]{8}$/.test(email)) {
+        const controlNumber = email;
+        const nip = (password || '').trim();
+        // Validar si es alumno y su nc y NIP son válidos
+        const studentData = await getStudentData(controlNumber, nip);
+        let query = { controlNumber: controlNumber };
+        if (studentData) {
+            // Buscar estudiante en la bd local
+            let student  = await _findStudent(query);
+            if (student) {
+                student = student.toObject();
+                // Se verifica si tiene aprobado el inglés
+                await validateEnglishApproved(controlNumber);
+                // Se verifica si está asegurado en el imss
+                await validateInsuredStudent(controlNumber);
+                // verificar si se cambió de semestre
+                if (studentData.semester > student.semester) {
+                    _student.updateOne(query, {
+                        $set: { semester: studentData.semester }
+                    }).then(ok => { });
+                }
+                // Verficar estatus
+                if (!student.hasOwnProperty('status')) {
+                    _student.updateOne(query, { $set: { status : studentData.status.toUpperCase()} }).then(ok => { });
+                } else if(student.status !== studentData.status) {
+                    _student.updateOne(query, { $set: { status : studentData.status.toUpperCase()} }).then(ok => { });
+                }
+                // Se contruye el token
+                const token = jwt.sign({ email: student.controlNumber }, config.secret);
+                let formatUser = {
+                    _id: student._id,
+                    name: {
+                        firstName: student.firstName,
+                        lastName: `${student.fatherLastName} ${student.motherLastName}`,
+                        fullName: student.fullName
+                    },
+                    email: student.controlNumber,
+                    career: student.career,
+                    rol: {
+                        name: student.idRole.name,
+                        permissions: student.idRole.permissions
+                    },
+                    semester: studentData.semester
+                };
+                return res.json({
+                    user: formatUser,
+                    token: token,
+                    action: 'signin'
+                });
+            } else {
+                const isCreated = await _createStudent(studentData);
+                if (isCreated) {
+                    const student = await _findStudent(query);
+                    if (student) {
+                        // Se verifica si tiene aprobado el inglés
+                        await validateEnglishApproved(controlNumber);
+                        // Se verifica si está asegurado en el imss
+                        await validateInsuredStudent(controlNumber);
+                        const token = jwt.sign({email: student.controlNumber}, config.secret);
+                        let formatUser = {
+                            _id: student._id,
+                            name: {
+                                firstName: student.firstName,
+                                lastName: `${student.fatherLastName} ${student.motherLastName}`,
+                                fullName: student.fullName
+                            },
+                            email: student.controlNumber,
+                            career: student.careerId.acronym,
+                            rol: {
+                                name: student.idRole.name,
+                                permissions: student.idRole.permissions
+                            },
+                            semester: student.semester,
+                        };
+                        return res.json({
+                            user: formatUser,
+                            token: token,
+                            action: 'signin'
+                        });
+                    } else {
+                        return res.status(status.NOT_FOUND).json({
+                            error: 'Usuario y/o contraseña son incorrectos'
+                        });
+                    }
+                } else  {
+                    return res.status(status.INTERNAL_SERVER_ERROR).json({
+                        error: 'Ocurrió un error, intente de nuevo'
                     });
                 }
             }
+        } else {
+            return res.status(status.NOT_FOUND).json({
+                error: 'Usuario y/o contraseña son incorrectos'
+            });
+        }
+    } else {
+        return res.status(status.NOT_FOUND).json({
+            error: 'Usuario y/o contraseña incorrectos'
         });
-};
+    }
+}
 
 const getStatusDegree = (req, res) => {
     const { _id } = req.params;
 
-    _student.findOne({_id: _id}).then( async student => {
-       if (student) {
-           const canEnglish = !!student.documents.filter(doc => doc.type === 'Ingles')[0];
-           if (!student.hasOwnProperty('status') || student.status !== 'EGR') {
-               const studentSii = await getStudentBySii(student.controlNumber);
-               _student.updateOne({_id: student._id}, { $set: { status : studentSii.data.status } })
-                   .then( _ => res.status(status.OK).json({
-                       status: studentSii.data.status,
-                       english: canEnglish
-                   }))
-                   .catch( _ => res.status(status.INTERNAL_SERVER_ERROR).json({
-                       error: 'Error al actualizar status'
-                   }));
-           } else {
-               //
-               res.status(status.OK).json({
-                   status: student.status,
-                   english: canEnglish
-               });
-           }
-       } else {
-           res.status(status.NOT_FOUND).json({
+    _student.findOne({_id: _id}).then( async (data) => {
+        if (data) {
+            const student = data.toObject();
+            const hasEnglish = !!student.documents.filter(doc => doc.type === 'Ingles')[0];
+            const studentSii = (await getStudentBySii(student.controlNumber)).data;
+            if (!student.hasOwnProperty('status') || student.status !== studentSii.status) {
+                _student.updateOne({_id: student._id}, { $set: { status : studentSii.status } })
+                    .then( _ => res.status(status.OK).json({
+                        status: studentSii.status,
+                        english: hasEnglish
+                    }))
+                    .catch( _ => res.status(status.INTERNAL_SERVER_ERROR).json({
+                        error: 'Error al actualizar status'
+                    }));
+            } else {
+                res.status(status.OK).json({
+                    status: student.status,
+                    english: hasEnglish
+                });
+            }
+        } else {
+            res.status(status.NOT_FOUND).json({
                error: 'No se encontró el estudiante'
-           });
-       }
+            });
+        }
     }).catch( _ => res.status(status.NOT_FOUND).json({
         error: 'Estudiante no encontrado'
     }));
 
 };
 
-const getStudentData = (email, password) => {
-    email = (email || '').toString().trim();
-    const options = {
-        "rejectUnauthorized": false,
-        host: 'wsescolares.tepic.tecnm.mx',
-        port: 443,
-        path: `/alumnos/info/${email}`,        
-        headers: {
-            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
-        }
-    };
-    const dataStudent = JSON.stringify({
-        nc: email,
-        nip: password
-    });
-    console.log(dataStudent);
-    
-    var optionsPost = {
-        "rejectUnauthorized": false,
-        host: 'wsescolares.tepic.tecnm.mx',
-        port: 443,
-        path: `/alumnos/login`,
-        // authentication headers     
-        method: 'POST',
-        headers: {
-            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
-            'Content-Type': 'application/json',
-            'Content-Length': dataStudent.length
-        }
+const getStudentData = (controlNumber, password) => {
+    controlNumber = (controlNumber || '').toString().trim();
 
-    };
     return new Promise(async (resolve) => {
-        var studentNew = "";
-
-        https.get(options, function (apiInfo) {
-            apiInfo.on('data', function (data) {
-                studentNew += data;
-            });
-            apiInfo.on('end', () => {
-                //json con los datos del alumno
-                studentNew = JSON.parse(studentNew);
-                if (studentNew.error) {
-                    resolve(false);
-                }
-                studentNew.firstName = studentNew.firstname;
-                studentNew.fatherLastName = studentNew.fatherlastname;
-                studentNew.motherLastName = studentNew.motherlastname;
-                studentNew.birthPlace = studentNew.birthplace;
-                studentNew.dateBirth = studentNew.datebirth;
-                studentNew.civilStatus = studentNew.civilstatus;
-                studentNew.originSchool = studentNew.originschool;
-                studentNew.nameOriginSchool = studentNew.nameoriginschool;
-                studentNew.fullName = `${studentNew.firstName} ${studentNew.fatherLastName} ${studentNew.motherLastName}`;
-                // studentNew.nip = password;
-                studentNew.controlNumber = email;
-                const incomingType = studentNew.income;
-                if (studentNew.semester == 1 || incomingType == 1 || incomingType == 2 || incomingType == 3 || incomingType == 4) {
-                    studentNew.stepWizard = 0;
-                }
-                const request = https.request(optionsPost, (apiLogin) => {
-                    var careerN = "";
-                    apiLogin.on('data', async (d) => {
-                        careerN += d;
-                    });
-                    apiLogin.on('end', async () => {
-                        careerN = JSON.parse(careerN);
-                        console.log(careerN);
-                        
-                        switch (careerN.carrera) {
-                            case 'L01':
-                                studentNew.career = 'ARQUITECTURA';
-                                break;
-                            case 'L02':
-                                studentNew.career = 'INGENIERÍA CIVIL';
-                                break;
-                            case 'L03':
-                                studentNew.career = 'INGENIERÍA ELÉCTRICA';
-                                break;
-                            case 'L04':
-                                studentNew.career = 'INGENIERÍA INDUSTRIAL';
-                                break;
-                            case 'L05':
-                                studentNew.career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
-                                break;
-                            case 'L06':
-                                studentNew.career = 'INGENIERÍA BIOQUÍMICA';
-                                break;
-                            case 'L07':
-                                studentNew.career = 'INGENIERÍA QUÍMICA';
-                                break;
-                            case 'L08':
-                                studentNew.career = 'LICENCIATURA EN ADMINISTRACIÓN';
-                                break;
-                            case 'L12':
-                                studentNew.career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
-                                break;
-                            case 'L11':
-                                studentNew.career = 'INGENIERÍA MECATRÓNICA';
-                                break;
-                            case 'ITI':
-                                studentNew.career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
-                                break;
-                            case 'MTI':
-                                studentNew.career = 'MAESTRÍA EN TECNOLOGÍAS DE LA INFORMACIÓN';
-                                break;
-                            case 'P01':
-                                studentNew.career = 'MAESTRÍA EN CIENCIAS DE ALIMENTOS';
-                                break;
-                            case 'DCA':
-                                studentNew.career = 'DOCTORADO EN CIENCIAS DE ALIMENTOS';
-                                break;
-                            default:
-                                break;
-                        }
-                        // Obtener id del rol para estudiente
-                        studentNew.estatus = careerN.estatus;        
-                        const studentId = await getRoleId('Estudiante');                        
-                        studentNew.idRole = studentId;
-                        studentNew.careerId = await getCareerId(studentNew.career);
-                        resolve(studentNew);
-
-                    });
-                });
-                request.on('error', (error) => {
-                    resolve(false);
-                });
-
-                request.write(dataStudent);
-                request.end();
-
-
-            });
-            apiInfo.on('error', function (e) {
-                resolve(false);
-            });
-        });
+        const login = await _loginSii(controlNumber, password);
+        if (login) {
+            const studentData = await _getStudentSii(controlNumber);
+            if (studentData) {
+                return resolve(studentData);
+            }
+            return resolve(false);
+        }
+        return resolve(false);
     });
 };
 
@@ -814,13 +621,20 @@ const validateInsuredStudent = (controlNumber) => {
 };
 
 const getRoleId = (roleName) => {
-    return new Promise(async (resolve) => {
-        await _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } }, (err, role) => {
-            if (!err && role) {
-                resolve(role.id);
-            }
+    return new Promise((resolve) => {
+        _role.findOne({ name: { $regex: new RegExp(`^${roleName}$`) } })
+            .then((role) => {
+                if (role) {
+                    resolve(role.id);
+                } else {
+                    resolve(null);
+                }
+            })
+            .catch((err) => {
+                console.log(err);
+                resolve(null);
+            });
         });
-    });
 };
 
 /**
@@ -958,78 +772,29 @@ const loginMiGraduacion = (req, res) => {
 
 const getCareerId = (careerName) => {
     console.log(careerName);
-    return new Promise(async (resolve) => {
-        await _career.findOne({ fullName: careerName }, (err, career) => {
-            if (!err && career) {
-                resolve(career.id);
-            }else{
-                console.log(err);
-                
-            }
-        });
-    });
-};
-
-const getStudentBySii = (email) => {
-    return new Promise(async (resolve) => {
-        const optionsInformation = {
-            "rejectUnauthorized": false,
-            host: 'wsescolares.tepic.tecnm.mx',
-            path: `/alumnos/info/${email}`,
-            headers: {
-                'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
-            }
-        };
-        https.get(optionsInformation, (res) => {
-            var studentResponse = "";
-            res.on('data', (information) => {
-                studentResponse += information;
-            });
-            res.on('end', async () => {
-                const StudentJson = JSON.parse(studentResponse);
-                // console.log("SutdentJson", StudentJson);
-                if (StudentJson.error) {
-                    resolve({ response: false, data: null });
-                }
-                else {
-                    let newStudent = {
-                        firstName: StudentJson.firstname,
-                        fatherLastName: StudentJson.fatherlastname,
-                        motherLastName: StudentJson.motherlastname,
-                        birthPlace: StudentJson.birthplace,
-                        dateBirth: StudentJson.datebirth,
-                        civilStatus: StudentJson.civilstatus,
-                        semester: StudentJson.semester,
-                        email: StudentJson.email,
-                        curp: StudentJson.curp,
-                        sex: StudentJson.sex,
-                        street: StudentJson.street,
-                        suburb: StudentJson.suburb,
-                        city: StudentJson.city,
-                        state: StudentJson.city,
-                        cp: StudentJson.cp,
-                        phone: StudentJson.phone,
-                        originSchool: StudentJson.originschool,
-                        nameOriginSchool: StudentJson.nameoriginschool,
-                        nss: StudentJson.nss,
-                        fullName: `${StudentJson.firstname} ${StudentJson.fatherlastname} ${StudentJson.motherlastname}`,
-                        firstName: StudentJson.firstname,
-                        nip: '',
-                        controlNumber: email,
-                        status: StudentJson.status,//CareerJson.estatus,
-                        career: getFullCarrera(StudentJson.career)
-                    };
-                    const ROLE_ID = await getRoleId('Estudiante');
-                    const CAREER_ID = await getCareerId(newStudent.career);
-                    newStudent.careerId = CAREER_ID;
-                    newStudent.idRole = ROLE_ID;
-                    resolve({ response: true, data: newStudent });
+    return new Promise((resolve) => {
+        _career.findOne({ fullName: careerName })
+            .then((career) => {
+                if (career) {
+                    resolve(career.id);
+                } else {
+                    resolve(null);
                 }
             })
-        }).on('error', (e) => {
-            console.error("Error Recuperacion", e);
-            resolve({ response: false, data: null });
+            .catch((err) => {
+                console.log(err);
+                resolve(null);
+            });
         });
+};
+
+const getStudentBySii = (controlNumber) => {
+    return new Promise(async (resolve) => {
+        const studentData = await _getStudentSii(controlNumber);
+        if (studentData) {
+            return resolve({ response: true, data: studentData });
+        }
+        resolve({ response: false, data: null });
     });
 
 };
@@ -1067,7 +832,7 @@ const titledRegister = async (req, res) => {
                         controlNumber: student.controlNumber,
                         isGraduate: isGraduate,
                         englishApproved: englishApproved,
-                        titled:isTitled
+                        titled: isTitled
                     };
                     return res.json(
                         formatUser
@@ -1107,56 +872,177 @@ const titledRegister = async (req, res) => {
     }
 }
 
-function getFullCarrera(carrera) {
-    var career = "";
-    switch (carrera) {
-        case 'L01':
-            career = 'ARQUITECTURA';
-            break;
-        case 'L02':
-            career = 'INGENIERÍA CIVIL';
-            break;
-        case 'L03':
-            career = 'INGENIERÍA ELÉCTRICA';
-            break;
-        case 'L04':
-            career = 'INGENIERÍA INDUSTRIAL';
-            break;
-        case 'L05':
-            career = 'INGENIERÍA EN SISTEMAS COMPUTACIONALES';
-            break;
-        case 'L06':
-            career = 'INGENIERÍA BIOQUÍMICA';
-            break;
-        case 'L07':
-            career = 'INGENIERÍA QUÍMICA';
-            break;
-        case 'L08':
-            career = 'LICENCIATURA EN ADMINISTRACIÓN';
-            break;
-        case 'L12':
-            career = 'INGENIERÍA EN GESTIÓN EMPRESARIAL';
-            break;
-        case 'L11':
-            career = 'INGENIERÍA MECATRÓNICA';
-            break;
-        case 'ITI':
-            career = 'INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES';
-            break;
-        case 'MTI':
-            career = 'MAESTRIA EN TECNOLOGÍAS DE LA INFORMACIÓN';
-            break;
-        case 'P01':
-            career = 'MAESTRIA EN CIENCIAS EN ALIMENTOS';
-            break;
-        case 'DCA':
-            career = 'DOCTORADO EN CIENCIAS EN ALIMENTOS';
-            break;
-        default:
-            break;
-    }
-    return career;
+const _findUser = (query) => {
+    return new Promise((resolve) => {
+        _user.findOne(query)
+            .populate({
+                path: 'idRole', model: 'Role',
+                select: {
+                    permissions: 1, name: 1, _id: 0
+                }
+            })
+            .populate({
+                path: 'employeeId', model: 'Employee',
+                select: {
+                    name: 1, _id: 0
+                }
+            })
+            .then((user) => resolve(user))
+            .catch((_) => resolve(null));
+    });
+};
+
+const _findCompany = (query) => {
+    return new Promise((resolve) => {
+        _user.findOne(query)
+            .populate({
+                path: 'idRole', model: 'Role',
+                select: {
+                    permissions: 1, name: 1, _id: 0
+                }
+            })
+            .populate({
+                path: 'companyId', model: 'Company',
+                select: {
+                    companyName: 1, _id: 0
+                }
+            })
+            .then((company) => resolve(company))
+            .catch((_) => resolve(null));
+    });
+};
+
+const _findStudent = (query) => {
+    return new Promise((resolve) => {
+        _student.findOne(query)
+            .populate({
+                path: 'idRole', model: 'Role',
+                select: {
+                    permissions: 1, name: 1, _id: 0
+                }
+            }).populate({
+                path: 'careerId', model: 'Career',
+                select: {
+                    fullName: 1, shortName: 1, acronym: 1
+                }
+            })
+            .then((student) => resolve(student))
+            .catch((_) => resolve(null));
+    });
 }
+
+const _createStudent = (data) => {
+    return new Promise((resolve) => {
+        _student.create(data)
+            .then((_) => resolve(true))
+            .catch((_) => resolve(false));
+    });
+};
+
+const _loginSii = (controlNumber, nip) => {
+    const dataStudent = JSON.stringify({
+        nc: controlNumber,
+        nip: nip
+    });
+    console.log(dataStudent);
+    const studentLoginWs = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: `/alumnos/login`,
+        // authentication headers     
+        method: 'POST',
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64'),
+            'Content-Type': 'application/json',
+            'Content-Length': dataStudent.length
+        }
+    };
+    return new Promise((resolve) => {
+        const request = https.request(studentLoginWs, (apiLogin) => {
+            let loginData;
+            apiLogin.on('data', async (data) => {
+                loginData = data;
+            });
+            apiLogin.on('end', async () => {
+                loginData = JSON.parse(loginData);
+                console.log(loginData);
+                if (loginData.error) {
+                    return resolve(false);
+                }
+                resolve(true);
+            });
+        });
+        request.on('error', (_) => {
+            resolve(false);
+        });
+        request.write(dataStudent);
+        request.end();
+    });
+};
+
+const _getStudentSii = (controlNumber) => {
+    return new Promise((resolve) => {
+        const studentInfoWs = {
+            "rejectUnauthorized": false,
+            host: 'wsescolares.tepic.tecnm.mx',
+            port: 443,
+            path: `/alumnos/info/${controlNumber}`,        
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+            }
+        };
+        https.get(studentInfoWs, function (apiInfo) {
+            let studentData;
+            apiInfo.on('data', (data) => {
+                studentData = data;
+            });
+            apiInfo.on('end', async () => {
+                //json con los datos del alumno
+                studentData = JSON.parse(studentData);
+                if (studentData.error) {
+                    return resolve(false);
+                }
+                let studentNew = {
+                    controlNumber: controlNumber,
+                    fullName: `${studentData.firstname} ${studentData.fatherlastname} ${studentData.motherlastname}`,
+                    career: eCareers[studentData.career],
+                    nss: studentData.nss,
+                    documents: [],
+                    firstName: studentData.firstname,
+                    fatherLastName: studentData.fatherlastname,
+                    motherLastName: studentData.motherlastname,
+                    birthPlace: studentData.birthplace,
+                    dateBirth: studentData.datebirth,
+                    civilStatus: studentData.civilstatus,
+                    email: studentData.email,
+                    status: studentData.status,
+                    curp: studentData.curp,
+                    sex: studentData.sex,
+                    street: studentData.street,
+                    suburb: studentData.suburb,
+                    city: studentData.city,
+                    state: studentData.state,
+                    cp: studentData.cp,
+                    phone: studentData.phone,
+                    originSchool: studentData.originschool,
+                    nameOriginSchool: studentData.nameoriginschool,
+                    semester: studentData.semester,
+                };
+                const incomingType = studentData.income;
+                if (studentNew.semester === 1 || ['1', '2', '3', '4'].includes(incomingType)) {
+                    studentNew.stepWizard = 0;
+                }
+                studentNew.careerId = await getCareerId(studentNew.career),
+                studentNew.idRole = await getRoleId('Estudiante'),
+                resolve(studentNew);
+            });
+            apiInfo.on('error', function (e) {
+                resolve(false);
+            });
+        });
+    });
+};
 
 module.exports = (User, Student, Employee, Role, Career, English, IMSS) => {
     _user = User;
@@ -1178,6 +1064,6 @@ module.exports = (User, Student, Employee, Role, Career, English, IMSS) => {
         studentLogin,
         updateFullName,
         loginMiGraduacion,
-        titledRegister            
+        titledRegister,
     });
 };
