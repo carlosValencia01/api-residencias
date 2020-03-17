@@ -19,5 +19,8 @@ module.exports = (wagner) => {
     router.get('/active/:_careerId/:titleOption', (req, res) =>
         minuteBookCtrl.getActiveBookByCareer(req, res));
         
+    router.put('/update/:_id', (req, res) =>
+        minuteBookCtrl.updateMinuteBook(req, res));
+        
     return router;
 };

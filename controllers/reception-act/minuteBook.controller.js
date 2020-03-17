@@ -77,6 +77,20 @@ const getActiveBookByCareer = (req, res) => {
         })       ;
 };
 
+const updateMinuteBook = (req, res ) => {
+    const { _id } = req.params;
+    let book = req.body;
+    const query = { _id: _id }
+
+    _minuteBook.update(query, {$set: book.data})
+        .then(_ => {
+            res.status(status.OK).json({message : 'Libro actualizado con éxito'});
+        })
+        .catch(error => {
+            res.status(status.INTERNAL_SERVER_ERROR).json({error : error, message : 'Ocurrió un error al actualizar el libro'});
+        });
+};
+
 module.exports = (MinuteBook) => {
     _minuteBook = MinuteBook;
     return ({
@@ -84,7 +98,8 @@ module.exports = (MinuteBook) => {
         createMinuteBook,
         changeMinuteBookStatus,
         getAllActiveMinuteBooks,
-        getActiveBookByCareer
+        getActiveBookByCareer,
+        updateMinuteBook
     });
 };
 
