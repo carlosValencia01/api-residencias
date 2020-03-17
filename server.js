@@ -5,8 +5,8 @@ const morgan = require('morgan');
 const wagner = require('wagner-core');
 const config = require('./_config');
 const URL = `/escolares`;
-// const URL = `/api`;
 const fileUpload = require('express-fileupload');
+
 // MODELS
 require('./models/shared/models')(wagner);
 
@@ -24,6 +24,7 @@ const english = require('./routers/reception-act/english.router')(wagner);
 const request = require('./routers/reception-act/request.router')(wagner);
 const range = require('./routers/reception-act/range.router')(wagner);
 const minuteBook = require('./routers/reception-act/minuteBook.router')(wagner);
+
 // Graduation
 const graduation = require('./routers/graduation/graduation.router')(wagner);
 
@@ -37,7 +38,6 @@ const career = require('./routers/shared/career.router')(wagner);
 const imss = require('./routers/shared/imss.router')(wagner);
 
 let app = express();
-
 
 app.use(morgan('dev'));
 app.use(bodyParser.json({
@@ -58,7 +58,6 @@ app.use(function (req, res, next) {
 
 // ROUTERS
 const v = 'credenciales';
-// const v = 'v1';
 const uri = `${URL}/${v}/`;
 
 const jwtOptions = {
@@ -72,23 +71,6 @@ const jwtOptions = {
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
-    // /^\/escolares\/credenciales\/request\/.*/,
-    // `${uri}graduationmail`,  
-    // `${uri}inscription/updateStudent`, 
-    // `${uri}inscription/sendmail`, 
-    // `${uri}student/create`, 
-    // `${uri}english`, 
-    // `${uri}student/login`, 
-    // `${uri}department/employees`, 
-    // `${uri}document`, 
-    // `${uri}position`, 
-    // `${uri}department/all`, 
-    // /^\/escolares\/credenciales\/student\/document\/.*/,
-    // /^\/escolares\/credenciales\/user\/.*/,
-    // /^\/escolares\/credenciales\/document\/.*/,
-    // /^\/escolares\/credenciales\/position\/.*/,
-    // `/favicon.ico`,
-    // `${uri}request`, `${uri}role`,
   ]
 };
 // files

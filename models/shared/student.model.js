@@ -39,8 +39,8 @@ const studentSchema = new mongoose.Schema({
     dateBirth: {type:String},
     civilStatus: {type:String},
     email: {type:String},
+    status: {type:String},
     curp: {type:String},
-    nss: {type:String},
     sex: {type:String},
     street: {type:String},
     suburb: {type:String},
@@ -66,7 +66,6 @@ const studentSchema = new mongoose.Schema({
     observationsAnalysis: {type: String},
     warningAnalysis: {type: Boolean},
     printCredential: {type: Boolean},
-    status: {type: String},
     expStatus : {type: String},
 });
 

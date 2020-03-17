@@ -182,6 +182,7 @@ const getStudentsInscriptionProcess = (req, res) => {
                 "phone": student.phone,
                 "state": student.state,
                 "street": student.street,
+                "status": student.status,
                 "suburb": student.suburb,
                 "typeDisability": student.typeDisability,
                 "typeEtnia": student.typeEtnia,
@@ -244,6 +245,7 @@ const getStudentsInscriptionPendant = (req, res) => {
                 "phone": student.phone,
                 "state": student.state,
                 "street": student.street,
+                "status": student.status,
                 "suburb": student.suburb,
                 "typeDisability": student.typeDisability,
                 "typeEtnia": student.typeEtnia,
@@ -1576,8 +1578,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _career = Career;
     _period = Period;
     _request = Request;
-    _role = Role;
-    _student = Student;        
+    _role = Role;     
     return ({
         create,
         getOne,
