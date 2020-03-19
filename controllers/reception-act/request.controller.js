@@ -519,17 +519,23 @@ const uploadFile = (req, res) => {
             if (error) {
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
             }
-            // const docName = data.Document + path.extname(files.file.name);
             const docName = data.Document + path.extname((isJsPdf ? files.name : files.file.name));
             if (!request) {
                 let result = await _Drive.uploadFile(req, eOperation.NEW, isJsPdf);
                 if (typeof (result) !== 'undefined' && result.isCorrect) {
-                    _request.update({ _id: _id }, {
-                        $set: {
+                    let setQuery;
+                    if (data.phase === eRequest.DELIVERED) {
+                        setQuery = {
                             status: eStatusRequest.PROCESS,
                             phase: data.phase
-                            // phase: eRequest.DELIVERED
-                        },
+                        };
+                    } else {
+                        setQuery = {
+                            phase: data.phase
+                        };
+                    }
+                    _request.update({ _id: _id }, {
+                        $set: setQuery,
                         $addToSet: {
                             documents:
                             {
@@ -542,20 +548,20 @@ const uploadFile = (req, res) => {
                 }
             } else {
                 const tmpDocument = request.documents.filter(doc => doc.type === data.Document);
-                req.body.fileId = tmpDocument[0].driveId;
-                let result = await _Drive.uploadFile(req, eOperation.EDIT, isJsPdf);
+                const fileId = tmpDocument[0].driveId;
+                req.body.fileId = fileId;
+                let result = await _Drive.uploadFile(req, fileId ? eOperation.EDIT : eOperation.NEW, isJsPdf);
                 if (typeof (result) !== 'undefined' && result.isCorrect) {
                     _request.update({
                         _id: _id,
                         documents: { $elemMatch: { type: data.Document } }
                     }, {
                         $set: {
-                            status: eStatusRequest.PROCESS,
-                            // phase: eRequest.DELIVERED,
+                            status: (data.phase === eRequest.DELIVERED) ? eStatusRequest.PROCESS : request.status,
                             phase: data.phase,
                             'documents.$': {
                                 type: data.Document, dateRegister: new Date(), nameFile: docName,
-                                driveId: tmpDocument[0].driveId,
+                                driveId: fileId ? tmpDocument[0].driveId : result.fileId,
                                 status: (data.IsEdit === 'true' ? 'Accept' : 'Process')
                             }
                         }
