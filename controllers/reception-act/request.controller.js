@@ -1139,6 +1139,16 @@ const updateRequest = (req, res) => {
                         request.phase = eRequest.REALIZED;
                         request.status = eStatusRequest.PROCESS;
                         item.status = eStatusRequest.NONE;
+                        req.body.Document = eFile.OFICIO;
+                        let isUploadFile = await _Drive.uploadFile(req, eOperation.NEW, true);
+                        if (typeof (isUploadFile) !== 'undefined' && isUploadFile.isCorrect) {
+                            request.documents.push({
+                                type: eFile.OFICIO, dateRegister: new Date(), nameFile: eFile.OFICIO, status: 'Accept', driveId: isUploadFile.fileId
+                            });
+                        }
+                        else {
+                            msnError = 'Archivo no cargado';
+                        }
                         break;
                     }
                     case eStatusRequest.CANCELLED: {
