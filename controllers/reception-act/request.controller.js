@@ -920,12 +920,14 @@ const updateRequest = (req, res) => {
     var observationsMail = '';
     let msnError = '';
 
-    for (let i = 0; i < data.jurado.length; i++){
-        _employee.findOne({ email: data.jurado[i].email}, (err, employee) => {
-            if(employee) {
-                data.jurado[i].genero = employee.gender;
-            }
-        });
+    if (data.jurado) {
+        for (let i = 0; i < data.jurado.length; i++){
+            _employee.findOne({ email: data.jurado[i].email}, (err, employee) => {
+                if(employee) {
+                    data.jurado[i].genero = employee.gender;
+                }
+            });
+        }
     }
 
     _request.findOne({ _id: _id }).exec(async (error, request) => {
