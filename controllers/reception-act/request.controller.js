@@ -8,6 +8,7 @@ const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../en
 const sendMail = require('../shared/mail.controller');
 const verifyCodeTemplate = require('../../templates/verifyCode');
 const mailTemplate = require('../../templates/notificationMailReception');
+const mailTemplateSinodales = require('../../templates/notificationMailSinodales');
 
 let _Drive;
 let _Departments;
@@ -904,6 +905,17 @@ const updateRequest = (req, res) => {
     var bodyMail = '';
     var observationsMail = '';
     let msnError = '';
+
+    if (data.jurado) {
+        for (let i = 0; i < data.jurado.length; i++){
+            _employee.findOne({ email: data.jurado[i].email}, (err, employee) => {
+                if(employee) {
+                    data.jurado[i].genero = employee.gender;
+                }
+            });
+        }
+    }
+
     _request.findOne({ _id: _id }).exec(async (error, request) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -915,6 +927,14 @@ const updateRequest = (req, res) => {
             doer: typeof (data.doer) !== 'undefined' ? data.doer : '',
             observation: typeof (data.observation) !== 'undefined' ? data.observation : ''
         };
+
+        
+        await _student.findOne({ _id: request.studentId}, (err, student) => {
+            if(student) {
+                data.genero = student.sex;
+            }
+        });
+
         if (typeof (request.history) === 'undefined')
             request.history = [];
         switch (data.phase) {
@@ -1109,9 +1129,64 @@ const updateRequest = (req, res) => {
                         break;
                     }
                     case eStatusRequest.ACCEPT: {
+                        let generoP = data.jurado[0].genero === 'MASCULINO' ? 'Presidente' : data.jurado[0].genero === 'FEMENINO' ? 'Presidenta' : 'Presidente/a';
+                        let generoS = data.jurado[1].genero === 'MASCULINO' ? 'Secretario' : data.jurado[1].genero === 'FEMENINO' ? 'Secretaria' : 'Secretaria/o';
+                        let generoA = data.genero === 'M' ? 'del C.' : data.genero === 'F' ? 'de la C.' : 'de C.';
+
+                        // Enviar correo  sinoidales
+                        for(let i = 0; i < 4; i++){
+                            if(data.jurado[i].email){
+                                const subtitle =  data.jurado[i].genero === 'MASCULINO' ? 'Estimado '+data.jurado[i].name : data.jurado[0].genero === 'FEMENINO' ? 'Estimada '+data.jurado[i].name : 'Estimado/a '+data.jurado[i].name;
+                                const body = 'Por este conducto le informo que el Acto de Recepción Profesional '+generoA+' <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br>Por lo que se le pide su puntual asistencia.<br><br>Integrantes del jurado<br>'+
+                                '<ol style="text-align:left">'+
+                                '<li><b>'+generoP+':</b>	'+data.jurado[0].name+'</li><br>'+
+                                '<li><b>'+generoS+':</b>	'+data.jurado[1].name+'</li><br>'+
+                                '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
+                                '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
+                                '</ol>';
+                                const email = data.jurado[i].email;
+                                const subject = 'Acto recepcional - Aviso de titulación';
+                                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                                const message = mailTemplateSinodales(subtitle, body);
+                                await _sendEmail({ email: email, subject: subject, sender: sender, message: message }).then(
+                                    result => {console.log("Correo enviado a: "+data.jurado[i].email);}
+                                );
+                                
+                            }
+                        }
+                        // Enviar correo a jefe y srecretaria del departamento
+                        for (let i = 0; i <2; i++) {
+                            if(data.departamentoEmail[i].email){
+                                const subtitle = '';
+                                const body = 'Por este conducto le informo que el Acto de Recepción Profesional '+generoA+' <b>'+data.nombreAlumno+'</b> egresado del Instituto Tecnológico de Tepic, de la carrera de <b>'+data.carreraAlumno+'</b> por la opción de titulación de <b>'+data.opcionTitulacion+'</b> se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br><br>Integrantes del jurado<br>'+
+                                '<ol style="text-align:left">'+
+                                '<li><b>'+generoP+':</b>	'+data.jurado[0].name+'</li><br>'+
+                                '<li><b>'+generoS+':</b>	'+data.jurado[1].name+'</li><br>'+
+                                '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
+                                '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
+                                '</ol>';
+                                const email = data.departamentoEmail[i].email;
+                                const subject = 'Acto recepcional - Aviso de titulación';
+                                const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+                                const message = mailTemplateSinodales(subtitle, body);
+                                await _sendEmail({ email: email, subject: subject, sender: sender, message: message }).then(
+                                    result => {console.log("Correo enviado a: "+data.departamentoEmail[i].email);}
+                                ).catch(err => {
+                                    console.log("Error al enviar correo enviado a: "+data.departamentoEmail[i].email);
+                                });
+                            }
+                        }
+
                         subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
                         subtitleMail = 'Confirmación de fecha de titulación';
-                        bodyMail = 'Tu fecha solicitada ha sido confirmada';
+                        bodyMail = 'Tu acto recepcional se realizará el día <b>'+data.fechaEvento+'</b>, a las <b>'+data.horaEvento+' Hrs.</b> En la sala <b>'+data.lugarEvento+'</b> de este Instituto.<br><br>'+
+                        'Integrantes del jurado'+
+                        '<ol style="text-align:left">'+
+                        '<li><b>'+generoP+':</b>	'+data.jurado[0].name+'</li><br>'+
+                        '<li><b>'+generoS+':</b>	'+data.jurado[1].name+'</li><br>'+
+                        '<li><b>Vocal:</b>		'+data.jurado[2].name+'</li><br>'+
+                        '<li><b>Vocal suplente:</b>	'+data.jurado[3].name+'</li><br>'+
+                        '</ol>';
                         request.phase = eRequest.REALIZED;
                         request.status = eStatusRequest.NONE;
                         item.status = eStatusRequest.ACCEPT;
@@ -1120,7 +1195,7 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.REJECT: {
                         subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
                         subtitleMail = 'Confirmación de fecha de titulación';
-                        bodyMail = 'Tu fecha solicitada ha sido rechazada';
+                        bodyMail = 'Tu fecha solicitada ha sido rechazada, favor de ingresar al sistema para elegir una nueva fecha.';
                         observationsMail = item.observation;
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
