@@ -1571,6 +1571,40 @@ const addCampaignStudent = async (req, res) => {
       .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({error: ''}));
   };
 
+  const getStudentStatusFromSII = (req,res) => {   
+    const _controlNumber = req.params.controlNumber;
+    const options = {
+        "rejectUnauthorized": false,
+        host: 'wsescolares.tepic.tecnm.mx',
+        port: 443,
+        path: '/alumnos/info/'+_controlNumber,        
+        headers: {
+            'Authorization': 'Basic ' + new Buffer.from('tecnm:35c0l4r35').toString('base64')
+        }
+    };
+    
+    var student = "";
+
+    https.get(options,function (apiInfo) {
+
+        apiInfo.on('data', function (data) {
+            student += data;
+        });
+
+        apiInfo.on('end', async () => {
+            student = JSON.parse(student);
+            if (student) {
+                res.status(status.OK).json({status:student.status});
+            } else {
+                res.status(status.BAD_REQUEST).json({err:'Alumno no encontrado'});
+            }
+        });
+
+        apiInfo.on('error', function (e) {
+            return res.status(status.NOT_FOUND).json({err:'Alumno no encontrado'});
+        });
+    });
+};
 
 module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _student = Student;
@@ -1621,6 +1655,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
         getAllCampaign,
         registerCretentialStudent,
         insertActiveStudents,
-        getAllActiveStudents
+        getAllActiveStudents,
+        getStudentStatusFromSII
     });
 };
