@@ -141,7 +141,8 @@ const getAllRequest = (req, res) => {
                 fullName: 1,
                 controlNumber: 1,
                 career: 1,
-                careerId: 1
+                careerId: 1,
+                sex:1
             }
         }).populate({
             path: 'periodId', model: 'Period',                   
@@ -167,7 +168,8 @@ const getRequestByStatus = (req, res) => {
                         fullName: 1,
                         controlNumber: 1,
                         career: 1,
-                        careerId: 1
+                        careerId: 1,
+                        sex:1
                     }
                 })
                 .populate({
@@ -193,6 +195,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -217,6 +220,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -241,6 +245,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -265,6 +270,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
