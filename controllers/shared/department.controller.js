@@ -83,6 +83,76 @@ const _getEmployeesByDepartment = (department) => {
   });
 };
 
+const getDepartmentBossSecretary = (req, res) => {
+  const {_departmentName} = req.params;
+  const query = {
+    name: { $regex: new RegExp(`^${_departmentName}$`) }
+  };
+  _department.findOne(query)
+    .populate('careers')
+    .then(async (department) => {
+      if (department) {
+        const positions = await _getPositionsByAscription(department._id);
+        const employees = [];
+        for (const position of positions) {
+          employees.push(await _getEmployeeByPosition(position._id));
+        }
+        res.status(status.OK)
+          .json({ department: employees });
+      } else {
+        res.status(status.NOT_FOUND)
+          .json({ error: 'Ocurrió un error' });
+      }
+    })
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR)
+      .json({ error: 'Ocurrió un error' }));
+};
+
+const _getPositionsByAscription = (departmentId) => {
+  return new Promise(resolve => {
+    const query = {
+      $and: [
+        { ascription: departmentId },
+        {
+          $or: [
+            { name: {$regex: new RegExp(`^JEFE DE DEPARTAMENTO$`)}},
+            { name: {$regex: new RegExp(`^SECRETARIA$`)}},
+          ]
+        }
+      ]
+    };
+    _position.find(query)
+      .then(positions => {
+        if (positions && positions.length) {
+          resolve(positions);
+        } else {
+          resolve([]);
+        }
+      })
+      .catch(_ => resolve([]));
+  });
+};
+
+const _getEmployeeByPosition = (positionId) => {
+  return new Promise(resolve => {
+    const query = {
+      $and: [
+        { 'positions.position': positionId },
+        { positions: { $elemMatch: { status: 'ACTIVE' } } }
+      ]
+    };
+    _employee.findOne(query)
+      .then(employee => {
+        if (employee) {
+          resolve(employee);
+        } else {
+          resolve(null);
+        }
+      })
+      .catch(_ => resolve(null));
+  });
+};
+
 const getAllDepartments = (req, res) => {
   _department.find({})
     .populate('careers')
@@ -192,6 +262,7 @@ module.exports = (Deparment, Employee, Position) => {
     updateDepartment,
     removeDepartment,
     searchEmployeeByPosition,
-    consultAll
+    consultAll,
+    getDepartmentBossSecretary,
   });
 };
