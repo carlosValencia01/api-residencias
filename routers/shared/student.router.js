@@ -128,5 +128,8 @@ module.exports = (wagner) => {
     router.put('/credential/:_id', (req, res) =>
         studentCtrl.registerCretentialStudent(req, res));
 
+    router.get('/get/active/sii/:controlNumber', (req, res) =>
+        studentCtrl.getStudentStatusFromSII(req, res));
+
     return router;
 };

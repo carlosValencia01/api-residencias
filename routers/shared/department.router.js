@@ -21,6 +21,8 @@ module.exports = (wagner) => {
     router.delete('/remove/:_id', (req, res) =>
         deptoCtrl.removeDepartment(req, res));
 
+    router.get('/DepartmentBossSecretary/:_departmentName', (req, res) => 
+        deptoCtrl.getDepartmentBossSecretary(req, res));
 
     return router;
 };
