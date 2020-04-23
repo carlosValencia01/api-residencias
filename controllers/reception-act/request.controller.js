@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const moment = require('moment');
 var https = require('https');
+const QRCode = require('qrcode');
+
 const { eRequest, eStatusRequest, eRole, eFile, eOperation } = require('../../enumerators/reception-act/enums');
 const sendMail = require('../shared/mail.controller');
 const verifyCodeTemplate = require('../../templates/verifyCode');
@@ -98,9 +100,10 @@ const createTitled = async (req, res) => {
     request.lastModified = new Date();
     request.periodId = (await _Drive.getActivePeriod())._id;
     request.grade = await _getGradeName(request.studentId);
-    const student = await getStudent(request.studentId); 
+    const student = await getStudent(request.studentId);        
     request.email = student.email;
-    request.telephone = student.phone;
+    request.telephone = student.phone;    
+    
     _request.findOne({ studentId: request.studentId }, (error, titled) => {
         if (error) {
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, error);
@@ -110,7 +113,7 @@ const createTitled = async (req, res) => {
         }
         else {
             _request.create(request).then(created => {
-                res.json({
+                res.status(status.OK).json({
                     request: created
                 });
             }).catch(err => {
@@ -141,7 +144,8 @@ const getAllRequest = (req, res) => {
                 fullName: 1,
                 controlNumber: 1,
                 career: 1,
-                careerId: 1
+                careerId: 1,
+                sex:1
             }
         }).populate({
             path: 'periodId', model: 'Period',                   
@@ -167,7 +171,8 @@ const getRequestByStatus = (req, res) => {
                         fullName: 1,
                         controlNumber: 1,
                         career: 1,
-                        careerId: 1
+                        careerId: 1,
+                        sex:1
                     }
                 })
                 .populate({
@@ -193,6 +198,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -217,6 +223,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -241,6 +248,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -265,6 +273,7 @@ const getRequestByStatus = (req, res) => {
                         controlNumber: 1,
                         career: 1,
                         careerId: 1,
+                        sex:1
                     }
                 }).populate({
                     path: 'periodId', model: 'Period',                   
@@ -1214,6 +1223,16 @@ const updateRequest = (req, res) => {
                         request.phase = eRequest.REALIZED;
                         request.status = eStatusRequest.PROCESS;
                         item.status = eStatusRequest.NONE;
+                        req.body.Document = eFile.OFICIO;
+                        let isUploadFile = await _Drive.uploadFile(req, eOperation.NEW, true);
+                        if (typeof (isUploadFile) !== 'undefined' && isUploadFile.isCorrect) {
+                            request.documents.push({
+                                type: eFile.OFICIO, dateRegister: new Date(), nameFile: eFile.OFICIO, status: 'Accept', driveId: isUploadFile.fileId
+                            });
+                        }
+                        else {
+                            msnError = 'Archivo no cargado';
+                        }
                         break;
                     }
                     case eStatusRequest.CANCELLED: {
@@ -1814,7 +1833,7 @@ const completeTitledRequest =  (req,res) => {
                                         
                 });
                 return res.status(status.OK)
-                    .json({ msg:'Tarea comppletada' });
+                    .json({ msg:'Tarea completada' });
             }
             return res.status(status.OK)
                 .json({ msg:'No hay solicitudes' });
@@ -1853,6 +1872,59 @@ const getEmployeeGradeAndGender = (req,res)=>{
         );
 };
 
+const getSummary = (req,res)=>{
+    _request.find({$or:[{phase:'Generado'},{phase:'Titulado'}]},{email:1,studentId:1,titulationOption:1,product:1,proposedDate:1,proposedHour:1}).
+    populate({
+        path: 'studentId', model: 'Student',        
+        populate: { path: 'folderIdRecAct', model: 'Folder', select:{idFolderInDrive:1}},
+        select: {            
+            folderIdRecAct:1
+        }
+    }).populate({path: 'studentId', model: 'Student', populate: { path: 'careerId', model: 'Career', select: {fullName:1,acronym:1}},select: {careerId:1,fullName: 1,
+        controlNumber: 1,            
+        documents:1}})
+    .then(
+       async (requests)=>{           
+           
+            if(requests){
+                
+                const mapedRequests = await Promise.all( 
+                    requests.map(
+                    async request => {
+                        const notSaved = request.studentId.documents ? request.studentId.documents.filter(doc=> doc.type === 'ACTOREC').length === 0: true;
+                        if(notSaved){
+                            if(request.email){
+                                const id = request._id;
+                                const proposedDate = request.proposedDate;
+                                const proposedHour = request.proposedHour;
+                                const titulationOption = request.titulationOption;                               
+                                const product = request.product;                                                                                               
+                                let student = {
+                                    fullName: request.studentId.fullName,
+                                    controlNumber : request.studentId.controlNumber,
+                                    career: request.studentId.careerId.fullName,
+                                    careerAcronym: request.studentId.careerId.acronym,
+                                    email: request.email+'',
+                                    folderDriveIdRecAct: request.studentId.folderIdRecAct.idFolderInDrive
+                                };                                  
+                                student.emailQr = await QRCode.toDataURL(student.email);
+                                                
+                                return {id,proposedDate,proposedHour,titulationOption,product,student};
+                            }
+                        }                            
+                    })
+                );
+                return res.status(status.OK).json(mapedRequests);
+            }else{
+                return res.status(status.NOT_FOUND).json({err:'No hay solicitudes'});
+            }
+        },
+        err=>console.log(err)
+        
+    ).catch(err=> {console.log(err);
+     res.status(status.BAD_REQUEST).json({err})});
+};
+
 module.exports = (Request, Range, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
     _ranges = Range;
@@ -1889,6 +1961,7 @@ module.exports = (Request, Range, Folder, Student, Period,Department, Employee, 
         getPeriods,
         completeTitledRequest,
         getEmployeeGender,
-        getEmployeeGradeAndGender
+        getEmployeeGradeAndGender,
+        getSummary
     });
 };

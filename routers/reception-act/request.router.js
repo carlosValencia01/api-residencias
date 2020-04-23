@@ -37,6 +37,9 @@ module.exports = (wagner) => {
     router.get('/students', (req, res) =>
         requestCtrl.StudentsToSchedule(req, res));
 
+    router.get('/summary', (req, res) =>
+        requestCtrl.getSummary(req, res));
+
     router.post('/schedule', (req, res) =>
         requestCtrl.groupRequest(req, res));
 
