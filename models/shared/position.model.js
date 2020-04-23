@@ -9,7 +9,8 @@ let positionSchema = mongoose.Schema({
     gender: {
         male: {type: String, uppercase: true, trim: true},
         female: {type: String, uppercase: true, trim: true}
-    }
+    },
+    role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
 });
 
 const positionModel = mongoose.model('Position', positionSchema, 'positions');

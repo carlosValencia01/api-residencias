@@ -89,6 +89,10 @@ const login = async (req, res) => {
                     }
                     // Password válido, se genera el token
                     const token = jwt.sign({ email: user.email }, config.secret);
+                    const role = user.idRole
+                        ? { name: user.idRole.name,
+                            permissions: user.idRole.permissions }
+                        : null 
                     let formatUser = {
                         _id: user._id,
                         name: {
@@ -98,10 +102,7 @@ const login = async (req, res) => {
                         },
                         email: user.email,
                         role: user.role,
-                        rol: {
-                            name: user.idRole.name,
-                            permissions: user.idRole.permissions
-                        }
+                        rol: role
                     };
                     //Se retorna el usuario y token
                     return res.json({
@@ -196,6 +197,7 @@ const login = async (req, res) => {
                 };
                 return res.json({
                     user: formatUser,
+                    gender: student.sex,
                     token: token,
                     action: 'signin'
                 });
@@ -226,6 +228,7 @@ const login = async (req, res) => {
                         };
                         return res.json({
                             user: formatUser,
+                            gender: student.sex,
                             token: token,
                             action: 'signin'
                         });
@@ -359,7 +362,7 @@ const getDataEmployee = (req, res) => {
         .populate({
             path: 'employeeId', model: 'Employee',
             select: {
-                grade: 0, birthdate: 0, gender: 0, curp: 0
+                grade: 0, birthdate: 0, curp: 0
             },
             populate: {
                 path: 'positions.position', model: 'Position',
@@ -370,13 +373,20 @@ const getDataEmployee = (req, res) => {
                 }
             }
         })
-        .exec((err, user) => {
+        .exec(async (err, user) => {
             if (!err && user) {
                 const employeeData = user.employeeId.toObject();
                 const activePositions = employeeData.positions
-                    .filter(({ status }) => status === 'ACTIVE')
-                    .map(({ position }) => position);
-                employeeData.positions = activePositions.slice();
+                    .filter(({ status }) => status === 'ACTIVE');
+                let _positions = [];
+                for(const item of activePositions) {
+                    const _position = item.position;
+                    if (_position && _position.role) {
+                        _position.role = await _getRoleById(_position.role);
+                    }
+                    _positions.push(_position);
+                }
+                employeeData.positions = _positions.slice();
                 res.status(status.OK).json({
                     employee: employeeData
                 });
@@ -1041,6 +1051,15 @@ const _getStudentSii = (controlNumber) => {
                 resolve(false);
             });
         });
+    });
+};
+
+const _getRoleById = (roleId) => {
+    return new Promise((resolve) => {
+        _role.findOne({ _id: roleId })
+            .select('-description -_id')
+            .then((role) => resolve(role))
+            .catch((_) => resolve(null));
     });
 };
 
