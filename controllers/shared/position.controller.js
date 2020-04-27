@@ -161,6 +161,31 @@ const getPositionById = (req, res) => {
                 .json({ error: err ? err.toString() : 'Error' }));
 };
 
+const updatePositionRole = (req, res) => {
+    const { _id } = req.params;
+    const { roleId } = req.body;
+
+    _position.updateOne({ _id: _id }, { $set: { role: roleId }})
+        .then(async (updated) => {
+            const response = {};
+            if (updated && updated.n) {
+                if (updated.nModified) {
+                  response.status = status.OK;
+                  response.message = 'Rol asignado con éxito';
+                } else {
+                  response.status = status.INTERNAL_SERVER_ERROR,
+                  response.error_msj = 'No se pudo asignar el rol al puesto';
+                }
+              } else {
+                response.status = status.NOT_FOUND;
+                response.error_msj = 'No se encontró el puesto';
+              }
+              res.status(response.status).json(response);
+        })
+        .catch((err) => ( res.status(status.INTERNAL_SERVER_ERROR)
+            .json(err || { error_msj: 'Error al actualizar el rol del puesto' }) ));
+};
+
 const _getActivePositionsByEmployee = (employeeId) => {
     return new Promise(resolve => {
         _employee.findOne({ _id: employeeId })
@@ -224,5 +249,6 @@ module.exports = (Position, Employee) => {
         getPositionsByDepartment,
         getAvailablePositionsByDepartment,
         getPositionById,
+        updatePositionRole,
     });
 };

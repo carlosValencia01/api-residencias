@@ -16,6 +16,7 @@ module.exports = (wagner) => {
     const Period = require('../app/period.model');
     const Role = require('../app/role.model');
     const User = require('../app/user.model');
+    const Permission = require('../app/permission.model');
 
     // Inscriptions
     const Inscription = require('../inscriptions/inscription.model');
@@ -45,6 +46,7 @@ module.exports = (wagner) => {
         Role,
         User,
         Folder,
+        Permission,
 
         // Inscriptions
         Inscription,

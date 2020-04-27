@@ -886,12 +886,6 @@ const _findUser = (query) => {
     return new Promise((resolve) => {
         _user.findOne(query)
             .populate({
-                path: 'idRole', model: 'Role',
-                select: {
-                    permissions: 1, name: 1, _id: 0
-                }
-            })
-            .populate({
                 path: 'employeeId', model: 'Employee',
                 select: {
                     name: 1, _id: 0
@@ -909,7 +903,8 @@ const _findCompany = (query) => {
                 path: 'idRole', model: 'Role',
                 select: {
                     permissions: 1, name: 1, _id: 0
-                }
+                },
+                populate: { path: 'permissions', model: 'Permission', select: '-_id', options: { sort: 'category' } }
             })
             .populate({
                 path: 'companyId', model: 'Company',
@@ -929,7 +924,8 @@ const _findStudent = (query) => {
                 path: 'idRole', model: 'Role',
                 select: {
                     permissions: 1, name: 1, _id: 0
-                }
+                },
+                populate: { path: 'permissions', model: 'Permission', select: '-_id', options: { sort: 'category' } }
             }).populate({
                 path: 'careerId', model: 'Career',
                 select: {
@@ -1057,6 +1053,7 @@ const _getStudentSii = (controlNumber) => {
 const _getRoleById = (roleId) => {
     return new Promise((resolve) => {
         _role.findOne({ _id: roleId })
+            .populate({ path: 'permissions', model:'Permission', select: '-_id', options: { sort: 'category' } })
             .select('-description -_id')
             .then((role) => resolve(role))
             .catch((_) => resolve(null));

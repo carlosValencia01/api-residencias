@@ -15,6 +15,7 @@ const role = require('./routers/app/role.router')(wagner);
 const user = require('./routers/app/user.router')(wagner);
 const period = require('./routers/app/period.router')(wagner);
 const drive = require('./routers/app/google-drive.router')(wagner);
+const permission = require('./routers/app/permission.router')(wagner);
 
 // Inscriptions
 const inscription = require('./routers/inscriptions/inscription.router')(wagner);
@@ -87,6 +88,7 @@ app.use(uri + 'user', user);
 app.use(uri + 'period', period);
 app.use(uri + 'drive', drive);
 app.use(uri + 'career', career);
+app.use(uri + 'permission', permission);
 
 // Credentials
 app.use(uri + 'employee', employee);

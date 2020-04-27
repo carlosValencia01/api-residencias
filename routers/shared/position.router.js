@@ -13,6 +13,9 @@ module.exports = (wagner) => {
     router.put('/update/:_id', (req, res) =>
         positionCtrl.updatePosition(req, res));
 
+    router.put('/:_id/role', (req, res) =>
+        positionCtrl.updatePositionRole(req, res));
+
     router.delete('/remove/:_id', (req, res) =>
         positionCtrl.removePosition(req, res));
 
