@@ -27,7 +27,7 @@ const getAllByCategories = (req, res) => {
         }
       },
       { $addFields: { category: '$_id' } },
-      { $unset: '_id' },
+      { $project: { _id: 0 } },
       { $sort: { 'category': 1 } }
     ];
   
