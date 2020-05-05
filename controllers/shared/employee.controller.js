@@ -10,6 +10,12 @@ let _position;
 
 const getAll = (req, res) => {
     _employee.find({})
+        .populate({
+            path: 'positions.position',
+            model: 'Position',
+            select: 'name ascription -_id',
+            populate: {path: 'ascription', model: 'Department', select: 'name shortName -_id'}
+        })
         .exec(handler.handleMany.bind(null, 'employees', res));
 };
 
