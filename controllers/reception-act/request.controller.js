@@ -1905,7 +1905,8 @@ const getSummary = (req,res)=>{
                                     career: request.studentId.careerId.fullName,
                                     careerAcronym: request.studentId.careerId.acronym,
                                     email: request.email+'',
-                                    folderDriveIdRecAct: request.studentId.folderIdRecAct.idFolderInDrive
+                                    folderDriveIdRecAct: request.studentId.folderIdRecAct.idFolderInDrive,
+                                    _id:request.studentId._id
                                 };                                  
                                 student.emailQr = await QRCode.toDataURL(student.email);
                                                 
@@ -1914,15 +1915,38 @@ const getSummary = (req,res)=>{
                         }                            
                     })
                 );
-                return res.status(status.OK).json(mapedRequests);
+                const filteredRequest = mapedRequests.filter( _req=>_req);
+                if(filteredRequest.length == 0)
+                    return res.status(status.NOT_FOUND).json({msg:'No hay solicitudes'});
+                return res.status(status.OK).json(filteredRequest);
             }else{
                 return res.status(status.NOT_FOUND).json({err:'No hay solicitudes'});
             }
         },
         err=>console.log(err)
         
-    ).catch(err=> {console.log(err);
-     res.status(status.BAD_REQUEST).json({err})});
+    ).catch(err=> {
+        console.log(err);
+        res.status(status.BAD_REQUEST).json({err});
+    });
+};
+
+const uploadSummary = async (req,res)=>{    
+    const summaries = req.body;
+    const result = await Promise.all(  
+        summaries.map(
+            async (summary)=>{
+                const result = await _Drive.uploadFile({body:summary}, eOperation.NEW, true);
+                if(result.isCorrect){
+                    _student.updateOne({_id:summary.studentId},{$push:{documents:{type:"ACTOREC",filename:summary.file.name,fileIdInDrive:result.fileId}}}).then(up=>{},err=>{}).catch(err=>{});
+                }
+                return result;
+            }
+        )
+    );
+    const resStatus = result.filter( up=> up.isCorrect ).length > 0 ? status.OK : status.BAD_REQUEST; 
+    return res.status(resStatus).json(result);
+    // const result = await _Drive.uploadFile(req, eOperation.NEW, true);
 };
 
 module.exports = (Request, Range, Folder, Student, Period,Department, Employee, Position) => {
@@ -1962,6 +1986,7 @@ module.exports = (Request, Range, Folder, Student, Period,Department, Employee, 
         completeTitledRequest,
         getEmployeeGender,
         getEmployeeGradeAndGender,
-        getSummary
+        getSummary,
+        uploadSummary
     });
 };
