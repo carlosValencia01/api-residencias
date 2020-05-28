@@ -25,6 +25,7 @@ const english = require('./routers/reception-act/english.router')(wagner);
 const request = require('./routers/reception-act/request.router')(wagner);
 const range = require('./routers/reception-act/range.router')(wagner);
 const minuteBook = require('./routers/reception-act/minuteBook.router')(wagner);
+const denyDay = require('./routers/reception-act/denyDays.router')(wagner);
 
 // Graduation
 const graduation = require('./routers/graduation/graduation.router')(wagner);
@@ -100,6 +101,7 @@ app.use(uri + 'inscription', inscription);
 app.use(uri + 'english', english);
 app.use(uri + 'request', request);
 app.use(uri + 'range', range);
+app.use(uri + 'denyDay', denyDay);
 app.use(uri + 'minuteBook', minuteBook);
 // Graduations
 app.use(uri + 'graduationmail', graduation);

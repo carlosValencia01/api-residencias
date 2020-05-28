@@ -2,8 +2,8 @@ const router = require('express').Router();
 
 
 module.exports = (wagner) => {
-    const requestCtrl = wagner.invoke((Request, Range, Folder, Student,Period,Department, Employee, Position) =>
-        require('../../controllers/reception-act/request.controller')(Request, Range, Folder, Student,Period,Department, Employee, Position));
+    const requestCtrl = wagner.invoke((Request, DenyDay, Folder, Student,Period,Department, Employee, Position) =>
+        require('../../controllers/reception-act/request.controller')(Request, DenyDay, Folder, Student,Period,Department, Employee, Position));
 
     router.post('/create/:_id', (req, res) => {
         return requestCtrl.create(req, res);

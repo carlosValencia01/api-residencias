@@ -26,6 +26,7 @@ module.exports = (wagner) => {
     const Range = require('../reception-act/ranges.models');
     const Request = require('../reception-act/request.model');
     const MinuteBook = require('../reception-act/minuteBook.model');
+    const DenyDay = require('../reception-act/denyDays.model');
 
     // Vinculation
     const Company = require('../vinculation/company.model');
@@ -56,7 +57,8 @@ module.exports = (wagner) => {
         Range,
         Request,
         MinuteBook,
-
+        DenyDay,
+        
         // Vinculation
         Company,
 
