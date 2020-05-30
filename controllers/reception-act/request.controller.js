@@ -15,7 +15,7 @@ const mailTemplateSinodales = require('../../templates/notificationMailSinodales
 let _Drive;
 let _Departments;
 let _request;
-let _ranges;
+let _DenyDays;
 let _student;
 let _period;
 let _employee;
@@ -1461,7 +1461,6 @@ const groupDiary = (req, res) => {
         StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
         EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
     }
-    console.log("FECHAS", StartDate, "--", EndDate);
     let query =
         [
             {
@@ -1491,23 +1490,12 @@ const groupDiary = (req, res) => {
                 }
             }
         ];
-    _request.aggregate(query, (error, diary) => {
+    _request.aggregate(query, async (error, diary) => {
         if (error)
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
-        _ranges.find(
-            {
-                $or: [{ start: { $gte: StartDate, $lte: EndDate } },
-                { end: { $gte: StartDate, $lte: EndDate } },
-                { start: { $gte: StartDate, $lte: EndDate } },
-                { $and: [{ start: { $lte: StartDate } }, { end: { $gte: StartDate } }] }
-                ]
-            }
-            , function (error, ranges) {
-                if (error)
-                    return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
-                res.status(status.OK);
-                res.json({ Diary: diary, Ranges: ranges });
-            });
+        
+            const denyDays = await _DenyDays.get();
+            res.status(status.OK).json({ Diary: diary, denyDays });
     });
 
     //.exec(handler.handleMany.bind(null, 'Diary', res));
@@ -1553,23 +1541,11 @@ const groupRequest = (req, res) => {
             }
         ];
     _request
-        .aggregate(query, (error, schedule) => {
+        .aggregate(query, async (error, schedule) => {
             if (error)
                 return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
-            _ranges.find(
-                {
-                    $or: [{ start: { $gte: StartDate, $lte: EndDate } },
-                    { end: { $gte: StartDate, $lte: EndDate } },
-                    { start: { $gte: StartDate, $lte: EndDate } },
-                    { $and: [{ start: { $lte: StartDate } }, { end: { $gte: StartDate } }] }
-                    ]
-                }
-                , function (error, ranges) {
-                    if (error)
-                        return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
-                    res.status(status.OK);
-                    res.json({ Schedule: schedule, Ranges: ranges });
-                });
+            const denyDays = await _DenyDays.get();
+            res.status(status.OK).json({ Schedule: schedule, denyDays });
         });
     //.exec(handler.handleMany.bind(null, 'Schedule', res));
 };
@@ -1949,9 +1925,9 @@ const uploadSummary = async (req,res)=>{
     // const result = await _Drive.uploadFile(req, eOperation.NEW, true);
 };
 
-module.exports = (Request, Range, Folder, Student, Period,Department, Employee, Position) => {
+module.exports = (Request, DenyDay, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
-    _ranges = Range;
+    _DenyDays = require('./denyDays.controller')(DenyDay);
     _Drive = require('../app/google-drive.controller')(Folder);
     _Departments = require('../shared/department.controller')(Department, Employee, Position);
     _employee = Employee;
