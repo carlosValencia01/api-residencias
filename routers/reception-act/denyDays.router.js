@@ -9,5 +9,8 @@ module.exports = (wagner) => {
 
     router.post('/create', (req, res) =>
         danyDaysCtrl.create(req, res));
+
+    router.post('/delete', (req, res) =>
+        danyDaysCtrl.remove(req, res));
     return router;
 };

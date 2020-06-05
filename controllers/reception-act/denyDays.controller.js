@@ -43,11 +43,20 @@ const create = (req, res, next) => {
     );
 };
 
+const remove = (req,res)=>{
+    const {_id} = req.body;
+    _denyDay.deleteOne({_id}).then(
+        (deleted) => res.status(status.OK).json({msg:"Día desbloqueado"}),
+        (error) => res.status(status.BAD_REQUEST).json({error})
+    ).catch((error) => res.status(status.BAD_REQUEST).json({error}));
+};
+
 module.exports = (DenyDay) => {
     _denyDay = DenyDay;
     return ({        
         create,        
         getAll,
-        get
+        get,
+        remove
     });
 };

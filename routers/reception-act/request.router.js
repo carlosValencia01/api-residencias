@@ -72,7 +72,7 @@ module.exports = (wagner) => {
     router.post('/:_id/file/omit', (req, res) =>
             requestCtrl.omitFile(req, res));
 
-    router.post('/summary', (req, res) =>
+    router.post('/summary/upload', (req, res) =>
         requestCtrl.uploadSummary(req, res));
 
     router.put('/:_id', (req, res) => {
