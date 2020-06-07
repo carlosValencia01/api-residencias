@@ -1310,10 +1310,10 @@ const updateRequest = (req, res) => {
                     }
                     //Se valida que el titulado paso por ella
                     case eStatusRequest.ACCEPT: {
-                        subjectMail = 'Acto recepcional - Acta de examen profesional';
-                        subtitleMail = 'Acta de examen profesional';
-                        bodyMail = 'Su acta ha sido entregada';
-                        observationsMail = item.observation;
+                        // subjectMail = 'Acto recepcional - Acta de examen profesional';
+                        // subtitleMail = 'Acta de examen profesional';
+                        // bodyMail = 'Su acta ha sido entregada';
+                        // observationsMail = item.observation;
                         request.phase = eRequest.TITLED;
                         request.status = eStatusRequest.NONE;
                         item.status = eStatusRequest.ACCEPT
@@ -1925,6 +1925,59 @@ const uploadSummary = async (req,res)=>{
     // const result = await _Drive.uploadFile(req, eOperation.NEW, true);
 };
 
+const createStatusExamAct = (req, res) => {
+    const {_idRequest} = req.params;
+    const doc = req.body;
+    // Actualizar la solicitud
+    _request.updateOne({_id: _idRequest}, {$addToSet: {documents: doc}})
+      .then(updated => {
+        if (updated.nModified) {
+          return res.status(status.OK).json({message: 'Solicitud actualizada con exito'});
+        }
+        return res.status(status.NOT_FOUND).json({error: 'No se encontró la solicitud'});
+      })
+      .catch(_ => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al actualizar la solicitud'});
+      })
+  };
+
+  const sendMailExamAct = (req, res) => {
+    const _email = req.body.to_email;
+    const _status = req.body.status;
+
+    const subtitle = 'Acta de examen profesional';
+    const body = _status ? 'Su acta ha sido entregada' : 'Su acta está pendiente de entrega' ;
+    const email = _email;
+    const subject = 'Acto recepcional - Acta de examen profesional';
+    const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+    const message = mailTemplate(subtitle, body, '');
+    _sendEmail({ email: email, subject: subject, sender: sender, message: message })
+    .then(async data => {
+        if (data.code === 202) {
+            res.status(status.OK).json({ message: 'Correo envíado con éxito' })
+        } else {
+            res.status(status.INTERNAL_SERVER_ERROR).json({ error: 'Error al envíar el correo' });
+        }
+    })
+  }
+
+  const changeStatusExamAct = (req, res) => {
+    const {_idRequest} = req.params;
+    const doc = req.body;
+
+    _request.updateOne({ _id: _idRequest, documents: { $elemMatch: { type: 'ACTA_EXAMEN' } } }, {$set: {'documents.$.status': doc.status}})
+    .then(updated => {
+        if (updated.nModified) {
+          return res.status(status.OK).json({message: 'Solicitud actualizada con exito'});
+        }
+        return res.status(status.NOT_FOUND).json({error: 'No se encontró la solicitud'});
+      })
+      .catch(_ => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al actualizar la solicitud'});
+      })
+  };
+
+
 module.exports = (Request, DenyDay, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
     _DenyDays = require('./denyDays.controller')(DenyDay);
@@ -1963,6 +2016,9 @@ module.exports = (Request, DenyDay, Folder, Student, Period,Department, Employee
         getEmployeeGender,
         getEmployeeGradeAndGender,
         getSummary,
-        uploadSummary
+        uploadSummary,
+        createStatusExamAct,
+        sendMailExamAct,
+        changeStatusExamAct
     });
 };

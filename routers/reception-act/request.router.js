@@ -99,5 +99,15 @@ module.exports = (wagner) => {
     router.delete('/:id', (req, res) =>
         requestCtrl.removeTitled(req, res));
 
+    router.put('/statusExamAct/:_idRequest', (req, res) => 
+        requestCtrl.createStatusExamAct(req, res));
+
+    router.post('/mailExamAct', (req, res) => {
+        requestCtrl.sendMailExamAct(req, res);
+    });
+
+    router.put('/changeStatusExamAct/:_idRequest', (req, res) => 
+        requestCtrl.changeStatusExamAct(req, res));
+    
     return router;
 };

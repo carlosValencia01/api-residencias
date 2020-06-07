@@ -261,7 +261,7 @@ module.exports = (SUBTITULO,MENSAJE,OBSERVACIONES) => {
                                               st-content="rightimage-paragraph">
                                               ${MENSAJE}<br>
                                               <b>${OBSERVACIONES}</b><br>
-                                              <a href="https://mitec.ittepic.edu.mx/graduation">Revisa tu avance</a>
+                                              <a href="https://mitec.ittepic.edu.mx/titulation/request">Revisa tu avance</a>
                                            </td>
                                         </tr>
                                         <tr>
