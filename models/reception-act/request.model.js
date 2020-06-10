@@ -58,7 +58,8 @@ const requestSchema = new mongoose.Schema({
         foja: { type: String, trim: true },
         career: { type: String, trim: true }
     },
-    isIntegral: { type: Boolean, default: true }
+    isIntegral: { type: Boolean, default: true },
+    examActStatus: {type: Boolean, required: false}
 });
 
 const requestModel = mongoose.model('Request', requestSchema, 'requests');

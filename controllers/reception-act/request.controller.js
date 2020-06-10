@@ -1930,7 +1930,7 @@ const createStatusExamAct = (req, res) => {
     const {_idRequest} = req.params;
     const doc = req.body;
     // Actualizar la solicitud
-    _request.updateOne({_id: _idRequest}, {$addToSet: {documents: doc}})
+    _request.updateOne({_id: _idRequest}, {$set: {examActStatus: doc.status}})
       .then(updated => {
         if (updated.nModified) {
           return res.status(status.OK).json({message: 'Solicitud actualizada con exito'});
@@ -1966,7 +1966,7 @@ const createStatusExamAct = (req, res) => {
     const {_idRequest} = req.params;
     const doc = req.body;
 
-    _request.updateOne({ _id: _idRequest, documents: { $elemMatch: { type: 'ACTA_EXAMEN' } } }, {$set: {'documents.$.status': doc.status}})
+    _request.updateOne({ _id: _idRequest},{examActStatus: doc.status})
     .then(updated => {
         if (updated.nModified) {
           return res.status(status.OK).json({message: 'Solicitud actualizada con exito'});
