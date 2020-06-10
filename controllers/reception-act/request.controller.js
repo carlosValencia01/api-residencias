@@ -592,14 +592,15 @@ const getResource = (req, res) => {
         var fileInformation = request.documents.find(f => f.nameFile.includes(resource.toUpperCase()));
         if (!fileInformation)
             return handler.handleError(res, status.NOT_FOUND, { message: 'Recurso no encontrado' });
-
-        const tmpName = resource.toUpperCase() + "_" + _id + ".pdf";
+        const extension = resource == 'xml' ? '.xml' : '.pdf';
+        const mimeType = resource == 'xml' ? 'text/xml' : 'application/pdf';
+        const tmpName = resource.toUpperCase() + "_" + _id + extension;
         let result = await _Drive.downloadToLocal(fileInformation.driveId, tmpName);
 
         if (typeof (result) !== 'undefined' && result) {
             console.log(`${__dirname}/../../documents/tmpFile/${tmpName}`);
             const fullPath = path.normalize(`${__dirname}/../../documents/tmpFile/${tmpName}`);
-            res.set('Content-Type', 'application/pdf');
+            res.set('Content-Type', mimeType);
             fs.createReadStream(fullPath).pipe(res);            
             fs.unlinkSync(fullPath);
         }
