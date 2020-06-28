@@ -1485,7 +1485,7 @@ const groupDiary = (req, res) => {
                     {
                         $push: {
                             id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
-                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$titulationOption'
+                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$titulationOption',status: "$status"
                         }
                     }
                 }
