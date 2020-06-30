@@ -44,5 +44,8 @@ module.exports = (wagner) => {
     router.get('/getArchivedExpedient', (req, res) =>
         studentCtrl.getArchivedExpedient(req, res));
 
+    router.post('/sendnotificationmail', (req, res) =>
+        inscriptionCtrl.sendInscriptionMail(req, res));
+
     return router;
 };

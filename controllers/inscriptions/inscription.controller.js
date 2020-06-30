@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 const sendMail = require('../shared/mail.controller');
+const mailTemplate = require('../../templates/inscription');
 
 const readFile = util.promisify(fs.readFile);
 let _inscription;
@@ -157,9 +158,43 @@ const chooseTemplate = index => {
     }
 };
 
+const _sendEmail = ({ email, subject, sender, message }) => {
+    return new Promise(resolve => {
+        const emailData = {
+            to_email: [email],
+            subject: subject,
+            sender: sender,
+            message: message
+        };
+        sendMail({ body: emailData })
+            .then(data => resolve(data));
+    });
+};
+
+const sendInscriptionMail = async (req, res) => {
+    let students = req.body;
+    for(let i = 0; i < students.length; i++){
+        const _email = students[i].personalEmail;
+        const nombre = students[i].name;
+        const nc = students[i].controlNumber;
+        const nip = students[i].nip;
+        const email = _email;
+        const subject = 'Inscripciones - ITTEPIC'; //MODIFICAR
+        const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
+        const message = mailTemplate(nombre, nc, nip);
+        await _sendEmail({ email: email, subject: subject, sender: sender, message: message })
+        .then(async data => {
+            console.log("Correo enviado a: "+students[i].personalEmail);
+        });
+    }
+    res.status(status.OK).json({ message: 'Correos envíados con éxito' })
+    
+};
+
 module.exports = Inscription => {
     _inscription = Inscription;
     return ({
-        sendTemplateMail
+        sendTemplateMail,
+        sendInscriptionMail
     });
 };
