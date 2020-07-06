@@ -1,9 +1,24 @@
 const status = require('http-status');
-const handler = require('../../utils/handler');
 let _period;
 
-const getAll = (req, res) => { 
-  _period.find({}).exec(handler.handleMany.bind(null, 'periods', res));
+const getAll = async (req, res) => {
+    const periods = await constultAll();
+    if(periods.err){
+        return res.status(status.BAD_REQUEST).json({error:periods.err});
+    }
+    return res.status(status.OK).json({periods});  
+};
+
+const constultAll = ()=>{
+    return new Promise((resolve)=>{
+        _period.find({}).then(
+            periods=>{
+                resolve(periods);
+            }
+        ).catch(err=>{
+            resolve({err});
+        })
+    });
 };
 
 const getActivePeriod = (req,res)=>{
@@ -66,6 +81,7 @@ module.exports = (Period) => {
     getAll,
     getActivePeriod,
     createPeriod,
-    updatePeriod
+    updatePeriod,
+    constultAll
   });
 };

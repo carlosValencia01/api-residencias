@@ -15,6 +15,7 @@ let _role;
 let _period;
 let _activeStudents;
 let _career;
+let _Period;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -26,65 +27,72 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
-const getStudentsInscription = (req, res) => {
-    _student.find({ "inscriptionStatus": { $exists: true } }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {            
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber:mapDocuments(student.documents).length,
-                documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus:mapDocuments(student.documents)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const getStudentsInscription = async (req, res) => {
+    const newStudents = await consultStudentsInscription();
+    res.status(status.OK).json({ students: newStudents });
+};
+
+const consultStudentsInscription = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ "inscriptionStatus": { $exists: true } }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {            
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
+                    totalDocumentsNumber:mapDocuments(student.documents).length,
+                    documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus:mapDocuments(student.documents)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
 };
 
 const mapDocuments = (documents) => {
@@ -142,203 +150,246 @@ const documentsHaveChangesAdmin = (documents, status) => {
 
 };
 
-const getStudentsInscriptionLogged = (req, res) => {
-    _student.find({ "stepWizard": 0 })
-        .exec(handler.handleMany.bind(null, 'students', res));
+const getStudentsInscriptionLogged = async (req, res) => {
+    const students = await consultStudentsInscriptionLogged();
+    res.status(status.OK).json({ students });
+};
+const consultStudentsInscriptionLogged = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ "stepWizard": 0 }).then(
+            sts=>{
+                resolve(sts);
+            }
+        );
+    });
+};
+const getStudentsInscriptionProcess = async (req, res) => {
+    const newStudents = await consultStudentsInscriptionProcess();
+    res.status(status.OK).json({ students: newStudents });
 };
 
-const getStudentsInscriptionProcess = (req, res) => {
-    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "status": student.status,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents),
-                documentsModifiedAdmin: documentsHaveChangesAdmin(student.documents, student.inscriptionStatus)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const  consultStudentsInscriptionProcess = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "status": student.status,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents),
+                    documentsModifiedAdmin: documentsHaveChangesAdmin(student.documents, student.inscriptionStatus)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
 };
 
-const getStudentsInscriptionPendant = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "status": student.status,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const getStudentsInscriptionPendant = async (req, res) => {
+   const newStudents = await consultStudentsInscriptionPendant();
+   res.status(status.OK).json({ students: newStudents });
 };
 
-const getStudentsInscriptionAcept = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const consultStudentsInscriptionPendant = ()=>{
+    return new Promise((resolve)=>{
+        _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "status": student.status,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
 };
 
-const getIntegratedExpedient = (req, res) => {
-    _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Integrado" }] })
-        .exec(handler.handleMany.bind(null, 'expedients', res));
+const getStudentsInscriptionAcept = async (req, res) => {
+    const newStudents = await consultStudentsInscriptionAcept();
+    res.status(status.OK).json({ students: newStudents });
 };
 
-const getArchivedExpedient = (req, res) => {
-    _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Archivado" }] })
-        .exec(handler.handleMany.bind(null, 'expedients', res));
+const consultStudentsInscriptionAcept = ()=>{
+    return new Promise(resolve=>{
+
+        _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
+}
+
+const getIntegratedExpedient = async (req, res) => {
+    const expedients = await consultIntegratedExpedient();
+    res.status(status.OK).json({expedients});
+};
+const consultIntegratedExpedient = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Integrado" }] }).then( exp=>{
+            resolve(exp);
+        })        
+    });
+};
+const getArchivedExpedient = async (req, res) => {
+    const expedients = await consultArchivedExpedient();
+    res.status(status.OK).json({expedients});        
+};
+const consultArchivedExpedient = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Archivado" }] }).then( exp=>{
+            resolve(exp);
+        })        
+    });
 };
 
 const getById = (req, res) => {
@@ -1606,13 +1657,41 @@ const addCampaignStudent = async (req, res) => {
     });
 };
 
+const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
+    const periods = (await _Period.constultAll());
+    const acepStudents = (await consultStudentsInscriptionAcept());
+    const pendantStudents = (await consultStudentsInscriptionPendant());
+    const processStudents = (await consultStudentsInscriptionProcess());
+    const loggedStudents = (await consultStudentsInscriptionLogged());
+    const allStudents = (await consultStudentsInscription());
+    const expedientsArchived = (await consultArchivedExpedient());
+    const expedientsIntegrated = (await consultIntegratedExpedient());
+    if(periods.err){
+        return res.status(status.BAD_REQUEST).json({error:periods.err});
+    }
+    
+        
+    const studentsByPeriod = periods.map( (per)=>({
+        periodId:per._id,
+        allStudents: allStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        acepStudents: acepStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        pendantStudents: pendantStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        processStudents: processStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        loggedStudents: loggedStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        expedientsArchived: expedientsArchived.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        expedientsIntegrated: expedientsIntegrated.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+    }));
+    res.status(status.OK).json({studentsByPeriod});
+};
+
 module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _student = Student;
     _activeStudents = ActiveStudents;
     _career = Career;
     _period = Period;
     _request = Request;
-    _role = Role;     
+    _role = Role;
+    _Period = require('../app/period.controller')(Period);
     return ({
         create,
         getOne,
@@ -1656,6 +1735,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
         registerCretentialStudent,
         insertActiveStudents,
         getAllActiveStudents,
-        getStudentStatusFromSII
+        getStudentStatusFromSII,
+        getNumberInscriptionStudentsByPeriod
     });
 };
