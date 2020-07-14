@@ -108,14 +108,14 @@ const mapDocuments = (documents) => {
 
 
     ).filter(
-        docFiltered =>docFiltered.filename ? docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 : false && docFiltered.statusName !== null
+        docFiltered =>docFiltered.filename  && docFiltered.statusName !== null
     );
 };
 
 const documentsHaveChanges = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 : false).map(
+        const changes = documents.filter(doc => doc.status.length > 0 ).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -134,7 +134,7 @@ const documentsHaveChanges = (documents, status) => {
 const documentsHaveChangesAdmin = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 :false).map(
+        const changes = documents.filter(doc => doc.status.length > 0 ).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -995,7 +995,7 @@ const getDocumentsStatus = async (req, res) => {
 
 
             ).filter(
-                docFiltered => docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+                docFiltered => docFiltered.statusName !== null
             ),
             action: 'get documents status'
         });
@@ -1106,9 +1106,9 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
         _student.findOne({controlNumber},{documents:1}).then(
             (student)=>{
                 if(student){
-                    if(grade === 'lic'){                                                
+                    if(grade === 'lic'){  // && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false                                
                         resolve(
-                            student.documents.filter((doc) =>doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            student.documents.filter((doc) =>doc.type === 'DRIVE').map((doc)=>
                             {                                
                                 
                                 const name = doc.filename;                                
@@ -1121,6 +1121,10 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
                                 :name.indexOf(eInsFiles.LETTER_BACH) !== -1 ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO BACHILLERATO',filename:name,position:2}
                                 :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
                                 :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:7} 
+                                : name.indexOf(eInsFiles.SOLICITUD) !== -1 ? {shortName:'SOLICITUD',fullName:'SOLICITUD',filename:name,position:8} 
+                                :name.indexOf(eInsFiles.CONTRATO) !== -1 ? {shortName:'CONTRATO',fullName:'CONTRATO',filename:name,position:9} 
+                                :name.indexOf(eInsFiles.ACUSE) !== -1 ? {shortName:'ACUSE',fullName:'ACUSE',filename:name,position:10} 
+                                :name.indexOf(eInsFiles.SCHEDULE) !== -1 ? {shortName:'HORARIO',fullName:'HORARIO',filename:name,position:11} 
                                 :'';
                                 const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
                                 
