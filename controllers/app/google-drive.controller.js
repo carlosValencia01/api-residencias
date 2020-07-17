@@ -422,9 +422,7 @@ const createFile2 = async (req, res) => {
     const drive = google.drive({ version: 'v3', auth });
     const { mimeType, nameInDrive, bodyMedia, folderId, newF, fileId } = req.body;
     console.log(nameInDrive, 'create2');
-
-    const filePath = 'documents/tmpFile/' + nameInDrive;
-    // console.log(nameInDrive);
+    
 
     let buffer = toUint8Array(bodyMedia);
     let bufferStream = new stream.PassThrough();
