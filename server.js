@@ -39,8 +39,9 @@ const student = require('./routers/shared/student.router')(wagner);
 const career = require('./routers/shared/career.router')(wagner);
 const imss = require('./routers/shared/imss.router')(wagner);
 
-// English
-const englishState = require('./routers/english/englishState.router')(wagner);
+// SG-CLE
+const englishStudent = require('./routers/sgcle/englishStudent.router')(wagner);
+const requestCourse = require('./routers/sgcle/requestCourse.router')(wagner);
 
 let app = express();
 
@@ -115,7 +116,8 @@ app.use(uri + 'employee', employee);
 app.use(uri + 'position', position);
 app.use(uri + 'student', student);
 app.use(uri + 'imss', imss);
-//English
-app.use(uri + 'englishstate', englishState);
+// SG-CLE
+app.use(uri + 'sg-cle/englishstudent', englishStudent);
+app.use(uri + 'sg-cle/requestcourse', requestCourse);
 
 module.exports = app;
