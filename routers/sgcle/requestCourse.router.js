@@ -11,5 +11,8 @@ module.exports = (wagner) => {
     router.post('/update', (req, res) =>
     requestCourseCtrl.updateRequestCourse(req, res));
 
+    router.put('/delete/:_id', (req, res) =>
+    requestCourseCtrl.deleteRequestOfStudent(req, res));  
+
     return router;
 }

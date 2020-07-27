@@ -42,6 +42,7 @@ const imss = require('./routers/shared/imss.router')(wagner);
 // SG-CLE
 const englishStudent = require('./routers/sgcle/englishStudent.router')(wagner);
 const requestCourse = require('./routers/sgcle/requestCourse.router')(wagner);
+const classroom = require('./routers/sgcle/classroom.router')(wagner);
 
 let app = express();
 
@@ -119,5 +120,6 @@ app.use(uri + 'imss', imss);
 // SG-CLE
 app.use(uri + 'sg-cle/englishstudent', englishStudent);
 app.use(uri + 'sg-cle/requestcourse', requestCourse);
+app.use(uri + 'sg-cle/classroom', classroom);
 
 module.exports = app;

@@ -9,13 +9,13 @@ const requestCourseSchema = new mongoose.Schema({
             hours: [
                 {
                     desc: {type: String},
-                    students: [{type: mongoose.Schema.Types.ObjectId, ref: 'sgcle-englishStudent' }]
+                    students: [{type: mongoose.Schema.Types.ObjectId, ref: 'EnglishStudent' }]
                 }
             ]
         }
     ],
 });
 
-const requestCourseModel = mongoose.model('sgcle-requestCourse', requestCourseSchema, 'sgcle-requestCourses');
+const requestCourseModel = mongoose.model('RequestCourse', requestCourseSchema, 'requestCourses');
 
 module.exports = requestCourseModel;

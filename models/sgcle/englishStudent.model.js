@@ -7,6 +7,6 @@ const englishStudentSchema = new mongoose.Schema({
     totalHoursCoursed: {type:Number},
 });
 
-const englishStudentModel = mongoose.model('sgcle-englishStudent', englishStudentSchema, 'sgcle-englishStudents');
+const englishStudentModel = mongoose.model('EnglishStudent', englishStudentSchema, 'englishStudents');
 
 module.exports = englishStudentModel;
