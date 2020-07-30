@@ -42,14 +42,13 @@ module.exports = (wagner) => {
     const ActiveStudents = require('./activeStudents.model');
 
     // SG-CLE
-    const CourseSchedule = require('./../sgcle/courseSchedule.model');
-    const EnglishCourse = require('./../sgcle/englishCourse.model') 
+    const EnglishCourse = require('./../sgcle/englishCourse.model')
 
     const EnglishStudent = require('./../sgcle/englishStudent.model');
-    const RequestCourse = require('./../sgcle/requestCourse.model'); 
+    const RequestCourse = require('./../sgcle/requestCourse.model');
     const classroom = require('./../sgcle/classroom.model');
 
-    
+
     const models = {
         // App
         Period,
@@ -67,7 +66,7 @@ module.exports = (wagner) => {
         Request,
         MinuteBook,
         DenyDay,
-        
+
         // Vinculation
         Company,
 
@@ -82,7 +81,6 @@ module.exports = (wagner) => {
         ActiveStudents,
 
         // SG-CLE
-        CourseSchedule, 
         EnglishCourse,
 
         EnglishStudent,

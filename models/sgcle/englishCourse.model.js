@@ -1,14 +1,16 @@
 const mongoose = require('mongoose');
 
 const englishCourseSchema = new mongoose.Schema({
-    
-    name: {type: String},
-    dailyHours: {type: String},         //Horas diarias
-    totalHours: {type: String},         //Total de horas por semestre
-    totalSemesters: {type: String},     //Cantidad de semestres por curso (niveles)
-    finalHours: {type: String},         //Total de horas por curso (450 hr)
-    status: {type: String},             //Si el curso sea nuevo,creado, habilitado (cuando ya tenga un horario), Suspendido.
-    
+
+    name: { type: String, trim: true, required: true }, // Curso: PRACTICAL TIGER
+    dailyHours: { type: Number },         // Horas diarias
+    semesterHours: { type: Number },      // Total de horas por semestre
+    totalSemesters: { type: Number },     // Cantidad de semestres del curso (niveles)
+    totalHours: { type: Number },         // Total de horas del curso (450 hr)
+    startPeriod: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' }, // Periodo de creación del curso
+    endPeriod: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' }, // Último periodo en el que estará disponible
+    status: { type: String, default: 'active', enum: ['active', 'inactive'] }, // Estatus del curso, activo o inactivo
+
 });
 
 const englishCourseModel = mongoose.model('EnglishCourse', englishCourseSchema, 'englishCourses');
