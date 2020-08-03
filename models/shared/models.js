@@ -46,7 +46,7 @@ module.exports = (wagner) => {
 
     const EnglishStudent = require('./../sgcle/englishStudent.model');
     const RequestCourse = require('./../sgcle/requestCourse.model');
-    const classroom = require('./../sgcle/classroom.model');
+    const Classroom = require('./../sgcle/classroom.model');
 
 
     const models = {
@@ -85,7 +85,7 @@ module.exports = (wagner) => {
 
         EnglishStudent,
         RequestCourse,
-        classroom,
+        Classroom,
     };
 
     _.each(models, (v, k) => {

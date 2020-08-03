@@ -5,8 +5,8 @@ const status = require('http-status');
 let _classroom;
 
 const createClassroom = (req, res) => {
-    const classromm = req.body;
-    _classroom.create(classromm)
+    const classroom = req.body;
+    _classroom.create(classroom)
       .then(created => res.status(status.OK).json(created))
       .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al crear Aula' }));
 };

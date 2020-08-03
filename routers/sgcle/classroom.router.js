@@ -2,8 +2,8 @@ const router = require('express').Router();
 
 module.exports = (wagner) => {
 
-const classroomCtrl = wagner.invoke((classroom) =>
-    require('../../controllers/sgcle/classroom.controller')(classroom));
+const classroomCtrl = wagner.invoke((Classroom) =>
+    require('../../controllers/sgcle/classroom.controller')(Classroom));
 
     router.post('/create', (req, res) =>
     classroomCtrl.createClassroom(req, res));
