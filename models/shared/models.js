@@ -43,8 +43,8 @@ module.exports = (wagner) => {
 
     // SG-CLE
     const EnglishCourse = require('./../sgcle/englishCourse.model')
-
     const EnglishStudent = require('./../sgcle/englishStudent.model');
+
     const RequestCourse = require('./../sgcle/requestCourse.model');
     const classroom = require('./../sgcle/classroom.model');
 
@@ -82,8 +82,8 @@ module.exports = (wagner) => {
 
         // SG-CLE
         EnglishCourse,
-
         EnglishStudent,
+        
         RequestCourse,
         classroom,
     };
