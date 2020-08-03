@@ -4,11 +4,28 @@ const status = require('http-status');
 
 let _englishCourse;
 
-// Const operaciones
+const createEnglishCourse = (req, res) => {
+    const englishCourse = req.body;
+    _englishCourse.create(englishCourse)
+        .then(created => res.status(status.OK).json(created))
+        .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al crear el curso de Ingles' }));
+};
 
-module.exports = _EnglishCourse => {
-    _englishCourse = _EnglishCourse;
+const getAllEnglishCourse = (req, res) => {
+    _englishCourse.find()
+        .exec(handler.handleMany.bind(null, 'englishCourses', res));
+};
+
+const getAllEnglishCourseActive = (req, res) => {
+    _englishCourse.find({status: 'active'})
+        .exec(handler.handleMany.bind(null, 'englishCourses', res));
+};
+
+module.exports = EnglishCourse => {
+    _englishCourse = EnglishCourse;
     return ({
-        //manda operaciones
+        createEnglishCourse,
+        getAllEnglishCourse,
+        getAllEnglishCourseActive,
     });
 };
