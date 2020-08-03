@@ -54,7 +54,7 @@ app.use(bodyParser.urlencoded({
 app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-HTTP-Method-Override, Access-Control-Allow-Origin');
   next();
 });
 
@@ -69,7 +69,9 @@ const jwtOptions = {
     `${uri}user/student/login` , // app inscripciones
     `${uri}user/graduation/login`, //app graduacion
     `${uri}drive/upload/file`,
-    `${uri}student/notify`, 
+    `${uri}student/notify`,
+    `${uri}company/create`,
+    /^\/socket.io\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
