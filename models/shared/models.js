@@ -44,6 +44,7 @@ module.exports = (wagner) => {
     // SG-CLE
     const EnglishCourse = require('./../sgcle/englishCourse.model')
     const EnglishStudent = require('./../sgcle/englishStudent.model');
+    const Group = require('./../sgcle/group.model');
 
     const RequestCourse = require('./../sgcle/requestCourse.model');
     const Classroom = require('./../sgcle/classroom.model');
@@ -83,7 +84,7 @@ module.exports = (wagner) => {
         // SG-CLE
         EnglishCourse,
         EnglishStudent,
-        
+        Group,
         RequestCourse,
         Classroom,
     };
