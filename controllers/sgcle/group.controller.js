@@ -23,6 +23,13 @@ const getAllGroup = (req, res) => { //Obtener todos los grupos
     }).exec(handler.handleMany.bind(null, 'groups', res));
 };
 
+const getAllGroupOpenedByCourseAndLevel = (req, res) => { //Obtener todos los grupos abiertos de acuerdo al curso y nivel
+    const courseId = req.query.courseId;
+    const level =  req.query.level;
+    _group.find({status: 'opened', level: level, course: courseId})
+        .exec(handler.handleMany.bind(null, 'groups', res));
+};
+
 const getAllGroupOpened = (req, res) => { //Obtener todos los grupos abiertos para demanda
     _group.find({status: 'opened'})
         .exec(handler.handleMany.bind(null, 'groups', res));
@@ -34,5 +41,6 @@ module.exports = Group => {
         createGroup,
         getAllGroup,
         getAllGroupOpened,
+        getAllGroupOpenedByCourseAndLevel,
     });
 };

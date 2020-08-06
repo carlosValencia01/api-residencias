@@ -13,6 +13,9 @@ const groupCtrl = wagner.invoke((Group) =>
 
     router.get('/all/opened', (req, res) =>
     groupCtrl.getAllGroupOpened(req, res));
+    
+    router.get('/all/opened/by-course-and-level', (req, res) =>
+    groupCtrl.getAllGroupOpenedByCourseAndLevel(req, res));
 
     return router;
 }
