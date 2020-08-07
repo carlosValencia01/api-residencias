@@ -15,7 +15,10 @@ module.exports = (wagner) => {
     requestCourseCtrl.createRequestCourse(req, res));
 
     router.put('/update/:_id', (req, res) =>
-    requestCourseCtrl.updateRequestCourse(req, res));
+    requestCourseCtrl.updateRequestCourseById(req, res));
+
+    router.put('/update/student/:_id', (req, res) =>
+    requestCourseCtrl.updateRequestCourseByStudentId(req, res));
 
     return router;
 }

@@ -22,10 +22,18 @@ const createRequestCourse = (req, res) => { //Crear Solicitud
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al crear Solicitud' }));
 };
 
-const updateRequestCourse = (req, res) => { //Modificar Solicitud
+const updateRequestCourseById = (req, res) => { //Modificar Solicitud por ID de solicitud
   const { _id } = req.params;
   const data = req.body;
   _requestCourse.updateOne({_id:_id},{$set:data})
+    .then(updated => res.status(status.OK).json(updated))
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
+};
+
+const updateRequestCourseByStudentId = (req, res) => { //Modificar Solicitud por ID del estudiante de Ingles
+  const { _id } = req.params;
+  const data = req.body;
+  _requestCourse.findOneAndUpdate({englishStudent:_id},{$set:data},{ sort: { requestDate: -1 } })
     .then(updated => res.status(status.OK).json(updated))
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
 };
@@ -36,6 +44,7 @@ const updateRequestCourse = (req, res) => { //Modificar Solicitud
       getAllRequestCourse,
       createRequestCourse,
       getAllRequestCourseByCourseAndRequested,
-      updateRequestCourse,
+      updateRequestCourseById,
+      updateRequestCourseByStudentId,
     });
   };
