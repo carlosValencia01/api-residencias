@@ -25,11 +25,20 @@ const removeClassroom = (req, res) => {
         .json({ message: 'Error al borrar Aula' }));
     };
 
+    const updateClassroom = (req, res) => {
+        const { _id } = req.params;
+        const classroom = req.body;
+        _classroom.updateOne({ _id: _id }, {$set: classroom})
+          .then(updated => res.status(status.OK).json(updated))
+          .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar el Aula' }));
+    };
+
 module.exports = Classroom => {
     _classroom = Classroom;
     return ({
         createClassroom,
         getAllClassroom,
         removeClassroom,
+        updateClassroom
     });
 };

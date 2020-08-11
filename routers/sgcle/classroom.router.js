@@ -13,6 +13,9 @@ const classroomCtrl = wagner.invoke((Classroom) =>
 
     router.delete('/remove/:_id', (req, res) =>
     classroomCtrl.removeClassroom(req, res));
+    
+    router.put('/update/:_id', (req, res) =>
+    classroomCtrl.updateClassroom(req, res));
 
     return router;
 }
