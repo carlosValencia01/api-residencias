@@ -9,6 +9,11 @@ const mongoose = require('mongoose');
 var https = require('https');
 const { eInsFiles} = require('../../enumerators/reception-act/enums');
 const _ = require('underscore');
+const pdf = require('html-pdf');
+const scheduleTemplate = require('../../templates/schedule');
+const moment = require('moment');
+moment.locale('es');
+
 let _student;
 let _request;
 let _role;
@@ -16,6 +21,11 @@ let _period;
 let _activeStudents;
 let _career;
 let _Period;
+let _department;
+let _position;
+let _employee;
+let _schedule;
+let _Drive;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -1681,7 +1691,185 @@ const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
     res.status(status.OK).json({studentsByPeriod});
 };
 
-module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
+const createSchedule = async (req,res)=>{
+    const student = req.body;
+
+    // Obtener nombre del jefe de división de estudios
+    const bossDivEst = await getBossDivEst();
+
+    // Obtener hora actual de firma de horario
+    const dateSchedule = new Date();
+
+    // Obtener datos del alumno en la db de escolares
+    const studentDb = await _student.findOne({controlNumber: student.nc})
+    .then(stud => {      
+      if (stud) {
+        return stud;
+      }
+    });
+
+    // Obtener carpeta del alumno de drive
+    const studentFolderId = await _student.findOne({ _id: studentDb._id }, { folderId: 1, _id: 0 })
+    .populate({
+        path: 'folderId', model: 'Folder',
+        select: {
+            idFolderInDrive: 1
+        }
+    })
+    .then(folder => {
+        return folder.folderId;
+    }).catch(err => {
+        console.log(err);
+    });
+
+    // Generar PDF
+    let bufferSchedule = await generatePDF(student,bossDivEst,moment(dateSchedule).format('LLLL'));
+    let binarySchedule = await bufferToBase64(bufferSchedule);
+
+    const documentInfo = {
+        mimeType: "application/pdf",
+        nameInDrive: student.nc+'-HORARIO-'+student.period+'.pdf',
+        bodyMedia: binarySchedule,
+        folderId: studentFolderId.idFolderInDrive,
+        newF: true,
+        fileId: ''
+      };
+
+    // Buscar si ya existe horario con periodo actual para actualizar en drive
+    const updateScheduleDrive = await existSchedule(studentDb._id,student.period);
+    if(updateScheduleDrive != ''){
+        documentInfo.newF = false;
+        documentInfo.fileId = updateScheduleDrive.driveId;
+    }
+
+    // Mandar a guardar pdf en drive
+    let driveSchedule = await _Drive.createFileSchedule(documentInfo,studentDb.career);
+    if (driveSchedule) {
+        const schedule = {
+            studentId: studentDb._id,
+            schedules: [{
+                dateFirm: dateSchedule,
+                period: student.period,
+                average: student.average,
+                specialty: student.specialty,
+                schedule: student.schedule,
+                driveId : driveSchedule.fileId
+            }]
+        };
+        // Mandar a guardar los datos del horario en la base de datos
+        const s = await saveSchedule(schedule.studentId,schedule);
+        if(s){
+            return res.status(status.OK).json({
+                status : true,
+                msg : "Exito al generar y guardar horario"
+            });
+        }
+        return res.status(status.OK).json({
+                status : false,
+                msg : "Error al generar y guardar horario"
+        });    
+    }
+    
+};
+
+function getBossDivEst() {
+    return new Promise(async (resolve) => {
+        _department.findOne({ name: 'DEPARTAMENTO DE DIVISIÓN DE ESTUDIOS PROFESIONALES' }, (err, department) => {
+            if (!err && department) {
+                _position.findOne({ ascription: department._id }, (err, position) => {
+                    if (!err && position) {
+                        _employee.findOne({ $and:[{"positions.position" : position._id},{"positions.status" : 'ACTIVE'}]}, (err, employee) => {
+                            if(employee == null){
+                                resolve('');
+                            }
+                            if (!err && employee) {
+                                const nombre = employee.name.lastName+" "+employee.name.firstName;
+                                resolve(nombre);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+}
+
+function generatePDF (studentData,bossDivEst,_dateSchedule) {
+    return new Promise(async (resolve) => {
+        let options = {
+            "orientation": "portrait",
+            "format": "Letter"
+        }
+        let schedule = await scheduleTemplate(studentData,bossDivEst,_dateSchedule);
+        
+        pdf.create(schedule, options).toBuffer(function(err, buffer){
+            resolve(buffer);
+        });
+    });
+}
+
+function bufferToBase64(buffer) {
+    return buffer.toString('base64');    
+}
+
+function existSchedule(id,period){
+    return new Promise(async (resolve) => {
+        _schedule.findOne({studentId: id})
+        .then(s => {             
+            if (s) {
+                if(period == s.schedules[s.schedules.length-1].period){
+                    // Horario ya existe por lo tanto no será un nuevo archivo en drive
+                    resolve(s.schedules[s.schedules.length-1]);
+                } else {
+                    // Horario no existe por lo tanto será un nuevo archivo en drive
+                    resolve('');
+                }
+            } 
+            resolve('');
+        });
+    });
+}
+
+function saveSchedule (id,horario) {
+    return new Promise(async (resolve) => {
+        _schedule.findOne({studentId: id})
+        .then(s => {
+            // Existe alumno en modelo de horarios             
+            if (s) {
+                // Existe horario con perdiodo actual
+                if(horario.schedules[0].period == s.schedules[s.schedules.length-1].period){
+                    const index = s.schedules.findIndex(item => item.period == horario.schedules[0].period);
+                    const newSchedule = horario.schedules[0];
+                    s.schedules[index] = newSchedule;
+                    s.save(function (error) {
+                        if (error) {
+                            resolve(false);
+                        }
+                        resolve(true);
+                    });
+                } else {
+                    // No existe horario con periodo actual
+                    const newSchedule = horario.schedules;
+                    _schedule.updateOne({studentId: id}, {$addToSet: {schedules: newSchedule}})
+                    .then(updated => {
+                        if (updated.nModified) {
+                        resolve(true);
+                        }
+                    });
+                }
+            } else {
+                // No se encontró alumno en modelo de horarios
+                _schedule.create(horario).then(created => {
+                    resolve(true);
+                }).catch(err => {
+                    resolve(false);
+                });
+            }
+        });
+    });
+};
+
+module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
     _activeStudents = ActiveStudents;
     _career = Career;
@@ -1689,6 +1877,11 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _request = Request;
     _role = Role;
     _Period = require('../app/period.controller')(Period);
+    _department = Department;
+    _position = Position;
+    _employee = Employee;
+    _schedule = Schedule;
+    _Drive = require('../app/google-drive.controller')(Folder);
     return ({
         create,
         getOne,
@@ -1733,6 +1926,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
         insertActiveStudents,
         getAllActiveStudents,
         getStudentStatusFromSII,
-        getNumberInscriptionStudentsByPeriod
+        getNumberInscriptionStudentsByPeriod,
+        createSchedule,
     });
 };

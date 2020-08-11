@@ -847,6 +847,133 @@ const getWebLink = async (fileId) => {
     return response;
 }
 
+const createFileSchedule = async (documentInfo,carrera) => {
+
+    switch (carrera) {
+        case ('INGENIERÍA ELÉCTRICA'):
+            emailCoordinator = 'coordinacion.ie.im@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA MECATRÓNICA'):
+            emailCoordinator = 'coordinacion.ie.im@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA EN SISTEMAS COMPUTACIONALES'):
+            emailCoordinator = 'coordinacion.isc.itic@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA EN TECNOLOGÍAS DE LA INFORMACIÓN Y COMUNICACIONES'):
+            emailCoordinator = 'coordinacion.isc.itic@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA INDUSTRIAL'):
+            emailCoordinator = 'coordinacion.ii@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA QUÍMICA'):
+            emailCoordinator = 'coordinacion.iq.ibq@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA BIOQUÍMICA'):
+            emailCoordinator = 'coordinacion.iq.ibq@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA EN GESTIÓN EMPRESARIAL'):
+            emailCoordinator = 'coordinacion.ige@ittepic.edu.mx';
+            break;
+        case ('INGENIERÍA CIVIL'):
+            emailCoordinator = 'coordinacion.ic@ittepic.edu.mx';
+            break;
+        case ('ARQUITECTURA'):
+            emailCoordinator = 'coordinacion.arquitectura@ittepic.edu.mx';
+            break;
+        case ('LICENCIATURA EN ADMINISTRACIÓN'):
+            emailCoordinator = 'Coordinacion.la@ittepic.edu.mx';
+            break;  
+        default:
+            emailCoordinator = '';
+            break;
+    }
+
+      const permissions = [
+        {
+          'type': 'user',
+          'role': 'reader',
+          'emailAddress': emailCoordinator
+        },
+        {
+            'type': 'user',
+            'role': 'reader',
+            'emailAddress': 'divestudiosprof@ittepic.edu.mx'
+          }
+      ];
+
+
+    return new Promise ( async (resolve) => {
+        const drive = google.drive({ version: 'v3', auth });
+        const { mimeType, nameInDrive, bodyMedia, folderId, newF, fileId } = documentInfo;
+
+        let buffer = toUint8Array(bodyMedia);
+        let bufferStream = new stream.PassThrough();
+        bufferStream.end(buffer);
+    
+        let media = await {
+            mimeType: mimeType,
+            body: bufferStream
+        };
+    
+        if (newF) { // Guardar nuevo documento
+            console.log('Guardando nuevo horario en drive');
+            let fileMetadata = {
+                name: nameInDrive,
+                mimeType: mimeType,
+                parents: [folderId]
+            };
+            drive.files.create({
+                requestBody: fileMetadata,
+                media: media,
+                fields: 'id'
+            },
+            (err, file) => {
+                if (err) { 
+                    console.log(err);
+                    resolve(''); 
+                }  else { 
+                        permissions.forEach(permission => {
+                            if(permission.emailAddress !== ''){
+                                drive.permissions.create({
+                                    fileId: file.data.id,
+                                    fields: 'id',
+                                    sendNotificationEmail: false,
+                                    resource: permission
+                                  },function (err, res) {
+                                    if (err) {
+                                      console.error('Error al compartir archivo con '+permission.emailAddress);
+                                    } else {
+                                      console.log('Compartiendo archivo con '+permission.emailAddress);
+                                    }
+                                  });
+                            }
+                        });
+                        resolve({
+                            fileId: file.data.id,
+                            name: fileMetadata.name,
+                            action: 'create'
+                        }); 
+                    }
+            });
+        } else if (!newF) { // Modificar documento
+            console.log('Actualizando horario en drive');
+            drive.files.update({
+                fileId: fileId,
+                media: media,
+            },
+            (err, file) => {
+                if (err) { resolve(false); } 
+                else {
+                    resolve({
+                        fileId: file.data.id,
+                        action: 'update'
+                    }); 
+                }
+            });
+        }
+    });
+};
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -866,7 +993,8 @@ module.exports = (Folder, Student, Period) => {
         uploadFile,
         downloadToLocal,
         getWebLink,
-        getActivePeriod
+        getActivePeriod,
+        createFileSchedule,
     });
 };
 
