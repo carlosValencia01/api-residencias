@@ -5,6 +5,9 @@ module.exports = (studentData,bossDivEst,_dateSchedule) => {
     let horario = '';
     let totalCreditos = 0;
     let fecha_firma = _dateSchedule;
+    let periodo = studentData.period;
+    let tipoPeriodo = periodo.substr(periodo.length-1,periodo.length) === '1' ? 'Ene-Jun' : periodo.substr(periodo.length-1,periodo.length) === '2' ? 'Verano' : 'Ago-Dic';
+    let periodoNombre = tipoPeriodo+'/'+periodo.substr(0,periodo.length-1);
 
 
     for(let i = 0; i < materias.length; i++){  
@@ -13,18 +16,18 @@ module.exports = (studentData,bossDivEst,_dateSchedule) => {
         global = materias[i].global ? "Si" : "";
         horario = '';
 
-        horario += materias[i].monday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black;">'+materias[i].monday.startDate+' - '+materias[i].monday.endDate+'<br>'+materias[i].monday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black;"></th>';
-        horario += materias[i].tuesday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black;">'+materias[i].tuesday.startDate+' - '+materias[i].tuesday.endDate+'<br>'+materias[i].tuesday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black;"></th>';
-        horario += materias[i].wednesday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black;">'+materias[i].wednesday.startDate+' - '+materias[i].wednesday.endDate+'<br>'+materias[i].wednesday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black;"></th>';
-        horario += materias[i].thursday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black;">'+materias[i].thursday.startDate+' - '+materias[i].thursday.endDate+'<br>'+materias[i].thursday.classroom+'</th>'  : '<th style="text-align: center; font-size:8px; border: 1pt solid black;"></th>';
-        horario += materias[i].friday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black;">'+materias[i].friday.startDate+' - '+materias[i].friday.endDate+'<br>'+materias[i].friday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black;"></th>';
-        horario += materias[i].saturday.startDate ?'<th style="text-align: center; font-size:8px; border: 1pt solid black;">'+materias[i].saturday.startDate+' - '+materias[i].saturday.endDate+'<br>'+materias[i].saturday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black;"></th>';                                                               
+        horario += materias[i].monday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].monday.startDate+' - '+materias[i].monday.endDate+'<br>'+materias[i].monday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;"></th>';
+        horario += materias[i].tuesday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].tuesday.startDate+' - '+materias[i].tuesday.endDate+'<br>'+materias[i].tuesday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;"></th>';
+        horario += materias[i].wednesday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].wednesday.startDate+' - '+materias[i].wednesday.endDate+'<br>'+materias[i].wednesday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;"></th>';
+        horario += materias[i].thursday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].thursday.startDate+' - '+materias[i].thursday.endDate+'<br>'+materias[i].thursday.classroom+'</th>'  : '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;"></th>';
+        horario += materias[i].friday.startDate ? '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].friday.startDate+' - '+materias[i].friday.endDate+'<br>'+materias[i].friday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;"></th>';
+        horario += materias[i].saturday.startDate ?'<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].saturday.startDate+' - '+materias[i].saturday.endDate+'<br>'+materias[i].saturday.classroom+'</th>' : '<th style="text-align: center; font-size:8px; border: 1pt solid black; font-weight: normal;"></th>';                                                               
         
         listaMaterias += '<tr>'+
-            '<th style="width: 19%; font-size:8px; border: 1pt solid black;">'+materias[i].subjectCode+'<br>'+materias[i].subjectName+'<br>'+materias[i].subjectTeacher+'</th>'+
-            '<th style="width: 5%; font-size:8px; border: 1pt solid black;">'+materias[i].group+'</th>'+
-            '<th style="width: 5%; font-size:8px; border: 1pt solid black;">'+materias[i].credits+'</th>'+
-            '<th style="width: 5%; font-size:8px; border: 1pt solid black;">'+global+'</th>'+
+            '<th style="width: 19%; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].subjectCode+'<br>'+materias[i].subjectName+'<br>'+materias[i].subjectTeacher+'</th>'+
+            '<th style="width: 5%; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].group+'</th>'+
+            '<th style="width: 5%; font-size:8px; border: 1pt solid black; font-weight: normal;">'+materias[i].credits+'</th>'+
+            '<th style="width: 5%; font-size:8px; border: 1pt solid black; font-weight: normal;">'+global+'</th>'+
             horario+
         '</tr>'
 
@@ -66,10 +69,10 @@ module.exports = (studentData,bossDivEst,_dateSchedule) => {
                     <th style="width: 27%; border-bottom: 1pt solid black; font-size:12px; font-weight: bold;">Periodo Escolar</th>
                 </tr>
                 <tr>
-                    <th style="width: 20%; font-size:10px;">${studentData.nc}</th>
-                    <th style="width: 33%; font-size:10px;">${studentData.studentName}</th>
-                    <th style="width: 20%; font-size:10px;">${studentData.semester}</th>
-                    <th style="width: 27%; font-size:10px;">${studentData.period}</th>
+                    <th style="width: 20%; font-size:10px; font-weight: normal;">${studentData.studentData.controlNumber}</th>
+                    <th style="width: 33%; font-size:10px; font-weight: normal;">${studentData.studentData.fullName}</th>
+                    <th style="width: 20%; font-size:10px; font-weight: normal;">${studentData.studentData.semester}</th>
+                    <th style="width: 27%; font-size:10px; font-weight: normal;">${periodoNombre}</th>
                 </tr>
             </tbody>
         </table>
@@ -80,8 +83,8 @@ module.exports = (studentData,bossDivEst,_dateSchedule) => {
                     <th style="width: 50%; border-bottom: 1pt solid black; font-size:12px; font-weight: bold;">Especialidad</th>
                 </tr>
                 <tr>
-                    <th style="width: 50%; font-size:10px;">${studentData.career}</th>
-                    <th style="width: 50%; font-size:10px;">${studentData.specialty}</th>
+                    <th style="width: 50%; font-size:10px; font-weight: normal;">${studentData.studentData.career}</th>
+                    <th style="width: 50%; font-size:10px; font-weight: normal;">${studentData.specialty}</th>
                 </tr>
             </tbody>
         </table>
@@ -109,10 +112,10 @@ module.exports = (studentData,bossDivEst,_dateSchedule) => {
                     <div style="width: 50%; text-align: center;">
                         <image src='http://drive.google.com/uc?export=view&id=1lecA25mhPluM_l8vovddbfGxA1JleJjg' width="110">
                     </div>
-                    <th style="width: 50%; border-bottom: 1pt solid black; font-size:10px; font-weight: bold;">
+                    <th style="width: 50%; border-bottom: 1pt solid black; font-size:10px; font-weight: normal;">
                     ${bossDivEst}
                     </th>
-                    <th style="width: 50%; border-bottom: 1pt solid black; font-size:10px; font-weight: bold;">${studentData.studentName}</th>
+                    <th style="width: 50%; border-bottom: 1pt solid black; font-size:10px; font-weight: normal;">${studentData.studentData.fatherLastName} ${studentData.studentData.motherLastName} ${studentData.studentData.firstName}</th>
                 </tr>
                 <tr>
                     <th style="width: 50%; font-size:10px; font-weight: bold;">JEFE DE LA DIVISION DE ESTUDIOS PROFESIONALES</th>

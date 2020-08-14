@@ -974,6 +974,40 @@ const createFileSchedule = async (documentInfo,carrera) => {
     });
 };
 
+const createSubFolder2 = async (_folderName,_period,_parentFolderId,_type) => {
+    return new Promise ( async (resolve) => {
+        const drive = google.drive({ version: 'v3', auth });
+        
+        const folderName = _folderName;
+        const period = _period;
+        const parentFolderId = _parentFolderId; 
+        const type = _type;
+
+        var fileMetadata = {
+            'name': folderName,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [parentFolderId]
+        };
+        drive.files.create({
+            requestBody: fileMetadata,
+            fields: 'id'
+        }, function (err, folder) {
+            if (err) {
+                resolve(false);
+            }
+            else {
+                _folder.create({ name: folderName, idPeriod: period, idFolderInDrive: folder.data.id, type: type }).then(
+                    created => {
+                        resolve(created);
+                    }
+                ).catch(err => {
+                    resolve(false);
+                });
+            };
+        });
+    });
+};
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -995,6 +1029,7 @@ module.exports = (Folder, Student, Period) => {
         getWebLink,
         getActivePeriod,
         createFileSchedule,
+        createSubFolder2,
     });
 };
 

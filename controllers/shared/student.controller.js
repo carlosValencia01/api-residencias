@@ -13,6 +13,7 @@ const pdf = require('html-pdf');
 const scheduleTemplate = require('../../templates/schedule');
 const moment = require('moment');
 moment.locale('es');
+const eCareers = require('../../enumerators/shared/careers.enum');
 
 let _student;
 let _request;
@@ -26,6 +27,7 @@ let _position;
 let _employee;
 let _schedule;
 let _Drive;
+let _folder;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -1694,6 +1696,17 @@ const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
 const createSchedule = async (req,res)=>{
     const student = req.body;
 
+    // Obtener registro en caso de no existir en bd escolares
+    const newStudent = req.body.studentData;
+    newStudent.fullName = newStudent.firstName+' '+newStudent.fatherLastName+' '+newStudent.motherLastName;
+    newStudent.career = eCareers[newStudent.career];
+    const incomingType = newStudent.income;
+    if (newStudent.semester === 1 || ['1', '2', '3', '4'].includes(incomingType)) {
+        newStudent.stepWizard = 0;
+    }
+    newStudent.careerId = await getCareerId(newStudent.career);
+    newStudent.idRole = await getRoleId('Estudiante');
+
     // Obtener nombre del jefe de división de estudios
     const bossDivEst = await getBossDivEst();
 
@@ -1701,15 +1714,25 @@ const createSchedule = async (req,res)=>{
     const dateSchedule = new Date();
 
     // Obtener datos del alumno en la db de escolares
-    const studentDb = await _student.findOne({controlNumber: student.nc})
+    const studentDb = await _student.findOne({controlNumber: student.studentData.controlNumber})
     .then(stud => {      
-      if (stud) {
+        if (!stud) {
+            //Insertar nuevo estudiante
+            return _student.create(newStudent);
+        }
         return stud;
-      }
+    })
+    .then(student => {
+        return student;
+    })
+    .catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            msg : "Ocurrió un error al crear al estudiante"
+        });
     });
 
     // Obtener carpeta del alumno de drive
-    const studentFolderId = await _student.findOne({ _id: studentDb._id }, { folderId: 1, _id: 0 })
+    let studentFolderId = await _student.findOne({ _id: studentDb._id }, { folderId: 1, _id: 0 })
     .populate({
         path: 'folderId', model: 'Folder',
         select: {
@@ -1719,8 +1742,48 @@ const createSchedule = async (req,res)=>{
     .then(folder => {
         return folder.folderId;
     }).catch(err => {
-        console.log(err);
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        });    
     });
+
+    if(!studentFolderId){
+        let folderStudentName = newStudent.controlNumber + ' - ' + newStudent.fullName;
+        const activePeriod = await getActivePeriod();
+        const folders = await getFolderPeriod(activePeriod.period._id,1);
+        const folderPeriod = await folders.filter(folder => folder.name.indexOf(activePeriod.period.periodName) !== -1);
+        const folderCareer = await folders.filter(folder => folder.name === newStudent.career);
+        if (folderCareer.length === 0) {
+            const careerFolder = await _Drive.createSubFolder2(newStudent.career,activePeriod.period._id,folderPeriod[0].idFolderInDrive,1);
+            if(careerFolder){
+                const studentFolder = await _Drive.createSubFolder2(folderStudentName,activePeriod.period._id,careerFolder.idFolderInDrive,1);
+                if(studentFolder){
+                    _student.updateOne({controlNumber: newStudent.controlNumber},{folderId: studentFolder._id})
+                    .then(updated => {
+                        if (updated.nModified) {
+                            console.log('Exito al crear folderId');
+                            studentFolderId = studentFolder;
+                        } else {
+                            console.log('Error al crear folderId');
+                        }
+                    });
+                }
+            }
+        } else {
+            const studentFolder = await _Drive.createSubFolder2(folderStudentName,activePeriod.period._id,folderCareer[0].idFolderInDrive,1);
+                if(studentFolder){
+                    _student.updateOne({controlNumber: newStudent.controlNumber},{folderId: studentFolder._id})
+                    .then(updated => {
+                        if (updated.nModified) {
+                            console.log('Exito al crear folderId');
+                            studentFolderId = studentFolder;
+                        } else {
+                            console.log('Error al crear folderId');
+                        }
+                    });
+                }
+        }
+    }
 
     // Generar PDF
     let bufferSchedule = await generatePDF(student,bossDivEst,moment(dateSchedule).format('LLLL'));
@@ -1728,7 +1791,7 @@ const createSchedule = async (req,res)=>{
 
     const documentInfo = {
         mimeType: "application/pdf",
-        nameInDrive: student.nc+'-HORARIO-'+student.period+'.pdf',
+        nameInDrive: student.studentData.controlNumber+'-HORARIO-'+student.period+'.pdf',
         bodyMedia: binarySchedule,
         folderId: studentFolderId.idFolderInDrive,
         newF: true,
@@ -1764,7 +1827,7 @@ const createSchedule = async (req,res)=>{
                 msg : "Exito al generar y guardar horario"
             });
         }
-        return res.status(status.OK).json({
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
                 status : false,
                 msg : "Error al generar y guardar horario"
         });    
@@ -1826,6 +1889,8 @@ function existSchedule(id,period){
                 }
             } 
             resolve('');
+        }).catch(err => {
+            resolve('');
         });
     });
 }
@@ -1865,9 +1930,48 @@ function saveSchedule (id,horario) {
                     resolve(false);
                 });
             }
+        }).catch(err => {
+            resolve(false);
         });
     });
 };
+
+function getActivePeriod(){
+    return new Promise(async (resolve) => {
+        _period.findOne({active:true})
+        .then( period=>{
+            if(period) {
+                resolve({period:period});
+            }else{
+                resolve(false);
+            } 
+        }).catch( error=>{
+            resolve(false);     
+        });
+    });
+}
+
+function getFolderPeriod(_id,_type){
+    return new Promise(async (resolve) => {
+        const query = {
+            idPeriod: _id,
+            type: _type
+        };
+        _folder.find(query).populate({
+            path: 'idPeriod', model: 'Period',
+            select: {
+                active: 1, name: 1, _id: 1
+            }
+        }).then(
+            folder => {
+            if(folder){
+                resolve(folder);
+            } else {
+                resolve(false);
+            }
+        });
+    });
+}
 
 module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
@@ -1882,6 +1986,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
     _employee = Employee;
     _schedule = Schedule;
     _Drive = require('../app/google-drive.controller')(Folder);
+    _folder = Folder;
     return ({
         create,
         getOne,
