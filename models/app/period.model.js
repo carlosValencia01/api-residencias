@@ -10,6 +10,8 @@ const periodSchema = new mongoose.Schema({
     insPerEndDate:{type: Date},
     arecPerInitDate:{type: Date}, // arec = acto recepcional
     arecPerEndDate:{type: Date},
+    englishPerInitDate:{type: Date},
+    englishPerEndDate:{type: Date},
     arecInitShed:{type: Number}, // inicio horario agenda acto recepcional
     arecEndShed:{type: Number}, // fin horario agenda acto recepcional
     certificateDeliveryDate: {type: Date}, //fecha de entrega del certificado,
