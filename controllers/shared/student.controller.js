@@ -1711,7 +1711,7 @@ const createSchedule = async (req,res)=>{
     const bossDivEst = await getBossDivEst();
 
     // Obtener hora actual de firma de horario
-    const dateSchedule = new Date();
+    const dateSchedule = new Date(student.dateFirm);
 
     // Obtener datos del alumno en la db de escolares
     const studentDb = await _student.findOne({controlNumber: student.studentData.controlNumber})
