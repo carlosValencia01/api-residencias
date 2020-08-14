@@ -9,6 +9,12 @@ const mongoose = require('mongoose');
 var https = require('https');
 const { eInsFiles} = require('../../enumerators/reception-act/enums');
 const _ = require('underscore');
+const pdf = require('html-pdf');
+const scheduleTemplate = require('../../templates/schedule');
+const moment = require('moment');
+moment.locale('es');
+const eCareers = require('../../enumerators/shared/careers.enum');
+
 let _student;
 let _request;
 let _role;
@@ -16,6 +22,12 @@ let _period;
 let _activeStudents;
 let _career;
 let _Period;
+let _department;
+let _position;
+let _employee;
+let _schedule;
+let _Drive;
+let _folder;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -1681,7 +1693,287 @@ const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
     res.status(status.OK).json({studentsByPeriod});
 };
 
-module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
+const createSchedule = async (req,res)=>{
+    const student = req.body;
+
+    // Obtener registro en caso de no existir en bd escolares
+    const newStudent = req.body.studentData;
+    newStudent.fullName = newStudent.firstName+' '+newStudent.fatherLastName+' '+newStudent.motherLastName;
+    newStudent.career = eCareers[newStudent.career];
+    const incomingType = newStudent.income;
+    if (newStudent.semester === 1 || ['1', '2', '3', '4'].includes(incomingType)) {
+        newStudent.stepWizard = 0;
+    }
+    newStudent.careerId = await getCareerId(newStudent.career);
+    newStudent.idRole = await getRoleId('Estudiante');
+
+    // Obtener nombre del jefe de división de estudios
+    const bossDivEst = await getBossDivEst();
+
+    // Obtener hora actual de firma de horario
+    const dateSchedule = new Date();
+
+    // Obtener datos del alumno en la db de escolares
+    const studentDb = await _student.findOne({controlNumber: student.studentData.controlNumber})
+    .then(stud => {      
+        if (!stud) {
+            //Insertar nuevo estudiante
+            return _student.create(newStudent);
+        }
+        return stud;
+    })
+    .then(student => {
+        return student;
+    })
+    .catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            msg : "Ocurrió un error al crear al estudiante"
+        });
+    });
+
+    // Obtener carpeta del alumno de drive
+    let studentFolderId = await _student.findOne({ _id: studentDb._id }, { folderId: 1, _id: 0 })
+    .populate({
+        path: 'folderId', model: 'Folder',
+        select: {
+            idFolderInDrive: 1
+        }
+    })
+    .then(folder => {
+        return folder.folderId;
+    }).catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        });    
+    });
+
+    if(!studentFolderId){
+        let folderStudentName = newStudent.controlNumber + ' - ' + newStudent.fullName;
+        const activePeriod = await getActivePeriod();
+        const folders = await getFolderPeriod(activePeriod.period._id,1);
+        const folderPeriod = await folders.filter(folder => folder.name.indexOf(activePeriod.period.periodName) !== -1);
+        const folderCareer = await folders.filter(folder => folder.name === newStudent.career);
+        if (folderCareer.length === 0) {
+            const careerFolder = await _Drive.createSubFolder2(newStudent.career,activePeriod.period._id,folderPeriod[0].idFolderInDrive,1);
+            if(careerFolder){
+                const studentFolder = await _Drive.createSubFolder2(folderStudentName,activePeriod.period._id,careerFolder.idFolderInDrive,1);
+                if(studentFolder){
+                    _student.updateOne({controlNumber: newStudent.controlNumber},{folderId: studentFolder._id})
+                    .then(updated => {
+                        if (updated.nModified) {
+                            console.log('Exito al crear folderId');
+                            studentFolderId = studentFolder;
+                        } else {
+                            console.log('Error al crear folderId');
+                        }
+                    });
+                }
+            }
+        } else {
+            const studentFolder = await _Drive.createSubFolder2(folderStudentName,activePeriod.period._id,folderCareer[0].idFolderInDrive,1);
+                if(studentFolder){
+                    _student.updateOne({controlNumber: newStudent.controlNumber},{folderId: studentFolder._id})
+                    .then(updated => {
+                        if (updated.nModified) {
+                            console.log('Exito al crear folderId');
+                            studentFolderId = studentFolder;
+                        } else {
+                            console.log('Error al crear folderId');
+                        }
+                    });
+                }
+        }
+    }
+
+    // Generar PDF
+    let bufferSchedule = await generatePDF(student,bossDivEst,moment(dateSchedule).format('LLLL'));
+    let binarySchedule = await bufferToBase64(bufferSchedule);
+
+    const documentInfo = {
+        mimeType: "application/pdf",
+        nameInDrive: student.studentData.controlNumber+'-HORARIO-'+student.period+'.pdf',
+        bodyMedia: binarySchedule,
+        folderId: studentFolderId.idFolderInDrive,
+        newF: true,
+        fileId: ''
+      };
+
+    // Buscar si ya existe horario con periodo actual para actualizar en drive
+    const updateScheduleDrive = await existSchedule(studentDb._id,student.period);
+    if(updateScheduleDrive != ''){
+        documentInfo.newF = false;
+        documentInfo.fileId = updateScheduleDrive.driveId;
+    }
+
+    // Mandar a guardar pdf en drive
+    let driveSchedule = await _Drive.createFileSchedule(documentInfo,studentDb.career);
+    if (driveSchedule) {
+        const schedule = {
+            studentId: studentDb._id,
+            schedules: [{
+                dateFirm: dateSchedule,
+                period: student.period,
+                average: student.average,
+                specialty: student.specialty,
+                schedule: student.schedule,
+                driveId : driveSchedule.fileId
+            }]
+        };
+        // Mandar a guardar los datos del horario en la base de datos
+        const s = await saveSchedule(schedule.studentId,schedule);
+        if(s){
+            return res.status(status.OK).json({
+                status : true,
+                msg : "Exito al generar y guardar horario"
+            });
+        }
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
+                status : false,
+                msg : "Error al generar y guardar horario"
+        });    
+    }
+    
+};
+
+function getBossDivEst() {
+    return new Promise(async (resolve) => {
+        _department.findOne({ name: 'DEPARTAMENTO DE DIVISIÓN DE ESTUDIOS PROFESIONALES' }, (err, department) => {
+            if (!err && department) {
+                _position.findOne({ ascription: department._id }, (err, position) => {
+                    if (!err && position) {
+                        _employee.findOne({ $and:[{"positions.position" : position._id},{"positions.status" : 'ACTIVE'}]}, (err, employee) => {
+                            if(employee == null){
+                                resolve('');
+                            }
+                            if (!err && employee) {
+                                const nombre = employee.name.lastName+" "+employee.name.firstName;
+                                resolve(nombre);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+}
+
+function generatePDF (studentData,bossDivEst,_dateSchedule) {
+    return new Promise(async (resolve) => {
+        let options = {
+            "orientation": "portrait",
+            "format": "Letter"
+        }
+        let schedule = await scheduleTemplate(studentData,bossDivEst,_dateSchedule);
+        
+        pdf.create(schedule, options).toBuffer(function(err, buffer){
+            resolve(buffer);
+        });
+    });
+}
+
+function bufferToBase64(buffer) {
+    return buffer.toString('base64');    
+}
+
+function existSchedule(id,period){
+    return new Promise(async (resolve) => {
+        _schedule.findOne({studentId: id})
+        .then(s => {             
+            if (s) {
+                if(period == s.schedules[s.schedules.length-1].period){
+                    // Horario ya existe por lo tanto no será un nuevo archivo en drive
+                    resolve(s.schedules[s.schedules.length-1]);
+                } else {
+                    // Horario no existe por lo tanto será un nuevo archivo en drive
+                    resolve('');
+                }
+            } 
+            resolve('');
+        }).catch(err => {
+            resolve('');
+        });
+    });
+}
+
+function saveSchedule (id,horario) {
+    return new Promise(async (resolve) => {
+        _schedule.findOne({studentId: id})
+        .then(s => {
+            // Existe alumno en modelo de horarios             
+            if (s) {
+                // Existe horario con perdiodo actual
+                if(horario.schedules[0].period == s.schedules[s.schedules.length-1].period){
+                    const index = s.schedules.findIndex(item => item.period == horario.schedules[0].period);
+                    const newSchedule = horario.schedules[0];
+                    s.schedules[index] = newSchedule;
+                    s.save(function (error) {
+                        if (error) {
+                            resolve(false);
+                        }
+                        resolve(true);
+                    });
+                } else {
+                    // No existe horario con periodo actual
+                    const newSchedule = horario.schedules;
+                    _schedule.updateOne({studentId: id}, {$addToSet: {schedules: newSchedule}})
+                    .then(updated => {
+                        if (updated.nModified) {
+                        resolve(true);
+                        }
+                    });
+                }
+            } else {
+                // No se encontró alumno en modelo de horarios
+                _schedule.create(horario).then(created => {
+                    resolve(true);
+                }).catch(err => {
+                    resolve(false);
+                });
+            }
+        }).catch(err => {
+            resolve(false);
+        });
+    });
+};
+
+function getActivePeriod(){
+    return new Promise(async (resolve) => {
+        _period.findOne({active:true})
+        .then( period=>{
+            if(period) {
+                resolve({period:period});
+            }else{
+                resolve(false);
+            } 
+        }).catch( error=>{
+            resolve(false);     
+        });
+    });
+}
+
+function getFolderPeriod(_id,_type){
+    return new Promise(async (resolve) => {
+        const query = {
+            idPeriod: _id,
+            type: _type
+        };
+        _folder.find(query).populate({
+            path: 'idPeriod', model: 'Period',
+            select: {
+                active: 1, name: 1, _id: 1
+            }
+        }).then(
+            folder => {
+            if(folder){
+                resolve(folder);
+            } else {
+                resolve(false);
+            }
+        });
+    });
+}
+
+module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
     _activeStudents = ActiveStudents;
     _career = Career;
@@ -1689,6 +1981,12 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
     _request = Request;
     _role = Role;
     _Period = require('../app/period.controller')(Period);
+    _department = Department;
+    _position = Position;
+    _employee = Employee;
+    _schedule = Schedule;
+    _Drive = require('../app/google-drive.controller')(Folder);
+    _folder = Folder;
     return ({
         create,
         getOne,
@@ -1733,6 +2031,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
         insertActiveStudents,
         getAllActiveStudents,
         getStudentStatusFromSII,
-        getNumberInscriptionStudentsByPeriod
+        getNumberInscriptionStudentsByPeriod,
+        createSchedule,
     });
 };
