@@ -15,6 +15,12 @@ const getAllRequestCourseByCourseAndRequested = (req, res) => {
       .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
+const getAllRequestCourseByCourseAndStudying = (req, res) => {
+  const { _id } = req.params;
+  _requestCourse.find({group: _id, status: 'studying'})
+      .exec(handler.handleMany.bind(null, 'requestCourses', res));
+};
+
 const createRequestCourse = (req, res) => { //Crear Solicitud
   const data = req.body;
   _requestCourse.create(data)
@@ -46,5 +52,6 @@ const updateRequestCourseByStudentId = (req, res) => { //Modificar Solicitud por
       getAllRequestCourseByCourseAndRequested,
       updateRequestCourseById,
       updateRequestCourseByStudentId,
+      getAllRequestCourseByCourseAndStudying,
     });
   };

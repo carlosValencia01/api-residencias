@@ -8,8 +8,11 @@ module.exports = (wagner) => {
     router.get('/all', (req, res) =>
     requestCourseCtrl.getAllRequestCourse(req, res));
 
-    router.get('/all/:_id', (req, res) =>
+    router.get('/all/requested/:_id', (req, res) =>
     requestCourseCtrl.getAllRequestCourseByCourseAndRequested(req, res));
+
+    router.get('/all/studying/:_id', (req, res) =>
+    requestCourseCtrl.getAllRequestCourseByCourseAndStudying(req, res));
 
     router.post('/create', (req, res) =>
     requestCourseCtrl.createRequestCourse(req, res));
