@@ -13,7 +13,8 @@ const requestCourseSchema = new mongoose.Schema({
     average: { type: String, trim: true }, // Promedio del nivel cursado
     requestDate: { type: Date, default: new Date() }, // Fecha de solicitud
     level: { type: Number }, // Nivel a cursar,
-    rejectMessage: {type: String} // mensaje de observacion al rechazar la solicitud
+    rejectMessage: {type: String}, // mensaje de observacion al rechazar la solicitud
+    period:{type: mongoose.Schema.Types.ObjectId, ref: 'Period' } // periodo en que se hizo la solicitud
 
 });
 

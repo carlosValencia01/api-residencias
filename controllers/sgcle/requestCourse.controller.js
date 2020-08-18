@@ -5,7 +5,26 @@ const status = require('http-status');
 let _requestCourse;
 
 const getAllRequestCourse = (req, res) => {
-  _requestCourse.find({})
+  _requestCourse.find({}).populate({
+    path: 'englishStudent', model: 'EnglishStudent',    
+    populate: {
+        path: 'studentId', model: 'Student',
+        select: {
+          careerId:1,controlNumber:1,fullName:1
+        },
+        populate: {
+            path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
+    }
+}).populate({
+  path:'group', model:'Group',
+  populate:{
+    path:'course', model:'EnglishCourse'
+  }
+})
       .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
