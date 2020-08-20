@@ -11,7 +11,16 @@ const createEnglishStudent = (req, res) => {
 const getEnglishStudentByStudentId = (req, res) => {
     const { _studentId } = req.params;
     _englishStudent.findOne({ studentId: _studentId })
-        .populate({ path: 'courseType', model: 'EnglishCourse' })
+        .populate({ path: 'courseType', model: 'EnglishCourse' }).populate({path: 'studentId', model: 'Student',
+        select: {
+          careerId:1,controlNumber:1,fullName:1
+        },
+        populate: {
+            path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }})
         .exec(handler.handleOne.bind(null, 'englishStudent', res));
 };
 
@@ -33,6 +42,19 @@ const updateEnglishStudent = (req, res) => {
     _englishStudent.updateOne({ _id: _id }, englishStudent)
         .then(updated => res.status(status.OK).json(updated))
         .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar el perfil del estudiante de Ingles' }));
+};
+
+const updateStatusToPaid = (req, res) => {
+    const data  = req.body;
+    console.log(data);
+    data.forEach(async (st)=>{
+        await new Promise((resolve)=>{            
+            _englishStudent.updateOne({ _id: st.englishStudent._id }, {paidNumber:(st.englishStudent.paidNumber+1), status:'paid'})
+                .then(updated => resolve(true))
+                .catch(_ => resolve(false));
+        });
+    });
+    res.status(status.OK).json({message:'Status updated'})
 };
 
 const updateStatus = (req, res) => {/*
@@ -71,5 +93,6 @@ module.exports = EnglishStudent => {
         updateEnglishStudent,
         getEnglishStudentAndStudentById,
         updateStatus,
+        updateStatusToPaid,
     });
 };

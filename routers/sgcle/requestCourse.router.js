@@ -13,6 +13,9 @@ module.exports = (wagner) => {
 
     router.get('/all/studying/:_id', (req, res) =>
     requestCourseCtrl.getAllRequestCourseByCourseAndStudying(req, res));
+    
+    router.get('/by/englishstudent/:_id', (req, res) =>
+    requestCourseCtrl.getRequestCourseByEnglishStudentId(req, res));
 
     router.post('/create', (req, res) =>
     requestCourseCtrl.createRequestCourse(req, res));
