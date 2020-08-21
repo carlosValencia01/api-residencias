@@ -8,13 +8,15 @@ const requestCourseSchema = new mongoose.Schema({
         type: String, default: 'requested',
         // requested: solicitado, rejected: rechazado, studying: cursando,
         // finalized: terminado, approved: nivel aprobado, not_approved: nivel no aprobado
-        enum: ['requested', 'rejected', 'studying', 'finalized', 'approved', 'not_approved']
+        // paid: curso pagado
+        enum: ['requested', 'rejected', 'studying', 'finalized', 'approved', 'not_approved','paid']
     }, // Estatus del nievel cursado
     average: { type: String, trim: true }, // Promedio del nivel cursado
     requestDate: { type: Date, default: new Date() }, // Fecha de solicitud
     level: { type: Number }, // Nivel a cursar,
     rejectMessage: {type: String}, // mensaje de observacion al rechazar la solicitud
-    period:{type: mongoose.Schema.Types.ObjectId, ref: 'Period' } // periodo en que se hizo la solicitud
+    period:{type: mongoose.Schema.Types.ObjectId, ref: 'Period' }, // periodo en que se hizo la solicitud
+    paidNumber: {type: Number, default:1} // número de pagos realizados
 
 });
 
