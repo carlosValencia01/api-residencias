@@ -2,8 +2,8 @@ const router = require('express').Router();
 
 module.exports = (wagner) => {
 
-    const requestCourseCtrl = wagner.invoke((RequestCourse,EnglishStudent) =>
-        require('../../controllers/sgcle/requestCourse.controller')(RequestCourse,EnglishStudent));
+    const requestCourseCtrl = wagner.invoke((RequestCourse,EnglishStudent,Period) =>
+        require('../../controllers/sgcle/requestCourse.controller')(RequestCourse,EnglishStudent,Period));
 
     router.get('/all', (req, res) =>
     requestCourseCtrl.getAllRequestCourse(req, res));
@@ -15,7 +15,7 @@ module.exports = (wagner) => {
     requestCourseCtrl.getAllRequestCourseByCourseAndStudying(req, res));
     
     router.get('/by/englishstudent/:_id', (req, res) =>
-    requestCourseCtrl.getRequestCourseByEnglishStudentId(req, res));
+    requestCourseCtrl.getActiveRequestCourseByEnglishStudentId(req, res));
 
     router.post('/create', (req, res) =>
     requestCourseCtrl.createRequestCourse(req, res));

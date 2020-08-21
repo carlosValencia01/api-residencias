@@ -3,6 +3,9 @@ const status = require('http-status');
 
 
 let _requestCourse;
+let _englishStudent;
+let _period;
+
 // FIND METHODS
 const getAllRequestCourse = (req, res) => {
   _requestCourse.find({status:'requested'}).populate({
@@ -40,15 +43,42 @@ const getAllRequestCourseByCourseAndStudying = (req, res) => {
       .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
-const getRequestCourseByEnglishStudentId = (req, res) => {
+const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
   const { _id } = req.params;
-  _requestCourse.find({englishStudent: _id}).populate({
+  const period = await getActivePeriod();
+  let query = {
+    englishStudent:_id,active:true
+  };
+  if(period){
+    query['period'] = period._id;
+  }
+  _requestCourse.find(query).populate({
     path:'group', model:'Group',
     populate:{
       path:'course', model:'EnglishCourse'
     }
-  })
+  }).populate({
+    path: 'englishStudent', model: 'EnglishStudent',    
+    populate: {
+        path: 'studentId', model: 'Student',
+        select: {
+          careerId:1,controlNumber:1,fullName:1
+        },
+        populate: {
+            path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
+    }
+})
       .exec(handler.handleMany.bind(null, 'requestCourse', res));
+};
+
+const getActivePeriod = ()=>{
+  return new Promise((resolve)=>{
+    _period.findOne({active:true}).then(period=>resolve(period)).catch(err=>resolve(false));
+  });
 };
 
 //END FIND METHODS
@@ -100,9 +130,10 @@ const activeRequestCourse = async (req, res) => {
   
 };
 
-  module.exports = (RequestCourse,EnglishStudent) => {
+  module.exports = (RequestCourse, EnglishStudent, Period) => {
     _requestCourse = RequestCourse;
     _englishStudent = EnglishStudent;
+    _period = Period;
     return ({
       getAllRequestCourse,
       createRequestCourse,
@@ -111,6 +142,6 @@ const activeRequestCourse = async (req, res) => {
       updateRequestCourseByStudentId,
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
-      getRequestCourseByEnglishStudentId,
+      getActiveRequestCourseByEnglishStudentId,
     });
   };
