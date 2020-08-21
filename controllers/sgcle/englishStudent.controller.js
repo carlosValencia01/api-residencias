@@ -63,8 +63,9 @@ const updateStatus = (req, res) => {/*
       .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar el perfil del estudiante de Ingles' }));
 */};
 
-module.exports = EnglishStudent => {
+module.exports = (EnglishStudent,EnglishCourse) => {
     _englishStudent = EnglishStudent;
+    _englishCourse = EnglishCourse;
     return ({
         createEnglishStudent,
         getEnglishStudentByStudentId,

@@ -6,7 +6,7 @@ const englishStudentSchema = new mongoose.Schema({
     currentPhone: { type: String, trim: true }, // Teléfono actual
     // no_choice: sin elección, selected: grupo seleccionado, cancelled: cancelado por el estudiante
     // rejected: rechazado, studying: cursando, not_released: no liberado, released: liberado
-    status: { type: String, enum: ['no_choice', 'selected', 'cancelled', 'rejected', 'studying', 'not_released', 'released'] },
+    status: { type: String, enum: ['no_choice', 'selected', 'cancelled', 'rejected', 'studying', 'not_released', 'released', 'paid'] },
     totalHoursCoursed: { type: Number }, // Avance en horas
     courseType: { type: mongoose.Schema.Types.ObjectId, ref: 'EnglishCourse' }, // Tipo de curso elegido
     level: { type: Number }, // Último nivel cursado-aprobado

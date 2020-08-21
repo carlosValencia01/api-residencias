@@ -2,8 +2,8 @@ const router = require('express').Router();
 
 module.exports = (wagner) => {
 
-const groupCtrl = wagner.invoke((Group) =>
-    require('../../controllers/sgcle/group.controller')(Group));
+const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
+    require('../../controllers/sgcle/group.controller')(Group,EnglishStudent,RequestCourse));
 
     router.post('/create', (req, res) =>
     groupCtrl.createGroup(req, res));
@@ -16,6 +16,12 @@ const groupCtrl = wagner.invoke((Group) =>
     
     router.get('/all/opened/by-course-and-level', (req, res) =>
     groupCtrl.getAllGroupOpenedByCourseAndLevel(req, res));
+
+
+    router.get('/students/:_groupId', (req, res) => {
+        groupCtrl.getPaidStudentsCourse(req, res);
+    });
+
 
     return router;
 }

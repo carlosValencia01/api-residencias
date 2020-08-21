@@ -5,7 +5,7 @@ const status = require('http-status');
 let _requestCourse;
 
 const getAllRequestCourse = (req, res) => {
-  _requestCourse.find({}).populate({
+  _requestCourse.find({status:'requested'}).populate({
     path: 'englishStudent', model: 'EnglishStudent',    
     populate: {
         path: 'studentId', model: 'Student',
@@ -63,8 +63,33 @@ const updateRequestCourseByStudentId = (req, res) => { //Modificar Solicitud por
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
 };
 
-  module.exports = RequestCourse => {
+const activeRequestCourse = async (req, res) => {
+  const groupId = req.body.groupId;
+  const students = req.body.students;
+
+  for(let i = 0; i < students.length; i++){
+      // Actualizar groupId de las solicitudes por la del nuevo grupo activo
+      _requestCourse.updateOne({_id:students[i]._id},{$set:{group:groupId}})
+      .then(updated => {
+        if(updated){
+          // Cambiar estatus del alumno por studying
+          _englishStudent.updateOne({_id:students[i].englishStudent._id},{$set:{status:'studying'}})
+          .then(updated => {
+            if(updated){
+
+            }
+          });
+        }
+      });
+  }
+  return res.status(status.OK).json(true);
+
+  
+};
+
+  module.exports = (RequestCourse,EnglishStudent) => {
     _requestCourse = RequestCourse;
+    _englishStudent = EnglishStudent;
     return ({
       getAllRequestCourse,
       createRequestCourse,
@@ -72,5 +97,6 @@ const updateRequestCourseByStudentId = (req, res) => { //Modificar Solicitud por
       updateRequestCourseById,
       updateRequestCourseByStudentId,
       getAllRequestCourseByCourseAndStudying,
+      activeRequestCourse
     });
   };
