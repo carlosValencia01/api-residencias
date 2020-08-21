@@ -36,7 +36,7 @@ const getAllRequestCourseByCourseAndRequested = (req, res) => {
 
 const getAllRequestCourseByCourseAndStudying = (req, res) => {
   const { _id } = req.params;
-  _requestCourse.find({group: _id, status: 'studying'})
+  _requestCourse.find({$and:[{group:_id},{status: 'studying'}]})
       .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
@@ -82,7 +82,7 @@ const activeRequestCourse = async (req, res) => {
 
   for(let i = 0; i < students.length; i++){
       // Actualizar groupId de las solicitudes por la del nuevo grupo activo
-      _requestCourse.updateOne({_id:students[i]._id},{$set:{group:groupId}})
+      _requestCourse.updateOne({_id:students[i]._id},{$set:{group:groupId,status:'studying'}})
       .then(updated => {
         if(updated){
           // Cambiar estatus del alumno por studying
