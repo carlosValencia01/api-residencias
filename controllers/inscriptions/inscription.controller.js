@@ -175,16 +175,23 @@ const sendInscriptionMail = async (req, res) => {
     let students = req.body;
     for(let i = 0; i < students.length; i++){
         const _email = students[i].personalEmail;
+        const _iemail = students[i].institutionalEmail;
         const nombre = students[i].name;
         const nc = students[i].controlNumber;
         const nip = students[i].nip;
+        const carrera = students[i].career;
+        const curp = students[i].curp;
         const email = _email;
         const subject = 'Inscripciones - ITTEPIC'; //MODIFICAR
         const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
-        const message = mailTemplate(nombre, nc, nip);
+        const message = mailTemplate(nombre, nc, nip, carrera, _iemail, curp);
         await _sendEmail({ email: email, subject: subject, sender: sender, message: message })
         .then(async data => {
             console.log("Correo enviado a: "+students[i].personalEmail);
+            await _sendEmail({ email: _iemail, subject: subject, sender: sender, message: message })
+            .then(async data => {
+                console.log("Correo enviado a: "+students[i].institutionalEmail);
+            });
         });
     }
     res.status(status.OK).json({ message: 'Correos envíados con éxito' })
