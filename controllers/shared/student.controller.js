@@ -9,12 +9,25 @@ const mongoose = require('mongoose');
 var https = require('https');
 const { eInsFiles} = require('../../enumerators/reception-act/enums');
 const _ = require('underscore');
+const pdf = require('html-pdf');
+const scheduleTemplate = require('../../templates/schedule');
+const moment = require('moment');
+moment.locale('es');
+const eCareers = require('../../enumerators/shared/careers.enum');
+
 let _student;
 let _request;
 let _role;
 let _period;
 let _activeStudents;
 let _career;
+let _Period;
+let _department;
+let _position;
+let _employee;
+let _schedule;
+let _Drive;
+let _folder;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -26,69 +39,76 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'students', res));
 };
 
-const getStudentsInscription = (req, res) => {
-    _student.find({ "inscriptionStatus": { $exists: true } }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {            
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber:mapDocuments(student.documents).length,
-                documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus:mapDocuments(student.documents)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const getStudentsInscription = async (req, res) => {
+    const newStudents = await consultStudentsInscription();
+    res.status(status.OK).json({ students: newStudents });
+};
+
+const consultStudentsInscription = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ "inscriptionStatus": { $exists: true } }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {            
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
+                    totalDocumentsNumber:mapDocuments(student.documents).length,
+                    documentsReviewNumber:mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus:mapDocuments(student.documents)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
 };
 
 const mapDocuments = (documents) => {
-    return documents.filter((st)=> st.status.length > 0).map(
+    return documents.filter((st)=> st.status.length > 0  && st.filename ? st.filename.indexOf('SOLICITUD') < 0  && st.filename.indexOf('CONTRATO') < 0 && st.filename.indexOf('ACUSE') < 0  : false).map(
         doc => {
             const stat = doc.status.filter(
                 st => st.active == true)[0];
@@ -100,14 +120,14 @@ const mapDocuments = (documents) => {
 
 
     ).filter(
-        docFiltered =>docFiltered.filename ? docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 : false && docFiltered.statusName !== null
+        docFiltered =>docFiltered.filename  && docFiltered.statusName !== null 
     );
 };
 
 const documentsHaveChanges = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 : false).map(
+        const changes = documents.filter(doc => doc.status.length > 0  && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0 && doc.filename.indexOf('ACUSE') < 0 : false).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -126,7 +146,7 @@ const documentsHaveChanges = (documents, status) => {
 const documentsHaveChangesAdmin = (documents, status) => {
     if (status == 'En Proceso') {
 
-        const changes = documents.filter(doc => doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0 && doc.filename.indexOf('CONTRATO') < 0 :false).map(
+        const changes = documents.filter(doc => doc.status.length > 0  && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0 && doc.filename.indexOf('ACUSE') < 0 : false).map(
             filteredDoc => {
                 if (filteredDoc.status.length > 1) {
                     const curStatus = filteredDoc.status[filteredDoc.status.length - 1];
@@ -142,203 +162,246 @@ const documentsHaveChangesAdmin = (documents, status) => {
 
 };
 
-const getStudentsInscriptionLogged = (req, res) => {
-    _student.find({ "stepWizard": 0 })
-        .exec(handler.handleMany.bind(null, 'students', res));
+const getStudentsInscriptionLogged = async (req, res) => {
+    const students = await consultStudentsInscriptionLogged();
+    res.status(status.OK).json({ students });
+};
+const consultStudentsInscriptionLogged = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ "stepWizard": 0 }).then(
+            sts=>{
+                resolve(sts);
+            }
+        );
+    });
+};
+const getStudentsInscriptionProcess = async (req, res) => {
+    const newStudents = await consultStudentsInscriptionProcess();
+    res.status(status.OK).json({ students: newStudents });
 };
 
-const getStudentsInscriptionProcess = (req, res) => {
-    _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "status": student.status,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents),
-                documentsModifiedAdmin: documentsHaveChangesAdmin(student.documents, student.inscriptionStatus)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const  consultStudentsInscriptionProcess = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Proceso" }] }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "status": student.status,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    documentsModified: documentsHaveChanges(student.documents, student.inscriptionStatus),
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents),
+                    documentsModifiedAdmin: documentsHaveChangesAdmin(student.documents, student.inscriptionStatus)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
 };
 
-const getStudentsInscriptionPendant = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "status": student.status,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const getStudentsInscriptionPendant = async (req, res) => {
+   const newStudents = await consultStudentsInscriptionPendant();
+   res.status(status.OK).json({ students: newStudents });
 };
 
-const getStudentsInscriptionAcept = (req, res) => {
-    _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).populate({
-        path: 'careerId', model: 'Career',
-        select: {
-            fullName: 1, shortName: 1, acronym: 1
-        }
-    }).then(
-        students => {
-            const newStudents = students.map(student => ({
-                "_id": student._id,
-                "fullName": student.fullName,
-                "controlNumber": student.controlNumber,
-                "nip": student.nip,
-                "career": student.career,
-                "careerId": student.careerId,
-                "idRole": student.idRole,
-                "averageOriginSchool": student.averageOriginSchool,
-                "birthPlace": student.birthPlace,
-                "city": student.city,
-                "civilStatus": student.civilStatus,
-                "cp": student.cp,
-                "curp": student.curp,
-                "disability": student.disability,
-                "email": student.email,
-                "etnia": student.etnia,
-                "fatherLastName": student.fatherLastName,
-                "firstName": student.firstName,
-                "motherLastName": student.motherLastName,
-                "nameOriginSchool": student.nameOriginSchool,
-                "nss": student.nss,
-                "originSchool": student.originSchool,
-                "otherSchool": student.otherSchool,
-                "phone": student.phone,
-                "state": student.state,
-                "street": student.street,
-                "suburb": student.suburb,
-                "typeDisability": student.typeDisability,
-                "typeEtnia": student.typeEtnia,
-                "dateBirth": student.dateBirth,
-                "semester": student.semester,
-                "sex": student.sex,
-                "idPeriodInscription": student.idPeriodInscription,
-                "folderId": student.folderId,
-                "documents": student.documents,
-                "inscriptionStatus": student.inscriptionStatus,
-                "stepWizard": student.stepWizard,
-                "acceptedTerms": student.acceptedTerms,
-                "dateAcceptedTerms": student.dateAcceptedTerms,
-                "printCredential": student.printCredential,
-                "warningAnalysis": student.warningAnalysis,
-                "expStatus":student.expStatus,
-                totalDocumentsNumber: mapDocuments(student.documents).length,
-                documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
-                documentsLastStatus: mapDocuments(student.documents)
-            }));
-            res.status(status.OK).json({ students: newStudents });
-        }
-    );
+const consultStudentsInscriptionPendant = ()=>{
+    return new Promise((resolve)=>{
+        _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "En Captura" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Enviado" }] }] }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "status": student.status,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
 };
 
-const getIntegratedExpedient = (req, res) => {
-    _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Integrado" }] })
-        .exec(handler.handleMany.bind(null, 'expedients', res));
+const getStudentsInscriptionAcept = async (req, res) => {
+    const newStudents = await consultStudentsInscriptionAcept();
+    res.status(status.OK).json({ students: newStudents });
 };
 
-const getArchivedExpedient = (req, res) => {
-    _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Archivado" }] })
-        .exec(handler.handleMany.bind(null, 'expedients', res));
+const consultStudentsInscriptionAcept = ()=>{
+    return new Promise(resolve=>{
+
+        _student.find({ $or: [{ $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Verificado" }] }, { $and: [{ "inscriptionStatus": { $exists: true } }, { "inscriptionStatus": "Aceptado" }] }] }).populate({
+            path: 'careerId', model: 'Career',
+            select: {
+                fullName: 1, shortName: 1, acronym: 1
+            }
+        }).then(
+            students => {
+                const newStudents = students.map(student => ({
+                    "_id": student._id,
+                    "fullName": student.fullName,
+                    "controlNumber": student.controlNumber,
+                    "nip": student.nip,
+                    "career": student.career,
+                    "careerId": student.careerId,
+                    "idRole": student.idRole,
+                    "averageOriginSchool": student.averageOriginSchool,
+                    "birthPlace": student.birthPlace,
+                    "city": student.city,
+                    "civilStatus": student.civilStatus,
+                    "cp": student.cp,
+                    "curp": student.curp,
+                    "disability": student.disability,
+                    "email": student.email,
+                    "etnia": student.etnia,
+                    "fatherLastName": student.fatherLastName,
+                    "firstName": student.firstName,
+                    "motherLastName": student.motherLastName,
+                    "nameOriginSchool": student.nameOriginSchool,
+                    "nss": student.nss,
+                    "originSchool": student.originSchool,
+                    "otherSchool": student.otherSchool,
+                    "phone": student.phone,
+                    "state": student.state,
+                    "street": student.street,
+                    "suburb": student.suburb,
+                    "typeDisability": student.typeDisability,
+                    "typeEtnia": student.typeEtnia,
+                    "dateBirth": student.dateBirth,
+                    "semester": student.semester,
+                    "sex": student.sex,
+                    "idPeriodInscription": student.idPeriodInscription,
+                    "folderId": student.folderId,
+                    "documents": student.documents,
+                    "inscriptionStatus": student.inscriptionStatus,
+                    "stepWizard": student.stepWizard,
+                    "acceptedTerms": student.acceptedTerms,
+                    "dateAcceptedTerms": student.dateAcceptedTerms,
+                    "printCredential": student.printCredential,
+                    "warningAnalysis": student.warningAnalysis,
+                    "expStatus":student.expStatus,
+                    totalDocumentsNumber: mapDocuments(student.documents).length,
+                    documentsReviewNumber: mapDocuments(student.documents).filter(doc => doc.statusName !== 'EN PROCESO').length,
+                    documentsLastStatus: mapDocuments(student.documents)
+                }));
+                resolve(newStudents);
+            }
+        );
+    });
+}
+
+const getIntegratedExpedient = async (req, res) => {
+    const expedients = await consultIntegratedExpedient();
+    res.status(status.OK).json({expedients});
+};
+const consultIntegratedExpedient = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Integrado" }] }).then( exp=>{
+            resolve(exp);
+        })        
+    });
+};
+const getArchivedExpedient = async (req, res) => {
+    const expedients = await consultArchivedExpedient();
+    res.status(status.OK).json({expedients});        
+};
+const consultArchivedExpedient = ()=>{
+    return new Promise( (resolve)=>{
+        _student.find({ $and: [{ "expStatus": { $exists: true } }, { "expStatus": "Archivado" }] }).then( exp=>{
+            resolve(exp);
+        })        
+    });
 };
 
 const getById = (req, res) => {
@@ -585,9 +648,9 @@ const assignDocumentDrive = (req, res) => {
     const _doc = req.body.doc;
     const status = req.body.status;
 
-    const push = { $push: { documents: _doc } };
+    const push = { $push: { documents: _doc } };    
 
-    _student.findOneAndUpdate({ _id: _id }, push, { new: true })
+    _student.updateOne({ _id: _id }, push)
         .then(
             async (doc) => {
                 let statusChanged = await updateDocumentStatus(_id, _doc.filename, status);
@@ -607,7 +670,6 @@ const assignDocumentDrive = (req, res) => {
 
 async function updateDocumentStatus(_id, docName, status) {
 
-    // console.log('1',status);
 
     const docid = await getActiveStatus(_id, docName);
     if (docid) {
@@ -616,13 +678,12 @@ async function updateDocumentStatus(_id, docName, status) {
         const doc_id = result.documents[0]._id;
         if ((result.documents[0].status)) {
             if (result.documents[0].status.length === 0) {//no hay estatus activo 
-                return await _student.findOneAndUpdate(
+                return await _student.updateOne(
                     {
                         _id: _id,
                         'documents._id': doc_id
                     },
-                    { $push: { 'documents.$.status': status } },
-                    { new: true }
+                    { $push: { 'documents.$.status': status } }
                 )
                     .then(
                         doc => {
@@ -630,7 +691,7 @@ async function updateDocumentStatus(_id, docName, status) {
                         }
                     ).catch(err => { return false; });
             } else {
-                return await _student.findOneAndUpdate( //cambiar active = false
+                return await _student.updateOne( //cambiar active = false
                     {
                         _id: _id,
                         documents: {
@@ -650,10 +711,9 @@ async function updateDocumentStatus(_id, docName, status) {
                     }
                 )
                     .then(
-                        async doc => {
-                            console.log(doc, '4');
+                        async doc => {                            
 
-                            return await _student.findOneAndUpdate(
+                            return await _student.updateOne(
                                 {
                                     '_id': _id,
                                     'documents._id': doc_id
@@ -673,7 +733,7 @@ async function updateDocumentStatus(_id, docName, status) {
 
         } else { //no existe estatus
 
-            return await _student.findOneAndUpdate(
+            return await _student.updateOne(
                 {
                     _id: _id,
                     'documents._id': doc_id
@@ -944,7 +1004,7 @@ const getDocumentsStatus = async (req, res) => {
 
 
             ).filter(
-                docFiltered => docFiltered.filename.indexOf('SOLICITUD') < 0 && docFiltered.filename.indexOf('CONTRATO') < 0 && docFiltered.statusName !== null
+                docFiltered => docFiltered.statusName !== null
             ),
             action: 'get documents status'
         });
@@ -1055,9 +1115,9 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
         _student.findOne({controlNumber},{documents:1}).then(
             (student)=>{
                 if(student){
-                    if(grade === 'lic'){                                                
+                    if(grade === 'lic'){                               
                         resolve(
-                            student.documents.filter((doc) =>doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            student.documents.filter((doc) =>doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0 && doc.filename.indexOf('ACUSE') < 0 : false).map((doc)=>
                             {                                
                                 
                                 const name = doc.filename;                                
@@ -1069,7 +1129,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
                                 :name.indexOf(eInsFiles.BIRTH_CERTIFICATE) !== -1 ?{shortName:'ACTA',fullName:'ACTA DE NACIMIENTO',filename:name,position:4}  
                                 :name.indexOf(eInsFiles.LETTER_BACH) !== -1 ? {shortName:'CARTA COMPROMISO CERTIFICADO',fullName:'CARTA COMPROMISO CERTIFICADO BACHILLERATO',filename:name,position:2}
                                 :name.indexOf(eInsFiles.PAY) !== -1 ? {shortName:'COMPROBANTE',fullName:'COMPROBANTE DE PAGO',filename:name,position:1}
-                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:7} 
+                                :name.indexOf(eInsFiles.NSS)  !== -1?{shortName:'NSS',fullName:'CONSTANCIA DE VIGENCIA DE DERECHOS IMSS',filename:name,position:7}                                  
                                 :'';
                                 const docStatus = doc.status.filter((stat)=> stat.active==true)[0];
                                 
@@ -1090,7 +1150,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 
                     if(grade === 'mas'){
                         resolve(
-                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0 && doc.filename.indexOf('ACUSE') < 0 : false).map((doc)=>
                             {
                                 const name = doc.filename;                                
                                const file = 
@@ -1125,7 +1185,7 @@ const mapInscriptionDocuments = (controlNumber, grade='lic')=>{
 
                     if(grade === 'doc'){
                         resolve(
-                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0  : false).map((doc)=>
+                            student.documents.filter(doc => doc.type === 'DRIVE' && doc.status.length > 0 && doc.filename ? doc.filename.indexOf('SOLICITUD') < 0  && doc.filename.indexOf('CONTRATO') < 0 && doc.filename.indexOf('ACUSE') < 0 : false).map((doc)=>
                             {
                                 
                                 
@@ -1606,13 +1666,327 @@ const addCampaignStudent = async (req, res) => {
     });
 };
 
-module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
+const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
+    const periods = (await _Period.constultAll());
+    const acepStudents = (await consultStudentsInscriptionAcept());
+    const pendantStudents = (await consultStudentsInscriptionPendant());
+    const processStudents = (await consultStudentsInscriptionProcess());
+    const loggedStudents = (await consultStudentsInscriptionLogged());
+    const allStudents = (await consultStudentsInscription());
+    const expedientsArchived = (await consultArchivedExpedient());
+    const expedientsIntegrated = (await consultIntegratedExpedient());
+    if(periods.err){
+        return res.status(status.BAD_REQUEST).json({error:periods.err});
+    }
+    
+        
+    const studentsByPeriod = periods.map( (per)=>({
+        periodId:per._id,
+        allStudents: allStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        acepStudents: acepStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        pendantStudents: pendantStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        processStudents: processStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        loggedStudents: loggedStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        expedientsArchived: expedientsArchived.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        expedientsIntegrated: expedientsIntegrated.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+    }));
+    res.status(status.OK).json({studentsByPeriod});
+};
+
+const createSchedule = async (req,res)=>{
+    const student = req.body;
+
+    // Obtener registro en caso de no existir en bd escolares
+    const newStudent = req.body.studentData;
+    newStudent.fullName = newStudent.firstName+' '+newStudent.fatherLastName+' '+newStudent.motherLastName;
+    newStudent.career = eCareers[newStudent.career];
+    const incomingType = newStudent.income;
+    if (newStudent.semester === 1 || ['1', '2', '3', '4'].includes(incomingType)) {
+        newStudent.stepWizard = 0;
+    }
+    newStudent.careerId = await getCareerId(newStudent.career);
+    newStudent.idRole = await getRoleId('Estudiante');
+
+    // Obtener nombre del jefe de división de estudios
+    const bossDivEst = await getBossDivEst();
+
+    // Obtener hora actual de firma de horario
+    const dateSchedule = new Date(student.dateFirm);
+
+    // Obtener datos del alumno en la db de escolares
+    const studentDb = await _student.findOne({controlNumber: student.studentData.controlNumber})
+    .then(stud => {      
+        if (!stud) {
+            //Insertar nuevo estudiante
+            return _student.create(newStudent);
+        }
+        return stud;
+    })
+    .then(student => {
+        return student;
+    })
+    .catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            msg : "Ocurrió un error al crear al estudiante"
+        });
+    });
+
+    // Obtener carpeta del alumno de drive
+    let studentFolderId = await _student.findOne({ _id: studentDb._id }, { folderId: 1, _id: 0 })
+    .populate({
+        path: 'folderId', model: 'Folder',
+        select: {
+            idFolderInDrive: 1
+        }
+    })
+    .then(folder => {
+        return folder.folderId;
+    }).catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        });    
+    });
+
+    if(!studentFolderId){
+        let folderStudentName = newStudent.controlNumber + ' - ' + newStudent.fullName;
+        const activePeriod = await getActivePeriod();
+        const folders = await getFolderPeriod(activePeriod.period._id,1);
+        const folderPeriod = await folders.filter(folder => folder.name.indexOf(activePeriod.period.periodName) !== -1);
+        const folderCareer = await folders.filter(folder => folder.name === newStudent.career);
+        if (folderCareer.length === 0) {
+            const careerFolder = await _Drive.createSubFolder2(newStudent.career,activePeriod.period._id,folderPeriod[0].idFolderInDrive,1);
+            if(careerFolder){
+                const studentFolder = await _Drive.createSubFolder2(folderStudentName,activePeriod.period._id,careerFolder.idFolderInDrive,1);
+                if(studentFolder){
+                    _student.updateOne({controlNumber: newStudent.controlNumber},{folderId: studentFolder._id})
+                    .then(updated => {
+                        if (updated.nModified) {
+                            console.log('Exito al crear folderId');
+                            studentFolderId = studentFolder;
+                        } else {
+                            console.log('Error al crear folderId');
+                        }
+                    });
+                }
+            }
+        } else {
+            const studentFolder = await _Drive.createSubFolder2(folderStudentName,activePeriod.period._id,folderCareer[0].idFolderInDrive,1);
+                if(studentFolder){
+                    _student.updateOne({controlNumber: newStudent.controlNumber},{folderId: studentFolder._id})
+                    .then(updated => {
+                        if (updated.nModified) {
+                            console.log('Exito al crear folderId');
+                            studentFolderId = studentFolder;
+                        } else {
+                            console.log('Error al crear folderId');
+                        }
+                    });
+                }
+        }
+    }
+
+    // Generar PDF
+    let bufferSchedule = await generatePDF(student,bossDivEst,moment(dateSchedule).format('LLLL'));
+    let binarySchedule = await bufferToBase64(bufferSchedule);
+
+    const documentInfo = {
+        mimeType: "application/pdf",
+        nameInDrive: student.studentData.controlNumber+'-HORARIO-'+student.period+'.pdf',
+        bodyMedia: binarySchedule,
+        folderId: studentFolderId.idFolderInDrive,
+        newF: true,
+        fileId: ''
+      };
+
+    // Buscar si ya existe horario con periodo actual para actualizar en drive
+    const updateScheduleDrive = await existSchedule(studentDb._id,student.period);
+    if(updateScheduleDrive != ''){
+        documentInfo.newF = false;
+        documentInfo.fileId = updateScheduleDrive.driveId;
+    }
+
+    // Mandar a guardar pdf en drive
+    let driveSchedule = await _Drive.createFileSchedule(documentInfo,studentDb.career);
+    if (driveSchedule) {
+        const schedule = {
+            studentId: studentDb._id,
+            schedules: [{
+                dateFirm: dateSchedule,
+                period: student.period,
+                average: student.average,
+                specialty: student.specialty,
+                schedule: student.schedule,
+                driveId : driveSchedule.fileId
+            }]
+        };
+        // Mandar a guardar los datos del horario en la base de datos
+        const s = await saveSchedule(schedule.studentId,schedule);
+        if(s){
+            return res.status(status.OK).json({
+                status : true,
+                msg : "Exito al generar y guardar horario"
+            });
+        }
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
+                status : false,
+                msg : "Error al generar y guardar horario"
+        });    
+    }
+    
+};
+
+function getBossDivEst() {
+    return new Promise(async (resolve) => {
+        _department.findOne({ name: 'DEPARTAMENTO DE DIVISIÓN DE ESTUDIOS PROFESIONALES' }, (err, department) => {
+            if (!err && department) {
+                _position.findOne({ ascription: department._id }, (err, position) => {
+                    if (!err && position) {
+                        _employee.findOne({ $and:[{"positions.position" : position._id},{"positions.status" : 'ACTIVE'}]}, (err, employee) => {
+                            if(employee == null){
+                                resolve('');
+                            }
+                            if (!err && employee) {
+                                const nombre = employee.name.lastName+" "+employee.name.firstName;
+                                resolve(nombre);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+}
+
+function generatePDF (studentData,bossDivEst,_dateSchedule) {
+    return new Promise(async (resolve) => {
+        let options = {
+            "orientation": "portrait",
+            "format": "Letter"
+        }
+        let schedule = await scheduleTemplate(studentData,bossDivEst,_dateSchedule);
+        
+        pdf.create(schedule, options).toBuffer(function(err, buffer){
+            resolve(buffer);
+        });
+    });
+}
+
+function bufferToBase64(buffer) {
+    return buffer.toString('base64');    
+}
+
+function existSchedule(id,period){
+    return new Promise(async (resolve) => {
+        _schedule.findOne({studentId: id})
+        .then(s => {             
+            if (s) {
+                if(period == s.schedules[s.schedules.length-1].period){
+                    // Horario ya existe por lo tanto no será un nuevo archivo en drive
+                    resolve(s.schedules[s.schedules.length-1]);
+                } else {
+                    // Horario no existe por lo tanto será un nuevo archivo en drive
+                    resolve('');
+                }
+            } 
+            resolve('');
+        }).catch(err => {
+            resolve('');
+        });
+    });
+}
+
+function saveSchedule (id,horario) {
+    return new Promise(async (resolve) => {
+        _schedule.findOne({studentId: id})
+        .then(s => {
+            // Existe alumno en modelo de horarios             
+            if (s) {
+                // Existe horario con perdiodo actual
+                if(horario.schedules[0].period == s.schedules[s.schedules.length-1].period){
+                    const index = s.schedules.findIndex(item => item.period == horario.schedules[0].period);
+                    const newSchedule = horario.schedules[0];
+                    s.schedules[index] = newSchedule;
+                    s.save(function (error) {
+                        if (error) {
+                            resolve(false);
+                        }
+                        resolve(true);
+                    });
+                } else {
+                    // No existe horario con periodo actual
+                    const newSchedule = horario.schedules;
+                    _schedule.updateOne({studentId: id}, {$addToSet: {schedules: newSchedule}})
+                    .then(updated => {
+                        if (updated.nModified) {
+                        resolve(true);
+                        }
+                    });
+                }
+            } else {
+                // No se encontró alumno en modelo de horarios
+                _schedule.create(horario).then(created => {
+                    resolve(true);
+                }).catch(err => {
+                    resolve(false);
+                });
+            }
+        }).catch(err => {
+            resolve(false);
+        });
+    });
+};
+
+function getActivePeriod(){
+    return new Promise(async (resolve) => {
+        _period.findOne({active:true})
+        .then( period=>{
+            if(period) {
+                resolve({period:period});
+            }else{
+                resolve(false);
+            } 
+        }).catch( error=>{
+            resolve(false);     
+        });
+    });
+}
+
+function getFolderPeriod(_id,_type){
+    return new Promise(async (resolve) => {
+        const query = {
+            idPeriod: _id,
+            type: _type
+        };
+        _folder.find(query).populate({
+            path: 'idPeriod', model: 'Period',
+            select: {
+                active: 1, name: 1, _id: 1
+            }
+        }).then(
+            folder => {
+            if(folder){
+                resolve(folder);
+            } else {
+                resolve(false);
+            }
+        });
+    });
+}
+
+module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
     _activeStudents = ActiveStudents;
     _career = Career;
     _period = Period;
     _request = Request;
-    _role = Role;     
+    _role = Role;
+    _Period = require('../app/period.controller')(Period);
+    _department = Department;
+    _position = Position;
+    _employee = Employee;
+    _schedule = Schedule;
+    _Drive = require('../app/google-drive.controller')(Folder);
+    _folder = Folder;
     return ({
         create,
         getOne,
@@ -1656,6 +2030,8 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career) => {
         registerCretentialStudent,
         insertActiveStudents,
         getAllActiveStudents,
-        getStudentStatusFromSII
+        getStudentStatusFromSII,
+        getNumberInscriptionStudentsByPeriod,
+        createSchedule,
     });
 };

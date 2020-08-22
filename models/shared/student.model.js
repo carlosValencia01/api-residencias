@@ -67,6 +67,8 @@ const studentSchema = new mongoose.Schema({
     warningAnalysis: {type: Boolean},
     printCredential: {type: Boolean},
     expStatus : {type: String},
+    signDocuments: {type: Boolean, default:false},
+    signDocumentsDate: {type: Date}
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');

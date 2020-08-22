@@ -44,5 +44,8 @@ module.exports = (wagner) => {
     router.get('/getArchivedExpedient', (req, res) =>
         studentCtrl.getArchivedExpedient(req, res));
 
+    router.get('/getNumberInscriptionStudentsByPeriod', (req, res) =>
+        studentCtrl.getNumberInscriptionStudentsByPeriod(req, res));
+
     return router;
 };

@@ -4,10 +4,14 @@ const config = require('../../_config');
 
 module.exports = (wagner) => {
     mongoose.Promise = global.Promise;
-    mongoose.connect(`mongodb://${config.dbhost}:${config.dbport}/${config.dbname}`, {
-        useNewUrlParser: true,
-        useCreateIndex: true
-    });
+    mongoose
+        .connect(`mongodb://${config.dbhost}:${config.dbport}/${config.dbname}`,
+            {
+                useNewUrlParser: true,
+                useCreateIndex: true,
+            })
+        .then(() => console.log('Connected'))
+        .catch((err) => console.log(err));
 
     wagner.factory('db', () => mongoose);
 
@@ -40,6 +44,7 @@ module.exports = (wagner) => {
     const Career = require('./career.model');
     const IMSS = require('./imss.model');
     const ActiveStudents = require('./activeStudents.model');
+    const Schedule = require('./schedule.model');
 
     // SG-CLE
     const EnglishCourse = require('./../sgcle/englishCourse.model')
@@ -80,6 +85,7 @@ module.exports = (wagner) => {
         Career,
         IMSS,
         ActiveStudents,
+        Schedule,
 
         // SG-CLE
         EnglishCourse,

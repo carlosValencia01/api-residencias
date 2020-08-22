@@ -39,6 +39,9 @@ const student = require('./routers/shared/student.router')(wagner);
 const career = require('./routers/shared/career.router')(wagner);
 const imss = require('./routers/shared/imss.router')(wagner);
 
+// Schedule
+const schedule = require('./routers/schedule/schedule.router')(wagner);
+
 // SG-CLE
 const englishStudent = require('./routers/sgcle/englishStudent.router')(wagner);
 const englishCourse = require('./routers/sgcle/englishCourse.router')(wagner);
@@ -78,6 +81,7 @@ const jwtOptions = {
     `${uri}user/graduation/login`, //app graduacion
     `${uri}drive/upload/file`,
     `${uri}student/notify`, 
+    `${uri}student/schedule`,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
@@ -120,6 +124,8 @@ app.use(uri + 'employee', employee);
 app.use(uri + 'position', position);
 app.use(uri + 'student', student);
 app.use(uri + 'imss', imss);
+// Schedule
+app.use(uri + 'schedule', schedule);
 // SG-CLE
 app.use(uri + 'sg-cle/englishstudent', englishStudent);
 app.use(uri + 'sg-cle/englishcourse', englishCourse);

@@ -13,8 +13,9 @@ let upload = multer({ storage: storage });
 
 module.exports = (wagner) => {
     
-    const studentCtrl = wagner.invoke((Student, Request, Role, Period, ActiveStudents, Career) =>
-        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, ActiveStudents, Career));
+    const studentCtrl = wagner.invoke((Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) =>
+        require('../../controllers/shared/student.controller')(Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder));
+
     const driveCtrl = wagner.invoke((Folder, Student, Period) =>  
         require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
 
@@ -131,5 +132,8 @@ module.exports = (wagner) => {
     router.get('/get/active/sii/:controlNumber', (req, res) =>
         studentCtrl.getStudentStatusFromSII(req, res));
 
+    router.post('/schedule/', (req, res) => {
+            studentCtrl.createSchedule(req, res);
+        });
     return router;
 };
