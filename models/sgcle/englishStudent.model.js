@@ -10,6 +10,14 @@ const englishStudentSchema = new mongoose.Schema({
     totalHoursCoursed: { type: Number }, // Avance en horas
     courseType: { type: mongoose.Schema.Types.ObjectId, ref: 'EnglishCourse' }, // Tipo de curso elegido
     level: { type: Number }, // Último nivel cursado-aprobado
+
+    // Datos del último bloque cursado
+    lastLevelInfo: {
+        startHour: { type: Number }, // En minutos
+        endHour: { type: Number }, // En minutos
+        teacher: { type: String, trim: true, uppercase: true },
+        period: { type: String, trim: true, uppercase: true },
+    }
 });
 
 const englishStudentModel = mongoose.model('EnglishStudent', englishStudentSchema, 'englishStudents');
