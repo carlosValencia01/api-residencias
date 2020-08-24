@@ -65,8 +65,8 @@ function getReqsCourse(_groupId){
 
 const getPaidStudentsCourse = async (req, res) => { //Obtener todos los grupos
     const _groupId = req.params._groupId;
-    _requestCourse.find({group:_groupId}).populate({
-        path: 'englishStudent', match: { status: 'paid' } , model: 'EnglishStudent', 
+    _requestCourse.find({$and:[{group:_groupId},{status: 'paid'}]}).populate({
+        path: 'englishStudent', match: { status: 'waiting' } , model: 'EnglishStudent', 
         populate: {
             path: 'studentId', model: 'Student',
             select: {

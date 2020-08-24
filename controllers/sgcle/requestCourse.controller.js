@@ -31,6 +31,31 @@ const getAllRequestCourse = (req, res) => {
       .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
+const getRequestCourse = (req, res) => {
+  _englishStudentId = req.params._id;
+  _requestCourse.find({englishStudent:_englishStudentId}).populate({
+    path: 'englishStudent', model: 'EnglishStudent',    
+    populate: {
+        path: 'studentId', model: 'Student',
+        select: {
+          careerId:1,controlNumber:1,fullName:1
+        },
+        populate: {
+            path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
+    }
+}).populate({
+  path:'group', model:'Group',
+  populate:{
+    path:'course', model:'EnglishCourse'
+  }
+})
+      .exec(handler.handleMany.bind(null, 'requestCourses', res));
+};
+
 const getAllRequestCourseByCourseAndRequested = (req, res) => {
   const { _id } = req.params;
   _requestCourse.find({group: _id, status: 'requested'})
@@ -136,6 +161,7 @@ const activeRequestCourse = async (req, res) => {
     _period = Period;
     return ({
       getAllRequestCourse,
+      getRequestCourse,
       createRequestCourse,
       getAllRequestCourseByCourseAndRequested,
       updateRequestCourseById,
