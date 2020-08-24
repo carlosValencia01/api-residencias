@@ -19,6 +19,29 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'employees', res));
 };
 
+const getEmployeesByPosition = async (req, res) => {
+    const { position } = req.params;
+    const positionDb = await _position.findOne({ name: new RegExp(`^${position}$`, 'i') });
+
+    if (!positionDb) {
+        return res.status(status.NOT_FOUND)
+            .json({ error_msj: 'No existe el puesto' });
+    }
+
+    const query = { positions: { $elemMatch: { position: positionDb._id, status: 'ACTIVE' } } };
+
+    _employee.find(query)
+        .select('-positions')
+        .then((employees) => {
+            res.status(status.OK)
+                .json(employees);
+        })
+        .catch((err) => {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json(err || { error_msj: 'Ocurrió un error' });
+        })
+};
+
 const getById = (req, res) => {
     const { _id } = req.params;
     _employee.findOne({ _id: _id })
@@ -585,6 +608,7 @@ module.exports = (Employee, Position) => {
         getOne,
         updateOne,
         getAll,
+        getEmployeesByPosition,
         search,
         searchRfc,
         uploadImage,

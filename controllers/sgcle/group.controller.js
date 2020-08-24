@@ -13,6 +13,24 @@ const createGroup = (req, res) => { //Crear Grupo
       .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al crear Grupo' }));
 };
 
+const assignGroupEnglishTeacher = (req, res) => {
+    const { id } = req.params;
+    const { teacher } = req.body;
+
+    _group.updateOne({ _id: id }, { $set: { teacher } })
+        .then((updated) => {
+            if (!updated || (updated && !updated.n)) {
+                return res.status(status.NOT_FOUND)
+                    .json({ error_msj: 'No se encontró el grupo' });
+            }
+            res.status(status.OK).json({ ok_msj: 'Docente asignado con éxito' });
+        })
+        .catch((err) => {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json(err || { error_msj: 'Ocurrió un error' });
+        });
+};
+
 const getAllGroup = async (req, res) => { //Obtener todos los grupos
     _group.find().populate({
         path: 'course', model: 'EnglishCourse', select: {
@@ -32,6 +50,7 @@ const getAllGroup = async (req, res) => { //Obtener todos los grupos
                     "level": _group.level,
                     "period": _group.period,
                     "course": _group.course,
+                    "teacher": _group.teacher,
                     "reqCount" : await getReqsCourse(_group._id)            
                 })));
             return res.status(status.OK).json({ groups: newGroup });
@@ -97,6 +116,7 @@ module.exports = (Group,EnglishStudent,RequestCourse) => {
     _requestCourse = RequestCourse;
     return ({
         createGroup,
+        assignGroupEnglishTeacher,
         getAllGroup,
         getAllGroupOpened,
         getAllGroupOpenedByCourseAndLevel,

@@ -8,6 +8,10 @@ const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
     router.post('/create', (req, res) =>
     groupCtrl.createGroup(req, res));
 
+    // @params { id } Group id
+    router.post('/:id/assign-teacher', (req, res) =>
+        groupCtrl.assignGroupEnglishTeacher(req, res));
+
     router.get('/all', (req, res) =>
     groupCtrl.getAllGroup(req, res));
 
