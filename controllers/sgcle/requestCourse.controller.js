@@ -151,8 +151,31 @@ const activeRequestCourse = async (req, res) => {
       });
   }
   return res.status(status.OK).json(true);
+};
 
-  
+const getAllRequestActiveCourse = (req, res) => {
+  const { _id } = req.params;
+  _requestCourse.find({group:_id}).populate({
+    path: 'englishStudent', model: 'EnglishStudent',    
+    populate: {
+      path: 'studentId', model: 'Student',
+      select: {
+        careerId:1,controlNumber:1,fullName:1,email:1
+      },
+      populate: {
+        path: 'careerId', model: 'Career',
+          select:{
+            _id:0
+          }          
+      }
+    }
+  }).populate({
+    path:'group', model:'Group',
+    populate:{
+      path:'course', model:'EnglishCourse'
+    }
+  })
+  .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
   module.exports = (RequestCourse, EnglishStudent, Period) => {
@@ -169,5 +192,6 @@ const activeRequestCourse = async (req, res) => {
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
       getActiveRequestCourseByEnglishStudentId,
+      getAllRequestActiveCourse
     });
   };

@@ -32,5 +32,8 @@ module.exports = (wagner) => {
     router.post('/active/request', (req, res) =>
     requestCourseCtrl.activeRequestCourse(req, res));
 
+    router.get('/all/active/:_id', (req, res) =>
+    requestCourseCtrl.getAllRequestActiveCourse(req, res));
+
     return router;
 }
