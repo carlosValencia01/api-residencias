@@ -23,6 +23,10 @@ module.exports = (wagner) => {
     router.get('/area', (req, res) =>
         employeeCtrl.getEmployeeByArea(req, res));
 
+    // @params { position } Position name
+    router.get('/position/:position', (req, res) =>
+        employeeCtrl.getEmployeesByPosition(req, res));
+
     router.get('/:_id', (req, res) =>
         employeeCtrl.getById(req, res));
 
