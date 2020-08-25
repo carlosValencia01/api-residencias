@@ -77,7 +77,7 @@ const getAllGroupOpened = (req, res) => { //Obtener todos los grupos abiertos pa
 
 function getReqsCourse(_groupId){
     return new Promise((resolve) => {
-        _requestCourse.find({$and:[{group:_groupId},{status: 'requested'}]}).then(req => {
+        _requestCourse.find({ $or: [ { $and:[{group:_groupId},{status: 'requested'}] }, { $and:[{group:_groupId},{status: 'paid'}]}]}).then(req => {
             if(req){
                 resolve(req.length);
             }
