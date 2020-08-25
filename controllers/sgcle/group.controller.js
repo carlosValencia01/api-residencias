@@ -40,6 +40,10 @@ const getAllGroup = async (req, res) => { //Obtener todos los grupos
         path: 'period', model: 'Period', select: {
             periodName: 1, year:1, _id: 1
         }
+    }).populate({        
+        path: 'teacher', model: 'Employee', select: {
+            name: 1, email:1, _id: 1
+        }
     }).then( async (_groups) => {
         if(_groups){
             const newGroup = await Promise.all(_groups.map( async (_group) => ({
