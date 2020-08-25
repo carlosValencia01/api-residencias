@@ -11,6 +11,7 @@ const englishStudentSchema = new mongoose.Schema({
     totalHoursCoursed: { type: Number }, // Avance en horas
     courseType: { type: mongoose.Schema.Types.ObjectId, ref: 'EnglishCourse' }, // Tipo de curso elegido
     level: { type: Number }, // Último nivel cursado-aprobado
+    verified: {type: Boolean, default: true},
 
     // Datos del último bloque cursado
     lastLevelInfo: {

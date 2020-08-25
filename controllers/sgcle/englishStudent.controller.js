@@ -85,6 +85,17 @@ const updateStatus = (req, res) => {/*
       .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar el perfil del estudiante de Ingles' }));
 */};
 
+const getEnglishStudentNoVerified = (req, res) => {
+    _englishStudent.find({ verified: false })
+        .populate({
+            path: 'studentId', model: 'Student', select: {
+                fullName: 1, controlNumber: 1, career: 1, sex: 1, email: 1, phone: 1, _id: 0
+            }
+        })
+        .populate({ path: 'courseType', model: 'EnglishCourse' })
+        .exec(handler.handleOne.bind(null, 'englishStudent', res));
+};
+
 module.exports = (EnglishStudent,EnglishCourse) => {
     _englishStudent = EnglishStudent;
     _englishCourse = EnglishCourse;
@@ -95,5 +106,6 @@ module.exports = (EnglishStudent,EnglishCourse) => {
         getEnglishStudentAndStudentById,
         updateStatus,
         updateStatusToPaid,
+        getEnglishStudentNoVerified,
     });
 };
