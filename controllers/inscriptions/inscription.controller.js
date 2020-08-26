@@ -182,17 +182,21 @@ const sendInscriptionMail = async (req, res) => {
         const carrera = students[i].career;
         const curp = students[i].curp;
         const email = _email;
-        const subject = 'Inscripciones - ITTEPIC'; //MODIFICAR
+        const subject = 'Bienvenido(a) al Instituto Tecnológico de Tepic';
         const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
         const message = mailTemplate(nombre, nc, nip, carrera, _iemail, curp);
-        await _sendEmail({ email: email, subject: subject, sender: sender, message: message })
-        .then(async data => {
-            console.log("Correo enviado a: "+students[i].personalEmail);
+        if(email){
+            await _sendEmail({ email: email, subject: subject, sender: sender, message: message })
+            .then(async data => {
+                console.log("Correo enviado a: "+students[i].personalEmail);
+            });
+        }
+        if(_iemail){
             await _sendEmail({ email: _iemail, subject: subject, sender: sender, message: message })
             .then(async data => {
                 console.log("Correo enviado a: "+students[i].institutionalEmail);
             });
-        });
+        }
     }
     res.status(status.OK).json({ message: 'Correos envíados con éxito' })
     
