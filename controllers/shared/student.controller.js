@@ -28,6 +28,7 @@ let _employee;
 let _schedule;
 let _Drive;
 let _folder;
+let _Notification;
 
 const getAll = (req, res) => {
     _student.find({}).populate({
@@ -1972,6 +1973,102 @@ function getFolderPeriod(_id,_type){
         });
     });
 }
+// REGISTER FOR EXTERNAL STUDENTS
+const createExternalStudents = async (req,res)=>{
+    let students = req.body;
+    // search the external student role
+    const externalStudentRole = await getRoleId('Estudiante externo');
+    // if exists then create the student
+    if(externalStudentRole){
+        // get the last control number
+        let lastCLEControlNumber = await _generateNewCLEControlNumber();
+        // convert the number to int 
+        let number = parseInt(lastCLEControlNumber.split('E')[1]);  
+        // increment the number per iteration
+        for(let i=0;i<students.length;i++,number++){
+            const canRegister = await canRegisterExternalStudent(students[i].curp);
+            if(canRegister){
+                // is not register then create the student                   
+                const created = await new Promise((resolve)=>{
+                    students[i].idRole = externalStudentRole;
+                    students[i].nip =_generateNip();
+                    students[i].controlNumber = 'CLE'+number;
+                    _student.create(students[i])
+                    .then(created => resolve(true))
+                    .catch(err => {                    
+                        resolve(false)
+                    });
+                });
+                if(created){
+                    // send notification when the student was created
+                    await sendEmailWithControlNumberAndNip(students[i].fullName,students[i].controlNumber,students[i].nip,students[i].email,students[i].sex);
+                }
+            }else{
+                console.log('no se puede crear');
+            }
+        }
+              
+        return res.status(status.OK).json({msg:'Alumnos creados'});
+    }
+    return res.status(status.BAD_REQUEST).json({error:'No se ha creado el rol para el estudiante externo'});
+}
+const _generateNip = (length=4) => {
+    let number = '';
+    while (number.length < length) {
+        number += Math.floor(Math.random() * 10);
+    }
+    return number;
+};
+const _generateNewCLEControlNumber = () => {
+    return new Promise((resolve)=>{
+        _student.find({controlNumber:{ $regex: new RegExp(`^CLE[0-9]{8}`) }},{controlNumber:1})
+        .sort({controlNumber:-1}).limit(1).then((students)=>{
+            let newCLEControlNumber = 'CLE';
+            if(students.length>0){
+                const lastCLEControlNumber = students[0].controlNumber;
+
+                newCLEControlNumber += ( parseInt(lastCLEControlNumber.split('E')[1])+1);
+            }else{
+                newCLEControlNumber += '20400001';
+            }
+            resolve(newCLEControlNumber);
+        }).catch((err)=>resolve(false));
+    });
+};
+const canRegisterExternalStudent = (curp)=>{
+    return new Promise((resolve)=>{
+        _student.findOne({curp}).then((student)=>{
+            if(student){
+                return resolve(false);
+            }else{
+
+                resolve(true);
+            }
+        }).catch(err=>resolve(true));
+    });
+}
+const sendEmailWithControlNumberAndNip = (studentName,controlNumber,nip,email, gender)=>{
+    const title = 'Coordinación de Lenguas Extranjeras';
+    const subtitle = 'Completa tu inscripción';
+    const subject = 'Coordinación de Lenguas Extranjeras - Registro en línea';
+    const sender = 'CLE <escolares_05@ittepic.edu.mx>';
+    const body = `
+                <div style="font-weight:800;">
+                ${gender == 'M' ? 'BIENVENIDO':'BIENVENIDA'} ${studentName}
+                <p>Ahora puedes continuar tu inscripción en línea</p>
+            </div>
+            <div>
+                Ingresa al portal <a href="https://rijimenezesdev.me" target="_blank">Mi Tec</a> con los siguientes datos
+                <p style="margin-bottom:0;"><strong>Número de control: ${controlNumber}<strong></p>
+                <p style="margin-top:0;"><strong>Nip: ${nip}<strong></p>
+            </div>
+            <div>
+                Listo, ya puedes solicitar y dar seguimiento de tu curso de inglés en la opción <strong>Mi Inglés</strong> 
+            </div>
+            `;
+    return _Notification.sendGenericNotification(email,sender,subject,{title,subtitle},body);
+};
+// END REGISTER FOR EXTERNAL STUDENTS
 
 module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
@@ -1987,6 +2084,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
     _schedule = Schedule;
     _Drive = require('../app/google-drive.controller')(Folder);
     _folder = Folder;
+    _Notification = require('../notificationMail/notification.controller')();
     return ({
         create,
         getOne,
@@ -2033,5 +2131,6 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
         getStudentStatusFromSII,
         getNumberInscriptionStudentsByPeriod,
         createSchedule,
+        createExternalStudents,
     });
 };
