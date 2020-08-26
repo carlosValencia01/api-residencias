@@ -1,6 +1,7 @@
 const status = require('http-status');
 const util= require('util');
 const send = require('../../utils/sendmail');
+const sendMail = require('../shared/mail.controller');
 
 // Enviar QR
 const sendNotificationMail = (req, res, callback)=>{
@@ -50,9 +51,33 @@ const sendNotification = (req, res) => {
         res.json({ code: 400, message: 'Ocurrió un error al enviar el email', detail: err});
     });
 };
+/**
+ * Enviar email con plantilla generica
+ * @param {*} email a quien va dirigido
+ * @param {*} sender quien lo envia
+ * @param {*} subject asunto
+ * @param {*} header debe contener las propiedades titulo y subtitulo
+ * @param {*} body cuerpo en html si se requiere
+ * @param {*} contact_ext si se quiere agregar una extension al teléfono del tec, ej. 'ext. 317, 430 y 307'
+ */
+const sendGenericNotification = (email,sender,subject,header={title:'',subtitle:''},body,contact_ext='') =>{
+
+    return new Promise(resolve => {
+        let message = require('../../templates/genericMail.template')(header,body,contact_ext);
+        const emailData = {
+            to_email: [email],
+            subject,
+            sender,
+            message
+        };
+        sendMail({ body: emailData })
+            .then(data => resolve(data));
+    });
+}
 
 module.exports = () => {
     return ({
-        sendNotification
+        sendNotification,
+        sendGenericNotification,
     });
 };

@@ -100,6 +100,9 @@ module.exports = (wagner) => {
     router.post('/create/sii/:controlNumber', (req, res) =>
         studentCtrl.createStudentFromSII(req, res));
 
+    router.post('/register/external', (req, res) =>
+        studentCtrl.createExternalStudents(req, res));
+
     router.put('/:_id', (req, res) =>
         studentCtrl.updateStudent(req, res));
     router.put('/data/:_id', (req, res) =>
