@@ -44,18 +44,6 @@ const updateEnglishStudent = (req, res) => {
         .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar el perfil del estudiante de Ingles' }));
 };
 
-const updateStatusToPaid = (req, res) => {
-    const data  = req.body;
-    console.log(data);
-    data.forEach(async (st)=>{
-        await new Promise((resolve)=>{            
-            _englishStudent.updateOne({ _id: st.englishStudent._id }, {paidNumber:(st.englishStudent.paidNumber+1), status:'paid'})
-                .then(updated => resolve(true))
-                .catch(_ => resolve(false));
-        });
-    });
-    res.status(status.OK).json({message:'Status updated'})
-};
 
 const updateStatus = (req, res) => {/*
     const { _id } = req.params;
@@ -105,7 +93,6 @@ module.exports = (EnglishStudent,EnglishCourse) => {
         updateEnglishStudent,
         getEnglishStudentAndStudentById,
         updateStatus,
-        updateStatusToPaid,
         getEnglishStudentNoVerified,
     });
 };

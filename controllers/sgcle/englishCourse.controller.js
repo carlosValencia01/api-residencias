@@ -26,6 +26,6 @@ module.exports = EnglishCourse => {
     return ({
         createEnglishCourse,
         getAllEnglishCourse,
-        getAllEnglishCourseActive,
+        getAllEnglishCourseActive
     });
 };
