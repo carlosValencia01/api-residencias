@@ -54,6 +54,7 @@ const getAllGroup = async (req, res) => { //Obtener todos los grupos
                     "level": _group.level,
                     "period": _group.period,
                     "course": _group.course,
+                    "groupOrigin": _group.groupOrigin ? _group.groupOrigin : '',
                     "teacher": _group.teacher,
                     "reqCount" : await getReqsCourse(_group._id)            
                 })));

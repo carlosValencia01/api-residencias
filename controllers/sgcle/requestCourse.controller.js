@@ -178,6 +178,42 @@ const getAllRequestActiveCourse = (req, res) => {
   .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
 
+const declineRequestActiveCourse = async (req, res) => {
+  const groupOrignId = req.body.group.groupOrigin;
+  const reqId = req.body._id;
+  const studentId = req.body.englishStudent._id;
+
+  _requestCourse.updateOne({_id:reqId},{$set:{group:groupOrignId,status:'paid'}})
+  .then(updated => {
+    if(updated){
+      _englishStudent.updateOne({_id:studentId},{$set:{status:'paid'}})
+      .then(updated => {
+        if(updated){
+          return res.status(status.OK).json(true);
+        }
+      });
+    }
+  });
+};
+
+const AddRequestActiveCourse = async (req, res) => {
+  const groupActiveId = req.body.activeGroup;
+  const reqId = req.body.req._id;
+  const studentId = req.body.req.englishStudent._id;
+
+  _requestCourse.updateOne({_id:reqId},{$set:{group:groupActiveId,status:'studying'}})
+  .then(updated => {
+    if(updated){
+      _englishStudent.updateOne({_id:studentId},{$set:{status:'studying'}})
+      .then(updated => {
+        if(updated){
+          return res.status(status.OK).json(true);
+        }
+      });
+    }
+  });
+};
+
   module.exports = (RequestCourse, EnglishStudent, Period) => {
     _requestCourse = RequestCourse;
     _englishStudent = EnglishStudent;
@@ -192,6 +228,8 @@ const getAllRequestActiveCourse = (req, res) => {
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
       getActiveRequestCourseByEnglishStudentId,
-      getAllRequestActiveCourse
+      getAllRequestActiveCourse,
+      declineRequestActiveCourse,
+      AddRequestActiveCourse
     });
   };

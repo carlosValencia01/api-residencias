@@ -17,7 +17,7 @@ const groupSchema = new mongoose.Schema({
   maxCapacity: { type: Number }, // Cantidad máxima de alumnos
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }, // Docente del grupo
   course: { type: mongoose.Schema.Types.ObjectId, ref: 'EnglishCourse' }, // Tipo de curso del grupo
-
+  groupOrigin: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' } // Grupo contenedor (solo para grupos activos)
 });
 
 const groupModel = mongoose.model('Group', groupSchema, 'groups');
