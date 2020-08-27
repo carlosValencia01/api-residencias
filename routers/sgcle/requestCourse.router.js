@@ -29,6 +29,9 @@ module.exports = (wagner) => {
     router.put('/update/student/:_id', (req, res) =>
     requestCourseCtrl.updateRequestCourseByStudentId(req, res));
 
+    router.put('/paidstatus', (req, res) =>
+    requestCourseCtrl.updateStatusToPaid(req, res));
+
     router.post('/active/request', (req, res) =>
     requestCourseCtrl.activeRequestCourse(req, res));
 

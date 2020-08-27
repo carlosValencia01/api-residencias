@@ -7,8 +7,8 @@ let _englishStudent;
 let _period;
 
 // FIND METHODS
-const getAllRequestCourse = (req, res) => {
-  _requestCourse.find({status:'requested'}).populate({
+const getAllRequestCourse = (req, res) => {  
+  _requestCourse.find({active:true}).populate({
     path: 'englishStudent', model: 'EnglishStudent',    
     populate: {
         path: 'studentId', model: 'Student',
@@ -177,6 +177,18 @@ const getAllRequestActiveCourse = (req, res) => {
   })
   .exec(handler.handleMany.bind(null, 'requestCourses', res));
 };
+const updateStatusToPaid = (req, res) => {
+  const data  = req.body;
+  console.log(data);
+  data.forEach(async (st)=>{
+      await new Promise((resolve)=>{            
+        _requestCourse.updateOne({ englishStudent: st.englishStudent._id }, {paidNumber:(st.englishStudent.paidNumber+1), status:'paid'})
+              .then(updated => resolve(true))
+              .catch(_ => resolve(false));
+      });
+  });
+  res.status(status.OK).json({message:'Status updated'})
+};
 
   module.exports = (RequestCourse, EnglishStudent, Period) => {
     _requestCourse = RequestCourse;
@@ -192,6 +204,7 @@ const getAllRequestActiveCourse = (req, res) => {
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
       getActiveRequestCourseByEnglishStudentId,
-      getAllRequestActiveCourse
+      getAllRequestActiveCourse,
+      updateStatusToPaid
     });
   };

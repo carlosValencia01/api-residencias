@@ -18,10 +18,7 @@ module.exports = (wagner) => {
     englishStudentCtrl.updateEnglishStudent(req, res));
 
     router.put('/update/status/:_id', (req, res) =>
-    englishStudentCtrl.updateStatus(req, res));
-    
-    router.put('/set/paidstatus', (req, res) =>
-    englishStudentCtrl.updateStatusToPaid(req, res));
+    englishStudentCtrl.updateStatus(req, res));    
 
     router.get('/students/noverified', (req, res) => {
         englishStudentCtrl.getEnglishStudentNoVerified(req, res);
