@@ -46,6 +46,9 @@ module.exports = (wagner) => {
 
     router.get('/getNumberInscriptionStudentsByPeriod', (req, res) =>
         studentCtrl.getNumberInscriptionStudentsByPeriod(req, res));
+        
+    router.post('/sendnotificationmail', (req, res) =>
+        inscriptionCtrl.sendInscriptionMail(req, res));
 
     return router;
 };
