@@ -56,7 +56,8 @@ const getAllGroup = async (req, res) => { //Obtener todos los grupos
                     "course": _group.course,
                     "groupOrigin": _group.groupOrigin ? _group.groupOrigin : '',
                     "teacher": _group.teacher,
-                    "reqCount" : await getReqsCourse(_group._id)            
+                    "reqCount" : await getReqsCourse(_group._id),
+                    "reqActCount" : await getReqsActCourse(_group._id)                       
                 })));
             return res.status(status.OK).json({ groups: newGroup });
         }
@@ -79,6 +80,17 @@ const getAllGroupOpened = (req, res) => { //Obtener todos los grupos abiertos pa
 function getReqsCourse(_groupId){
     return new Promise((resolve) => {
         _requestCourse.find({ $or: [ { $and:[{group:_groupId},{status: 'requested'}] }, { $and:[{group:_groupId},{status: 'paid'}]}]}).then(req => {
+            if(req){
+                resolve(req.length);
+            }
+            resolve(0);
+        });
+    });
+};
+
+function getReqsActCourse(_groupId){
+    return new Promise((resolve) => {
+        _requestCourse.find({$and:[{group:_groupId},{status: 'studying'}]}).then(req => {
             if(req){
                 resolve(req.length);
             }

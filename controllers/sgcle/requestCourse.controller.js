@@ -198,7 +198,7 @@ const declineRequestActiveCourse = async (req, res) => {
   _requestCourse.updateOne({_id:reqId},{$set:{group:groupOrignId,status:'paid'}})
   .then(updated => {
     if(updated){
-      _englishStudent.updateOne({_id:studentId},{$set:{status:'paid'}})
+      _englishStudent.updateOne({_id:studentId},{$set:{status:'waiting'}})
       .then(updated => {
         if(updated){
           return res.status(status.OK).json(true);
