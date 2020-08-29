@@ -1,8 +1,8 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const inscriptionCtrl = wagner.invoke((Inscription, Period) =>
-        require('../../controllers/inscriptions/inscription.controller')(Inscription, Period));
+    const inscriptionCtrl = wagner.invoke((Inscription, Period, WelcomeData) =>
+        require('../../controllers/inscriptions/inscription.controller')(Inscription, Period, WelcomeData));
 
     const studentCtrl = wagner.invoke((Student, Request) =>
         require('../../controllers/shared/student.controller')(Student, Request));
@@ -49,6 +49,12 @@ module.exports = (wagner) => {
         
     router.post('/sendnotificationmail', (req, res) =>
         inscriptionCtrl.sendInscriptionMail(req, res));
+
+    router.get('/welcomeStudent/:curp', (req, res) =>
+        inscriptionCtrl.getDataWelcomeStudent(req, res));
+
+    router.post('/welcomeStudent', (req, res) =>
+        inscriptionCtrl.saveWelcomeData(req, res));
 
     return router;
 };

@@ -24,6 +24,8 @@ module.exports = (wagner) => {
 
     // Inscriptions
     const Inscription = require('../inscriptions/inscription.model');
+    const WelcomeData = require('../inscriptions/welcomeData.model');
+
 
     // Reception act
     const English = require('../reception-act/english.model');
@@ -56,6 +58,7 @@ module.exports = (wagner) => {
 
         // Inscriptions
         Inscription,
+        WelcomeData,
 
         // Reception act
         English,
