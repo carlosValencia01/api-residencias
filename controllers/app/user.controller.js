@@ -251,6 +251,58 @@ const login = async (req, res) => {
                 error: 'Usuario y/o contraseña son incorrectos'
             });
         }
+    } else if (/^[A-Za-z]{3}[0-9]{8}$/.test(email)) {
+        const controlNumber = email;
+        const nip = (password || '').trim();
+        let query = { controlNumber };
+        // Buscar estudiante en la bd local
+        let student = await _findStudent(query);
+        if (student) {
+            student = student.toObject();
+            // Verificar si el estudiante tiene nip en la bd local
+            if (!student.hasOwnProperty('nip')) {
+                return res.status(status.NOT_FOUND)
+                    .json({
+                        error: 'Usuario no cuenta con nip asignado'
+                    });
+            }
+            // Validar si el NIP es correcto
+            if (student.nip !== nip) {
+                return res.status(status.NOT_FOUND)
+                    .json({
+                        error: 'Usuario y/o contraseña son incorrectos'
+                    });
+            }
+            // Se verifica si tiene aprobado el inglés
+            await validateEnglishApproved(controlNumber);
+            // Se contruye el token
+            const token = jwt.sign({ email: student.controlNumber }, config.secret);
+            let formatUser = {
+                _id: student._id,
+                name: {
+                    firstName: student.firstName,
+                    lastName: `${student.fatherLastName} ${student.motherLastName}`,
+                    fullName: student.fullName
+                },
+                email: student.controlNumber,
+                career: student.career,
+                rol: {
+                    name: student.idRole.name,
+                    permissions: student.idRole.permissions
+                },
+                semester: student.semester
+            };
+            return res.json({
+                user: formatUser,
+                gender: student.sex,
+                token: token,
+                action: 'signin'
+            });
+        } else {
+            return res.status(status.NOT_FOUND).json({
+                error: 'Usuario y/o contraseña incorrectos'
+            });
+        }
     } else {
         return res.status(status.NOT_FOUND).json({
             error: 'Usuario y/o contraseña incorrectos'
