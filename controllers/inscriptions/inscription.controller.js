@@ -7,6 +7,8 @@ const mailTemplate = require('../../templates/inscription');
 
 const readFile = util.promisify(fs.readFile);
 let _inscription;
+let _period;
+let _welcomeData;
 
 const sendTemplateMail = async (req, res) => {
     const template = chooseTemplate(req.body.index);
@@ -202,10 +204,43 @@ const sendInscriptionMail = async (req, res) => {
     
 };
 
-module.exports = Inscription => {
+const getDataWelcomeStudent = async (req, res) => {
+    const _curp = req.params.curp;
+    _welcomeData.findOne(
+        {'students.curp':_curp},{'students.$': 1 })
+        .then(student => {
+        res.status(status.OK).json({
+            data: student
+        });
+    }).catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        })
+    });
+}
+
+const saveWelcomeData = async (req, res) => {
+    const data = req.body;
+    _welcomeData.create(data).then(created => {
+        res.status(status.OK).json({
+            created: true
+        });
+    }).catch(err => {
+        res.status(status.INTERNAL_SERVER_ERROR).json({
+            error: err.toString()
+        })
+    });
+    
+}
+
+module.exports = (Inscription, Period, WelcomeData) => {
     _inscription = Inscription;
+    _period = Period;
+    _welcomeData = WelcomeData;
     return ({
         sendTemplateMail,
-        sendInscriptionMail
+        sendInscriptionMail,
+        getDataWelcomeStudent,
+        saveWelcomeData
     });
 };
