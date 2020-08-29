@@ -77,7 +77,7 @@ const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
   if(period){
     query['period'] = period._id;
   }
-  _requestCourse.find(query).populate({
+  _requestCourse.findOne(query).populate({
     path:'group', model:'Group',
     populate:{
       path:'course', model:'EnglishCourse'
