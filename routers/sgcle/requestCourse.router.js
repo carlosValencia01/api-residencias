@@ -20,6 +20,12 @@ module.exports = (wagner) => {
     router.get('/by/englishstudent/:_id', (req, res) =>
     requestCourseCtrl.getActiveRequestCourseByEnglishStudentId(req, res));
 
+    // GET: Return requests in status requested
+    // @params {id} - Group id
+    router.get(
+        '/:id/requests',
+        requestCourseCtrl.getRequestedGroupRequests);
+
     router.post('/create', (req, res) =>
     requestCourseCtrl.createRequestCourse(req, res));
 
