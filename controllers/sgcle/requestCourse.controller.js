@@ -77,7 +77,7 @@ const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
   if(period){
     query['period'] = period._id;
   }
-  _requestCourse.find(query).populate({
+  _requestCourse.findOne(query).populate({
     path:'group', model:'Group',
     populate:{
       path:'course', model:'EnglishCourse'
@@ -98,6 +98,35 @@ const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
     }
 })
       .exec(handler.handleMany.bind(null, 'requestCourse', res));
+};
+
+const getRequestedGroupRequests = (req, res) => {
+  const { id } = req.params;
+
+  _requestCourse
+    .find({ group: id, status: 'requested', active: true })
+    .populate({
+      path: 'englishStudent', model: 'EnglishStudent',
+      populate: {
+        path: 'studentId', model: 'Student',
+        select: 'fullName career controlNumber phone email'
+      }
+    })
+    .populate({
+      path: 'group', model: 'Group',
+      populate: {
+        path: 'course', model: 'EnglishCourse'
+      }
+    })
+    .populate('period')
+    .then((requests) => {
+      res.status(status.OK)
+        .json(requests);
+    })
+    .catch((err) => {
+      res.status(status.INTERNAL_SERVER_ERROR)
+        .json(err || { error_msj: 'Ocurrió un erro' });
+    });
 };
 
 const getActivePeriod = ()=>{
@@ -240,6 +269,7 @@ const AddRequestActiveCourse = async (req, res) => {
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
       getActiveRequestCourseByEnglishStudentId,
+      getRequestedGroupRequests,
       getAllRequestActiveCourse,
       declineRequestActiveCourse,
       AddRequestActiveCourse,

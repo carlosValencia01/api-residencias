@@ -24,6 +24,8 @@ module.exports = (wagner) => {
 
     // Inscriptions
     const Inscription = require('../inscriptions/inscription.model');
+    const WelcomeData = require('../inscriptions/welcomeData.model');
+
 
     // Reception act
     const English = require('../reception-act/english.model');
@@ -53,7 +55,7 @@ module.exports = (wagner) => {
 
     const RequestCourse = require('./../sgcle/requestCourse.model');
     const Classroom = require('./../sgcle/classroom.model');
-
+    const EnBossMessage = require('./../sgcle/bossMessage.model');
 
     const models = {
         // App
@@ -65,6 +67,7 @@ module.exports = (wagner) => {
 
         // Inscriptions
         Inscription,
+        WelcomeData,
 
         // Reception act
         English,
@@ -93,6 +96,7 @@ module.exports = (wagner) => {
         Group,
         RequestCourse,
         Classroom,
+        EnBossMessage
     };
 
     _.each(models, (v, k) => {

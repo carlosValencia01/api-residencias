@@ -153,7 +153,105 @@ const login = async (req, res) => {
                 });
             }
         }
-    } else if (/^[A-Za-z]{0,3}[0-9]{8}$/.test(email)) {
+    } else if (/^[A-Za-z]{0,1}[0-9]{8}$/.test(email)) {
+        const controlNumber = email;
+        const nip = (password || '').trim();
+        // Validar si es alumno y su nc y NIP son válidos
+        const studentData = await getStudentData(controlNumber, nip);
+        let query = { controlNumber: controlNumber };
+        if (studentData) {
+            // Buscar estudiante en la bd local
+            let student = await _findStudent(query);
+            if (student) {
+                student = student.toObject();
+                // Se verifica si tiene aprobado el inglés
+                await validateEnglishApproved(controlNumber);
+                // Se verifica si está asegurado en el imss
+                await validateInsuredStudent(controlNumber);
+                // verificar si se cambió de semestre
+                if (studentData.semester > student.semester) {
+                    _student.updateOne(query, {
+                        $set: { semester: studentData.semester }
+                    }).then(ok => { });
+                }
+                // Verficar estatus
+                if (!student.hasOwnProperty('status')) {
+                    _student.updateOne(query, { $set: { status: studentData.status.toUpperCase() } }).then(ok => { });
+                } else if (student.status !== studentData.status) {
+                    _student.updateOne(query, { $set: { status: studentData.status.toUpperCase() } }).then(ok => { });
+                }
+                // Se contruye el token
+                const token = jwt.sign({ email: student.controlNumber }, config.secret);
+                let formatUser = {
+                    _id: student._id,
+                    name: {
+                        firstName: student.firstName,
+                        lastName: `${student.fatherLastName} ${student.motherLastName}`,
+                        fullName: student.fullName
+                    },
+                    email: student.controlNumber,
+                    career: student.career,
+                    rol: {
+                        name: student.idRole.name,
+                        permissions: student.idRole.permissions
+                    },
+                    semester: studentData.semester,
+                    status: student.status
+                };
+                return res.json({
+                    user: formatUser,
+                    gender: student.sex,
+                    token: token,
+                    action: 'signin'
+                });
+            } else {
+                const isCreated = await _createStudent(studentData);
+                if (isCreated) {
+                    const student = await _findStudent(query);
+                    if (student) {
+                        // Se verifica si tiene aprobado el inglés
+                        await validateEnglishApproved(controlNumber);
+                        // Se verifica si está asegurado en el imss
+                        await validateInsuredStudent(controlNumber);
+                        const token = jwt.sign({ email: student.controlNumber }, config.secret);
+                        let formatUser = {
+                            _id: student._id,
+                            name: {
+                                firstName: student.firstName,
+                                lastName: `${student.fatherLastName} ${student.motherLastName}`,
+                                fullName: student.fullName
+                            },
+                            email: student.controlNumber,
+                            career: student.careerId.acronym,
+                            rol: {
+                                name: student.idRole.name,
+                                permissions: student.idRole.permissions
+                            },
+                            semester: student.semester,
+                        };
+                        return res.json({
+                            user: formatUser,
+                            gender: student.sex,
+                            token: token,
+                            action: 'signin'
+                        });
+                    } else {
+                        return res.status(status.NOT_FOUND).json({
+                            error: 'Usuario y/o contraseña son incorrectos'
+                        });
+                    }
+                } else {
+                    return res.status(status.INTERNAL_SERVER_ERROR).json({
+                        error: 'Ocurrió un error, intente de nuevo'
+                    });
+                }
+            }
+        } else {
+            return res.status(status.NOT_FOUND).json({
+                error: 'Usuario y/o contraseña son incorrectos'
+            });
+        }
+    } else if (/^[A-Za-z]{3}[0-9]{8}$/.test(email)) {
         const controlNumber = email;
         const nip = (password || '').trim();
         let query = { controlNumber };
@@ -162,13 +260,11 @@ const login = async (req, res) => {
         if (student) {
             student = student.toObject();
             // Verificar si el estudiante tiene nip en la bd local
-            // Si no tiene nip, se trae del SII y se guarda en la bd local
-            if (!student.hasOwnProperty('nip') || student.nip !== nip) {
-                const isOkLogin = await _loginSii(controlNumber, nip);
-                if (isOkLogin) {
-                    _student.updateOne(query, { nip }).exec();
-                    student.nip = nip;
-                }
+            if (!student.hasOwnProperty('nip')) {
+                return res.status(status.NOT_FOUND)
+                    .json({
+                        error: 'Usuario no cuenta con nip asignado'
+                    });
             }
             // Validar si el NIP es correcto
             if (student.nip !== nip) {
@@ -179,8 +275,6 @@ const login = async (req, res) => {
             }
             // Se verifica si tiene aprobado el inglés
             await validateEnglishApproved(controlNumber);
-            // Se verifica si está asegurado en el imss
-            await validateInsuredStudent(controlNumber);
             // Se contruye el token
             const token = jwt.sign({ email: student.controlNumber }, config.secret);
             let formatUser = {
@@ -205,54 +299,9 @@ const login = async (req, res) => {
                 action: 'signin'
             });
         } else {
-            const studentData = await getStudentData(controlNumber, nip);
-            if (!studentData) {
-                return res.status(status.NOT_FOUND)
-                    .json({
-                        error: 'Usuario y/o contraseña son incorrectos'
-                    });
-            }
-            studentData.nip = nip;
-            const isCreated = await _createStudent(studentData);
-            if (isCreated) {
-                const student = await _findStudent(query);
-                if (student) {
-                    // Se verifica si tiene aprobado el inglés
-                    await validateEnglishApproved(controlNumber);
-                    // Se verifica si está asegurado en el imss
-                    await validateInsuredStudent(controlNumber);
-                    const token = jwt.sign({ email: student.controlNumber }, config.secret);
-                    let formatUser = {
-                        _id: student._id,
-                        name: {
-                            firstName: student.firstName,
-                            lastName: `${student.fatherLastName} ${student.motherLastName}`,
-                            fullName: student.fullName
-                        },
-                        email: student.controlNumber,
-                        career: student.careerId.acronym,
-                        rol: {
-                            name: student.idRole.name,
-                            permissions: student.idRole.permissions
-                        },
-                        semester: student.semester,
-                    };
-                    return res.json({
-                        user: formatUser,
-                        gender: student.sex,
-                        token: token,
-                        action: 'signin'
-                    });
-                } else {
-                    return res.status(status.NOT_FOUND).json({
-                        error: 'Usuario y/o contraseña son incorrectos'
-                    });
-                }
-            } else {
-                return res.status(status.INTERNAL_SERVER_ERROR).json({
-                    error: 'Ocurrió un error, intente de nuevo'
-                });
-            }
+            return res.status(status.NOT_FOUND).json({
+                error: 'Usuario y/o contraseña incorrectos'
+            });
         }
     } else {
         return res.status(status.NOT_FOUND).json({

@@ -48,6 +48,7 @@ const jwtOptions = {
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
+    /^\/escolares\/credenciales\/inscription\/welcomeStudent\/.*/,
   ]
 };
 // files
