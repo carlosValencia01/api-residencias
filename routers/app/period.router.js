@@ -12,6 +12,8 @@ module.exports = (wagner) => {
         periodCtrl.createPeriod(req, res));
     router.put('/update/:id', (req, res) =>
         periodCtrl.updatePeriod(req, res));
+    router.get('/english', (req, res) =>
+        periodCtrl.inEnglishPeriod(req, res));
 
     return router;
 };

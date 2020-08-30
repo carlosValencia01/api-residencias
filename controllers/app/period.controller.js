@@ -1,4 +1,6 @@
 const status = require('http-status');
+var moment = require('moment');
+moment.locale('es');
 let _period;
 
 const getAll = async (req, res) => {
@@ -75,6 +77,28 @@ const updatePeriod = (req,res)=> {
         }));
 };
 
+const inEnglishPeriod = (req,res)=>{
+    const nowDate = new Date(); 
+    _period.findOne({active:true})
+        .then( period=>{
+            if(period) {
+                const englishInitDate = period.englishPerInitDate;
+                const englishEndDate =  period.englishPerEndDate;
+                if(moment(nowDate).isBetween(englishInitDate,englishEndDate)){
+                    res.status(status.OK).json({active:true});
+                } else {
+                    res.status(status.OK).json({active:false});
+                }
+            } else{
+                res.status(status.NOT_FOUND).json({model:'period',action:'get active', error:'There are not any periods active'});
+            } 
+        }).catch( error=>{
+            res.status(status.BAD_REQUEST).json({
+                model:'period',action:'get english period', error: error.toString()
+            });
+        });
+};
+
 module.exports = (Period) => {
   _period = Period;
   return ({
@@ -82,6 +106,7 @@ module.exports = (Period) => {
     getActivePeriod,
     createPeriod,
     updatePeriod,
-    constultAll
+    constultAll,
+    inEnglishPeriod
   });
 };
