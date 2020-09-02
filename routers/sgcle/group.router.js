@@ -21,9 +21,12 @@ const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
     router.get('/all/opened/by-course-and-level', (req, res) =>
     groupCtrl.getAllGroupOpenedByCourseAndLevel(req, res));
 
-
     router.get('/students/:_groupId', (req, res) => {
         groupCtrl.getPaidStudentsCourse(req, res);
+    });
+
+    router.get('/teacher/:_teacherId', (req, res) => {
+        groupCtrl.getAllGroupByTeacher(req, res);
     });
 
 
