@@ -1723,8 +1723,8 @@ const createSchedule = async (req,res)=>{
         }
         return stud;
     })
-    .then(student => {
-        return student;
+    .then(stude => {
+        return stude;
     })
     .catch(err => {
         res.status(status.INTERNAL_SERVER_ERROR).json({
@@ -1788,6 +1788,14 @@ const createSchedule = async (req,res)=>{
 
     // Generar PDF
     let bufferSchedule = await generatePDF(student,bossDivEst,moment(dateSchedule).format('LLLL'));
+   
+    if (!bufferSchedule){
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
+            status : false,
+            msg : "Error al generar y guardar horario"
+        });    
+    }
+
     let binarySchedule = await bufferToBase64(bufferSchedule);
 
     const documentInfo = {
@@ -1867,6 +1875,9 @@ function generatePDF (studentData,bossDivEst,_dateSchedule) {
         let schedule = await scheduleTemplate(studentData,bossDivEst,_dateSchedule);
         
         pdf.create(schedule, options).toBuffer(function(err, buffer){
+            if(err){
+                resolve(null);
+            }
             resolve(buffer);
         });
     });
