@@ -2020,16 +2020,25 @@ const _generateNip = (length=4) => {
     return number;
 };
 const _generateNewCLEControlNumber = () => {
-    return new Promise((resolve)=>{
+    return new Promise(async (resolve)=>{
+        // Obtener los ultimos dos digitos del año del periodo activo
+        const periodYear = (await getActivePeriod()).period.year.substr(2,2);
         _student.find({controlNumber:{ $regex: new RegExp(`^CLE[0-9]{8}`) }},{controlNumber:1})
         .sort({controlNumber:-1}).limit(1).then((students)=>{
             let newCLEControlNumber = 'CLE';
             if(students.length>0){
                 const lastCLEControlNumber = students[0].controlNumber;
-
-                newCLEControlNumber += ( parseInt(lastCLEControlNumber.split('E')[1])+1);
+                // si el año del periodo es igual al del ultimo numero de control
+                // entonces se continua incrementando los numeros de control de ese año                
+                if(periodYear == lastCLEControlNumber.substr(3,2)){
+                    newCLEControlNumber += ( parseInt(lastCLEControlNumber.split('E')[1])+1);
+                }else{
+                    // los años son diferentes entonces iniciar con el nuevo año del periodo activo
+                    newCLEControlNumber += periodYear+'400001';
+                }
             }else{
-                newCLEControlNumber += '20400001';
+                // no hay ningun estudiante externo 
+                newCLEControlNumber += periodYear+'400001';
             }
             resolve(newCLEControlNumber);
         }).catch((err)=>resolve(false));
@@ -2037,6 +2046,7 @@ const _generateNewCLEControlNumber = () => {
 };
 const canRegisterExternalStudent = (curp)=>{
     return new Promise((resolve)=>{
+        // no se ha registrado el alumno si no se encuentra su curp
         _student.findOne({curp}).then((student)=>{
             if(student){
                 return resolve(false);
@@ -2050,15 +2060,15 @@ const canRegisterExternalStudent = (curp)=>{
 const sendEmailWithControlNumberAndNip = (studentName,controlNumber,nip,email, gender)=>{
     const title = 'Coordinación de Lenguas Extranjeras';
     const subtitle = 'Completa tu inscripción';
-    const subject = 'Coordinación de Lenguas Extranjeras - Registro en línea';
-    const sender = 'CLE <escolares_05@ittepic.edu.mx>';
+    const subject = 'Registro en línea';
+    const sender = 'COORDINACIÓN DE LENGUAS EXTRANJERAS <cle_tepic@ittepic.edu.mx>';
     const body = `
                 <div style="font-weight:800;">
                 ${gender == 'M' ? 'BIENVENIDO':'BIENVENIDA'} ${studentName}
                 <p>Ahora puedes continuar tu inscripción en línea</p>
             </div>
             <div>
-                Ingresa al portal <a href="https://rijimenezesdev.me" target="_blank">Mi Tec</a> con los siguientes datos
+                Ingresa al portal <a href="https://mitec.ittepic.edu.mx/" target="_blank">Mi Tec</a> con los siguientes datos
                 <p style="margin-bottom:0;"><strong>Número de control: ${controlNumber}<strong></p>
                 <p style="margin-top:0;"><strong>Nip: ${nip}<strong></p>
             </div>
