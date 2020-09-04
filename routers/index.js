@@ -32,5 +32,7 @@ module.exports = (wagner) => {
     group: require('./sgcle/group.router')(wagner),
     requestCourse: require('./sgcle/requestCourse.router')(wagner),
     classroom: require('./sgcle/classroom.router')(wagner),
+    // Social-Service
+    controlStudent: require('./social-service/control.router')(wagner)
   };
 };
