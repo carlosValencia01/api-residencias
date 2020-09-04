@@ -133,6 +133,11 @@ const getAllGroupByTeacher = (req, res) => {
                 name: 1, _id: 1
             }
         })
+        .populate({
+            path: 'period', model: 'Period', select: {
+                periodName: 1, year: 1
+            }
+        })
         .then(async (_groups) => {
             if (_groups) {
                 const newGroups = await Promise.all(_groups.map(async (_group) => ({

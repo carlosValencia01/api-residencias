@@ -12,7 +12,7 @@ const groupSchema = new mongoose.Schema({
   level: { type: Number }, // Nivel del grupo en base al tipo de curso
   period: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' }, // Periodo en que se abrió el grupo
   // opened: Abierto para demanda, active: Activo en clases, closed: Cerrado sin iniciar, finalized: Terminado
-  status: { type: String, default: 'opened', enum: ['opened', 'active', 'closed', 'finalized'] }, // Estatus del curso
+  status: { type: String, default: 'opened', enum: ['opened', 'active', 'closed', 'evaluated', 'finalized'] }, // Estatus del curso
   minCapacity: { type: Number }, // Cantidad mínima de alumnos
   maxCapacity: { type: Number }, // Cantidad máxima de alumnos
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' }, // Docente del grupo
