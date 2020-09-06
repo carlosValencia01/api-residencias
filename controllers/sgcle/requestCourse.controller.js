@@ -96,7 +96,17 @@ const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
             }          
         }
     }
-})
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'teacher', model:'Employee'
+      }
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'schedule.$.classroom', model:'Classroom'
+      }
+    })
       .exec(handler.handleMany.bind(null, 'requestCourse', res));
 };
 
@@ -208,12 +218,12 @@ const getAllRequestActiveCourse = (req, res) => {
 };
 const updateStatusToPaid = (req, res) => {
   const data  = req.body;
-  console.log(data);
+
   data.forEach(async (st)=>{
       await new Promise((resolve)=>{            
-        _requestCourse.updateOne({ englishStudent: st.englishStudent._id }, {paidNumber:(st.englishStudent.paidNumber+1), status:'paid'})
+        _requestCourse.updateOne({ englishStudent: st.englishStudent._id }, {paidNumber: 1, status:'paid'})
               .then(updated => resolve(true))
-              .catch(_ => resolve(false));
+              .catch(_ => {console.log(_);resolve(false);});
       });
   });
   res.status(status.OK).json({message:'Status updated'})
@@ -255,6 +265,41 @@ const AddRequestActiveCourse = async (req, res) => {
   });
 };
 
+// guardar las calificaciones de un grupo de forma masiva
+const saveAverages = async (req, res) => {
+  const students = req.body;
+
+  for(let i = 0; i < students.length; i++){
+      // datos de la solicitud a ser actualizados
+      let query = {
+        average: students[i].average,
+        status: 'approved'
+      };
+      // comprobamos si se aprobo el bloque
+      if(query.average < 70){
+        query.status = 'not_approved';
+      }
+      await new Promise((resolve) => _requestCourse.updateOne({_id:students[i]._id},query).then(updated=>resolve(true)).catch(err=>resolve(false)));
+      // datos del estudiante a ser actualizados
+      let studentQuery = {
+        level: students[i].level,
+        status: 'no_choice'
+      };
+      // se comprueba si es el ultimo bloque del curso
+      if(students[i].level.level == students[i].group.course.totalSemesters){
+        studentQuery.status = query.status == 'approved' ?  'released' :'not_released';
+      }
+      await new Promise((resolve)=>{       
+        _englishStudent.updateOne({_id:students[i].englishStudent},studentQuery)
+        .then(created => resolve(true))
+        .catch(err => {                    
+            resolve(false)
+        });
+    });    
+  }       
+  return res.status(status.OK).json({msg:'Calificaciones registradas'});
+};
+
   module.exports = (RequestCourse, EnglishStudent, Period) => {
     _requestCourse = RequestCourse;
     _englishStudent = EnglishStudent;
@@ -273,6 +318,7 @@ const AddRequestActiveCourse = async (req, res) => {
       getAllRequestActiveCourse,
       declineRequestActiveCourse,
       AddRequestActiveCourse,
-      updateStatusToPaid
+      updateStatusToPaid,
+      saveAverages,
     });
   };
