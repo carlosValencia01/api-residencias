@@ -10,6 +10,9 @@ module.exports = (wagner) => {
     router.get(':studentId', (req, res) =>
         controlStudentCtrl.getControlStudentByStudentId(req, res));
 
+    router.post('/register/assistance', (req, res) =>
+       controlStudentCtrl.createAssistanceByControlNumber(req, res));
+
     router.put('/release/csv', (req, res) =>
         controlStudentCtrl.releaseSocialServiceAssistanceCsv(req, res));
 

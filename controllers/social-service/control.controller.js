@@ -24,6 +24,36 @@ const getControlStudentByStudentId = (req, res) => {
     });
 };
 
+const createAssistanceByControlNumber = (req, res) => {
+    const data = req.body;
+    _student.findOne({controlNumber: data.controlNumber})
+        .then(student => {
+            if (student) {
+                data._id = student._id;
+                _controlStudent.findOne({controlNumber: data.controlNumber})
+                    .then( control => {
+                        if (control) {
+                            return res.status(status.NOT_FOUND).json({ msg: 'La asistencia del estudiante ya se encuentra registrada' })
+                        } else {
+                            _controlStudent.create({studentId: data._id, controlNumber: data.controlNumber, releaseAssistanceDate: new Date()})
+                                .then( () => {
+                                    return res.status(status.OK).json({ msg: 'Se ha registrado la asistencia del alumno correctamente' });
+                                }).catch( err => {
+                                    return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+                            });
+                        }
+                    }).catch( err => {
+                    return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+                });
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        })
+        .catch(_ => {
+            return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+        });
+};
+
 const releaseSocialServiceAssistanceCsv = (req, res) => {
     const students = req.body;
     const findStudent = (data) => {
@@ -89,6 +119,7 @@ module.exports = (ControlStudent, Student) => {
     return ({
         getAll,
         getControlStudentByStudentId,
+        createAssistanceByControlNumber,
         releaseSocialServiceAssistanceCsv,
         updateGeneralControlStudent
     });
