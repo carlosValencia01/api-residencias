@@ -826,7 +826,30 @@ const updateDocumentLog = async (req, res) => {
     const { _id } = req.params;
     const { filename, status } = req.body;
     let statusChanged = await updateDocumentStatus(_id, filename, status);
-    console.log(statusChanged, req.body);
+    // validate stepwizard
+    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
+        await new Promise((resolve)=>{
+
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1}).then(docs => {
+                
+                const processDocs = docs.documents.filter( (doc)=> doc.status === 'EN PROCESO').length;
+                const validatedDocs = docs.documents.filter( (doc)=> doc.status === 'VALIDADO').length;
+                const aceptedDocs = docs.documents.filter( (doc)=> doc.status === 'ACEPTADO').length;
+                const totalDocs = processDocs + validatedDocs + aceptedDocs;
+                let query = { inscriptionStatus:"En Proceso" };
+                const isFoto = filename.indexOf('FOTO') > -1;       
+                if(isFoto){
+                
+                if(totalDocs === 3 && (validatedDocs === 3 || aceptedDocs === 3) && this.data.student.stepWizard == 2){
+                    query['stepWizard'] = 3;
+                }
+                }else if( totalDocs === 2 && (validatedDocs === 2 || aceptedDocs === 2) && this.data.student.stepWizard == 2 ){    
+                    query['stepWizard'] = 3;
+                }
+                _student.updateOne({_id:docs._id},query).then(updated=>{resolve(true);}).catch(err=>{console.log(err); resolve(false);});
+            });
+        });
+    }
 
     if (statusChanged) {
         res.status(200).json({ action: "Status updated" });
@@ -2152,6 +2175,6 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
         getStudentStatusFromSII,
         getNumberInscriptionStudentsByPeriod,
         createSchedule,
-        createExternalStudents,
+        createExternalStudents
     });
 };
