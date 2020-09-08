@@ -145,6 +145,32 @@ const getActivePeriod = ()=>{
   });
 };
 
+const getAllRequestCourseByEnglishStudentId = async (req, res) => {
+  const { _id } = req.params;
+  let query = {
+    englishStudent:_id
+  };
+  _requestCourse.find(query).populate({
+    path:'group', model:'Group',
+    populate:{
+      path:'course', model:'EnglishCourse'
+    }
+  }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'teacher', model:'Employee'
+      }
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'schedule.$.classroom', model:'Classroom'
+      }
+    }).populate({
+      path: 'period', model: 'Period',
+    })
+    .exec(handler.handleMany.bind(null, 'requestCourse', res));
+};
+
 //END FIND METHODS
 
 const createRequestCourse = (req, res) => { //Crear Solicitud
@@ -320,5 +346,6 @@ const saveAverages = async (req, res) => {
       AddRequestActiveCourse,
       updateStatusToPaid,
       saveAverages,
+      getAllRequestCourseByEnglishStudentId,
     });
   };

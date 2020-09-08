@@ -1,6 +1,23 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
 
+const getAllEnglishStudent = (req, res) => {
+    _englishStudent.find({})
+    .populate({
+        path: 'studentId', model: 'Student', select: {
+            fullName: 1, controlNumber: 1, career: 1, sex: 1, email: 1, phone: 1, _id: 0
+        },
+        populate: {
+            path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
+    })
+    .populate({ path: 'courseType', model: 'EnglishCourse' })
+        .exec(handler.handleMany.bind(null, 'englishStudents', res));
+    };
+
 const createEnglishStudent = (req, res) => {
     const englishStudent = req.body;
     _englishStudent.create(englishStudent)
@@ -94,5 +111,6 @@ module.exports = (EnglishStudent,EnglishCourse) => {
         getEnglishStudentAndStudentById,
         updateStatus,
         getEnglishStudentNoVerified,
+        getAllEnglishStudent,
     });
 };

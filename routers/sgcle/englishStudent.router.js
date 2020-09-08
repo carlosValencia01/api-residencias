@@ -24,5 +24,8 @@ module.exports = (wagner) => {
         englishStudentCtrl.getEnglishStudentNoVerified(req, res);
     });
 
+    router.get('/all', (req, res) =>
+    englishStudentCtrl.getAllEnglishStudent(req, res));
+
     return router;
 }
