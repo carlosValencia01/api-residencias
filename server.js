@@ -71,7 +71,7 @@ const jwtOptions = {
     `${uri}drive/upload/file`,
     `${uri}student/notify`,
     `${uri}company/create`,
-    /^\/socket.io\/.*/,
+    /^\/escolares\/credenciales\/socket\/.*/,
     /^\/escolares\/credenciales\/graduationmail\/.*/,
     /^\/escolares\/credenciales\/student\/image\/.*/,
     /^\/escolares\/credenciales\/employee\/image\/.*/,
