@@ -2142,7 +2142,7 @@ const changeSpetWizardWhenAceptCertificate = async (req, res)=>{
                     status: dc.status.filter(st => st.active === true)[0]
                 }));
                 if(docs.length > 1){
-                    const aceptedOrValidatedDocs = docs.filter(doc=>doc.status.name == 'ACEPTADO' || doc.status.name == 'VALIDADO').length;
+                    const aceptedOrValidatedDocs = docs.filter(doc=> doc.status && doc.status.name ? doc.status.name == 'ACEPTADO' || doc.status.name == 'VALIDADO' : false).length;
                     if(aceptedOrValidatedDocs >1){
                         prev.push({_id:curr._id,fullName:curr.fullName,controlNumber:curr.controlNumber});
                     }
