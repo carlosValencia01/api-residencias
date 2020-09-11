@@ -830,23 +830,41 @@ const updateDocumentLog = async (req, res) => {
     if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
         await new Promise((resolve)=>{
 
-            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1}).then(docs => {
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1,stepWizard:1, inscriptionStatus:1}).then(docs => {
                 
-                const processDocs = docs.documents.filter( (doc)=> doc.status === 'EN PROCESO').length;
+
                 const validatedDocs = docs.documents.filter( (doc)=> doc.status === 'VALIDADO').length;
                 const aceptedDocs = docs.documents.filter( (doc)=> doc.status === 'ACEPTADO').length;
-                const totalDocs = processDocs + validatedDocs + aceptedDocs;
-                let query = { inscriptionStatus:"En Proceso" };
-                const isFoto = filename.indexOf('FOTO') > -1;       
-                if(isFoto){
                 
-                if(totalDocs === 3 && (validatedDocs === 3 || aceptedDocs === 3) && this.data.student.stepWizard == 2){
-                    query['stepWizard'] = 3;
+                const iPhoto = filename.indexOf('FOTO') > -1;      
+                let query = { inscriptionStatus:docs.inscriptionStatus }; 
+                if(iPhoto){
+                    const photo = docs.documents.filter(doc=>doc.filename ? doc.filename.indexOf('FOTO') > -1 : false)[0];       
+                    if(photo.status[photo.status.length-1].name == 'EN PROCESO'){
+                        if((validatedDocs + aceptedDocs) == 2 && docs.stepWizard == 2){
+                            query['stepWizard'] = 3;
+                            query['inscriptionStatus'] = 'En Proceso';
+                        }
+                    }else if(photo.status[photo.status.length-1].name == 'VALIDADO' || photo.status[photo.status.length-1].name == 'ACEPTADO'){
+                        if((validatedDocs + aceptedDocs) == 3 && docs.stepWizard == 2){
+                            query['stepWizard'] = 3;
+                            query['inscriptionStatus'] = 'En Proceso';
+                        }
+                    }else if( (validatedDocs + aceptedDocs) == 2 && docs.stepWizard == 2 ){  
+                        query['stepWizard'] = 3;
+                        query['inscriptionStatus'] = 'En Proceso';
+                    }
+                }else if(docs.stepWizard == 2){
+                    const isCertificate = docs.documents.filter(doc=>doc.filename.indexOf('CERTIFICADO') > -1 )[0];
+                    const isPay = docs.documents.filter(doc=>doc.filename.indexOf('COMPROBANTE') > -1)[0];
+                    if(isCertificate && isPay){
+                      if((isCertificate.status[isCertificate.status.length-1].name == 'VALIDADO' || isCertificate.status[isCertificate.status.length-1].name == 'ACEPTADO') && (isPay.status[isPay.status.length-1].name == 'VALIDADO' || isPay.status[isPay.status.length-1].name == 'ACEPTADO')){
+                        query['stepWizard'] = 3;
+                        query['inscriptionStatus'] = 'En Proceso';                        
+                      }
+                    }
                 }
-                }else if( totalDocs === 2 && (validatedDocs === 2 || aceptedDocs === 2) && this.data.student.stepWizard == 2 ){    
-                    query['stepWizard'] = 3;
-                }
-                _student.updateOne({_id:docs._id},query).then(updated=>{resolve(true);}).catch(err=>{console.log(err); resolve(false);});
+                _student.updateOne({_id:docs._id},query).then(ok=>resolve(true)).catch(_=>resolve(false));
             });
         });
     }
@@ -2114,6 +2132,34 @@ const sendEmailWithControlNumberAndNip = (studentName,controlNumber,nip,email, g
 };
 // END REGISTER FOR EXTERNAL STUDENTS
 
+const changeSpetWizardWhenAceptCertificate = async (req, res)=>{
+    const period = (await getActivePeriod()).period;    
+    _student.find({stepWizard: 2, idPeriodInscription:period._id, controlNumber:{$regex:/^2040/}}, {documents:1,fullName:1,controlNumber:1}).then( async (students)=>{
+        const filteredStudents = students.reduce((prev,curr)=>{
+            if(curr.documents.length > 2){
+                const docs = curr.documents.filter(doc=> doc.filename ? doc.filename.indexOf('CERTIFICADO') > -1 || doc.filename.indexOf('COMPROBANTE') > -1 || doc.filename.indexOf('COMPROMISO') > -1: false).map(dc=>({
+                    filename:dc.filename,
+                    status: dc.status.filter(st => st.active === true)[0]
+                }));
+                if(docs.length > 1){
+                    const aceptedOrValidatedDocs = docs.filter(doc=>doc.status.name == 'ACEPTADO' || doc.status.name == 'VALIDADO').length;
+                    if(aceptedOrValidatedDocs >1){
+                        prev.push({_id:curr._id,fullName:curr.fullName,controlNumber:curr.controlNumber});
+                    }
+                }
+
+            }
+            return prev;
+        },[]);
+        for(let i = 0; i < filteredStudents.length; i++){
+            await new Promise((resolve)=>{
+                _student.updateOne({_id:filteredStudents[i]._id},{stepWizard: 3,inscriptionStatus: 'En Proceso'}).then(ok=>resolve(true)).catch(_=>resolve(false));
+            });
+        }
+        res.status(status.OK).json(filteredStudents);
+    });
+};
+
 module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
     _activeStudents = ActiveStudents;
@@ -2175,6 +2221,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
         getStudentStatusFromSII,
         getNumberInscriptionStudentsByPeriod,
         createSchedule,
-        createExternalStudents
+        createExternalStudents,
+        changeSpetWizardWhenAceptCertificate
     });
 };
