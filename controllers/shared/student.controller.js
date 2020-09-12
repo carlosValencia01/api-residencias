@@ -854,9 +854,9 @@ const updateDocumentLog = async (req, res) => {
                         query['inscriptionStatus'] = 'En Proceso';
                     }
                 }else if(docs.stepWizard == 2){
-                    const isCertificate = docs.documents.filter(doc=>doc.filename.indexOf('CERTIFICADO') > -1 )[0];
+                   let isCertificate = docs.documents.filter(doc=>doc.filename.indexOf('CERTIFICADO') > -1 )[0];
                     const isPay = docs.documents.filter(doc=>doc.filename.indexOf('COMPROBANTE') > -1)[0];
-		    const isCertificate = isCertificate ? isCertificate : docs.documents.filter(doc=>doc.filename.indexOf('COMPROBANTE') > -1 )[0];
+		     isCertificate = isCertificate ? isCertificate : docs.documents.filter(doc=>doc.filename.indexOf('COMPROBANTE') > -1 )[0];
                     if(isCertificate && isPay){
                       if((isCertificate.status[isCertificate.status.length-1].name == 'VALIDADO' || isCertificate.status[isCertificate.status.length-1].name == 'ACEPTADO') && (isPay.status[isPay.status.length-1].name == 'VALIDADO' || isPay.status[isPay.status.length-1].name == 'ACEPTADO')){
                         query['stepWizard'] = 3;
