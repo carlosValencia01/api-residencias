@@ -827,11 +827,10 @@ const updateDocumentLog = async (req, res) => {
     const { filename, status } = req.body;
     let statusChanged = await updateDocumentStatus(_id, filename, status);
     // validate stepwizard
-    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
+    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('COMPROMISO') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
         await new Promise((resolve)=>{
 
-            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1,stepWizard:1, inscriptionStatus:1}).then(docs => {
-                
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1,stepWizard:1, inscriptionStatus:1}).then(docs => {                
 
                 const validatedDocs = docs.documents.filter( (doc)=> doc.status === 'VALIDADO').length;
                 const aceptedDocs = docs.documents.filter( (doc)=> doc.status === 'ACEPTADO').length;
