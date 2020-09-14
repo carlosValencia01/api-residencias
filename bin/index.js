@@ -26,6 +26,17 @@ const port = normalizePort(process.env.PORT | config.port);
 server.listen(port);
 console.log(`server is running on port ${port}`);
 
+// socket.io 
+// crear constante para escuchar o emitir eventos con websockets
+const socketIo = require('socket.io');
+const io = socketIo(server,{path:'/escolares/credenciales/socket'});
+global.globalSocketIo = io; // asignar la constante como una variable global
+
+// cada que un cliente se conecta emitir su ID, solo a el mismo
+globalSocketIo.on("connection",(socket)=>{
+    io.to(socket.id).emit("app:connection",{connectionId:socket.id});    
+});
+
 function normalizePort(val) {
     const port = parseInt(val, 10);
 
