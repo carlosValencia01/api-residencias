@@ -12,6 +12,8 @@ const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
     router.post('/:id/assign-teacher', (req, res) =>
         groupCtrl.assignGroupEnglishTeacher(req, res));
 
+    router.get('/byid/:groupId', groupCtrl.getGroupById);
+
     router.get('/all', (req, res) =>
     groupCtrl.getAllGroup(req, res));
 
@@ -25,10 +27,14 @@ const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
         groupCtrl.getPaidStudentsCourse(req, res);
     });
 
-    router.get('/teacher/:_teacherId', (req, res) => {
+    router.get('/teacher/:_teacherId/:clientId', (req, res) => {
         groupCtrl.getAllGroupByTeacher(req, res);
     });
 
+
+    router.put('/students/average',  groupCtrl.saveAverages);
+
+    router.put('/students/single/average', groupCtrl.saveSingleAverage);
 
     return router;
 }

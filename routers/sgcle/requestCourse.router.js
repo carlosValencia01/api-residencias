@@ -38,13 +38,10 @@ module.exports = (wagner) => {
     router.put('/paidstatus', (req, res) =>
         requestCourseCtrl.updateStatusToPaid(req, res));
 
-    router.put('/students/average', (req, res) =>
-        requestCourseCtrl.saveAverages(req, res));
-
     router.post('/active/request', (req, res) =>
         requestCourseCtrl.activeRequestCourse(req, res));
 
-    router.get('/all/active/:_id', (req, res) =>
+    router.get('/all/active/:_id/:clientId', (req, res) =>
         requestCourseCtrl.getAllRequestActiveCourse(req, res));
 
     router.post('/decline/request', (req, res) =>

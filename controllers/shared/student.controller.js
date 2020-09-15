@@ -15,6 +15,8 @@ const moment = require('moment');
 moment.locale('es');
 const eCareers = require('../../enumerators/shared/careers.enum');
 
+const _socket = require('../../sockets/app.socket');
+const eSocket = require('../../enumerators/shared/sockets.enum');
 let _student;
 let _request;
 let _role;
@@ -42,7 +44,8 @@ const getAll = (req, res) => {
 
 const getStudentsInscription = async (req, res) => {
     const newStudents = await consultStudentsInscription();
-    res.status(status.OK).json({ students: newStudents });
+    _socket.singleEmit(eSocket.inscriptionEvents.ALL_STUDENTS,newStudents,req.params.clientId);
+    res.status(status.OK).json({ sendBySocket:true });
 };
 
 const consultStudentsInscription = ()=>{
@@ -165,7 +168,8 @@ const documentsHaveChangesAdmin = (documents, status) => {
 
 const getStudentsInscriptionLogged = async (req, res) => {
     const students = await consultStudentsInscriptionLogged();
-    res.status(status.OK).json({ students });
+    _socket.singleEmit(eSocket.inscriptionEvents.LOGGED_STUDENTS,students,req.params.clientId);
+    res.status(status.OK).json({ sendBySocket:true });    
 };
 const consultStudentsInscriptionLogged = ()=>{
     return new Promise( (resolve)=>{
@@ -178,7 +182,8 @@ const consultStudentsInscriptionLogged = ()=>{
 };
 const getStudentsInscriptionProcess = async (req, res) => {
     const newStudents = await consultStudentsInscriptionProcess();
-    res.status(status.OK).json({ students: newStudents });
+    _socket.singleEmit(eSocket.inscriptionEvents.PROCESS_STUDENTS,newStudents,req.params.clientId);
+    res.status(status.OK).json({ sendBySocket:true });    
 };
 
 const  consultStudentsInscriptionProcess = ()=>{
@@ -248,7 +253,8 @@ const  consultStudentsInscriptionProcess = ()=>{
 
 const getStudentsInscriptionPendant = async (req, res) => {
    const newStudents = await consultStudentsInscriptionPendant();
-   res.status(status.OK).json({ students: newStudents });
+   _socket.singleEmit(eSocket.inscriptionEvents.PENDANT_STUDENTS,newStudents,req.params.clientId);
+    res.status(status.OK).json({ sendBySocket:true });   
 };
 
 const consultStudentsInscriptionPendant = ()=>{
@@ -316,7 +322,8 @@ const consultStudentsInscriptionPendant = ()=>{
 
 const getStudentsInscriptionAcept = async (req, res) => {
     const newStudents = await consultStudentsInscriptionAcept();
-    res.status(status.OK).json({ students: newStudents });
+    _socket.singleEmit(eSocket.inscriptionEvents.ACCEPT_STUDENTS,newStudents,req.params.clientId);
+    res.status(status.OK).json({ sendBySocket:true });    
 };
 
 const consultStudentsInscriptionAcept = ()=>{
@@ -552,12 +559,28 @@ const createWithoutImage = async (req, res) => {
         }));
 };
 
-const updateStudent = (req, res) => {
+const updateStudent = async (req, res) => {
     const { _id } = req.params;
     let student = req.body;
     const query = { _id: _id };
-    _student.findOneAndUpdate(query, student, { new: true })
+    _student.updateOne(query, student)
         .exec(handler.handleOne.bind(null, 'student', res));
+    if(student.expStatus || student.printCredential || student.inscriptionStatus){
+        const studentsByPeriod = (await consultNumberInscriptionStudentsByPeriod());
+        const acceptStudents = (await consultStudentsInscriptionAcept());
+        const pendantStudents = (await consultStudentsInscriptionPendant());
+        const processStudents = (await consultStudentsInscriptionProcess());
+        const loggedStudents = (await consultStudentsInscriptionLogged());
+        const allStudents = (await consultStudentsInscription());
+        if(!studentsByPeriod.error){
+            _socket.broadcastEmit(eSocket.inscriptionEvents.NUMBER_STUDENTS_BY_PERIOD,studentsByPeriod);  
+            _socket.broadcastEmit(eSocket.inscriptionEvents.ACCEPT_STUDENTS,acceptStudents);  
+            _socket.broadcastEmit(eSocket.inscriptionEvents.PENDANT_STUDENTS,pendantStudents);  
+            _socket.broadcastEmit(eSocket.inscriptionEvents.PROCESS_STUDENTS,processStudents);  
+            _socket.broadcastEmit(eSocket.inscriptionEvents.LOGGED_STUDENTS,loggedStudents);  
+            _socket.broadcastEmit(eSocket.inscriptionEvents.ALL_STUDENTS,allStudents);  
+        }
+    }
 };
 
 const updateStudentApp = (req, res) => {
@@ -826,7 +849,30 @@ const updateDocumentLog = async (req, res) => {
     const { _id } = req.params;
     const { filename, status } = req.body;
     let statusChanged = await updateDocumentStatus(_id, filename, status);
-    console.log(statusChanged, req.body);
+    // validate stepwizard
+    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
+        await new Promise((resolve)=>{
+
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1}).then(docs => {
+                
+                const processDocs = docs.documents.filter( (doc)=> doc.status === 'EN PROCESO').length;
+                const validatedDocs = docs.documents.filter( (doc)=> doc.status === 'VALIDADO').length;
+                const aceptedDocs = docs.documents.filter( (doc)=> doc.status === 'ACEPTADO').length;
+                const totalDocs = processDocs + validatedDocs + aceptedDocs;
+                let query = { inscriptionStatus:"En Proceso" };
+                const isFoto = filename.indexOf('FOTO') > -1;       
+                if(isFoto){
+                
+                if(totalDocs === 3 && (validatedDocs === 3 || aceptedDocs === 3) && this.data.student.stepWizard == 2){
+                    query['stepWizard'] = 3;
+                }
+                }else if( totalDocs === 2 && (validatedDocs === 2 || aceptedDocs === 2) && this.data.student.stepWizard == 2 ){    
+                    query['stepWizard'] = 3;
+                }
+                _student.updateOne({_id:docs._id},query).then(updated=>{resolve(true);}).catch(err=>{console.log(err); resolve(false);});
+            });
+        });
+    }
 
     if (statusChanged) {
         res.status(200).json({ action: "Status updated" });
@@ -1555,7 +1601,7 @@ const insertActiveStudents = async (req,res)=>{
     return res.status(status.OK).json({msg:'Se completo la operación', created});
     
 };
-const getAllActiveStudents = (req,res)=>{
+const getAllActiveStudents = (req,res)=>{    
     _activeStudents.find({}).then(
         activeStudents=>res.status(status.OK).json({activeStudents}),
         err=>res.status(status.BAD_REQUEST).json({err})
@@ -1667,9 +1713,17 @@ const addCampaignStudent = async (req, res) => {
     });
 };
 
-const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
+const getNumberInscriptionStudentsByPeriod = async (req,res)=>{    
+    const studentsByPeriod = (await consultNumberInscriptionStudentsByPeriod());   
+    if(studentsByPeriod.error){
+        return res.status(status.BAD_REQUEST).json({error:studentsByPeriod.error});
+    }        
+    _socket.singleEmit("insc:getNumberInscriptionStudentsByPeriod",studentsByPeriod, req.params.clientId);
+    res.status(status.OK).json({sendBySocket:true});
+};
+const consultNumberInscriptionStudentsByPeriod = async ()=>{
     const periods = (await _Period.constultAll());
-    const acepStudents = (await consultStudentsInscriptionAcept());
+    const accepStudents = (await consultStudentsInscriptionAcept());
     const pendantStudents = (await consultStudentsInscriptionPendant());
     const processStudents = (await consultStudentsInscriptionProcess());
     const loggedStudents = (await consultStudentsInscriptionLogged());
@@ -1677,21 +1731,21 @@ const getNumberInscriptionStudentsByPeriod = async (req,res)=>{
     const expedientsArchived = (await consultArchivedExpedient());
     const expedientsIntegrated = (await consultIntegratedExpedient());
     if(periods.err){
-        return res.status(status.BAD_REQUEST).json({error:periods.err});
+        return {error:periods.err}
     }
     
         
     const studentsByPeriod = periods.map( (per)=>({
         periodId:per._id,
         allStudents: allStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
-        acepStudents: acepStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
+        accepStudents: accepStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
         pendantStudents: pendantStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
         processStudents: processStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
         loggedStudents: loggedStudents.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
         expedientsArchived: expedientsArchived.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
         expedientsIntegrated: expedientsIntegrated.filter( st=>st.idPeriodInscription+'' == per._id+'').length,
     }));
-    res.status(status.OK).json({studentsByPeriod});
+    return studentsByPeriod;
 };
 
 const createSchedule = async (req,res)=>{
@@ -1723,8 +1777,8 @@ const createSchedule = async (req,res)=>{
         }
         return stud;
     })
-    .then(student => {
-        return student;
+    .then(stude => {
+        return stude;
     })
     .catch(err => {
         res.status(status.INTERNAL_SERVER_ERROR).json({
@@ -1788,6 +1842,14 @@ const createSchedule = async (req,res)=>{
 
     // Generar PDF
     let bufferSchedule = await generatePDF(student,bossDivEst,moment(dateSchedule).format('LLLL'));
+   
+    if (!bufferSchedule){
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
+            status : false,
+            msg : "Error al generar y guardar horario"
+        });    
+    }
+
     let binarySchedule = await bufferToBase64(bufferSchedule);
 
     const documentInfo = {
@@ -1867,6 +1929,9 @@ function generatePDF (studentData,bossDivEst,_dateSchedule) {
         let schedule = await scheduleTemplate(studentData,bossDivEst,_dateSchedule);
         
         pdf.create(schedule, options).toBuffer(function(err, buffer){
+            if(err){
+                resolve(null);
+            }
             resolve(buffer);
         });
     });
@@ -2141,6 +2206,6 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
         getStudentStatusFromSII,
         getNumberInscriptionStudentsByPeriod,
         createSchedule,
-        createExternalStudents,
+        createExternalStudents
     });
 };

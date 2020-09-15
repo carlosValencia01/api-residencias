@@ -1,6 +1,7 @@
 const status = require('http-status');
+const _socket = require('../../sockets/app.socket');
+const eSocket = require('../../enumerators/shared/sockets.enum');
 let _denyDay;
-
 
 const getAll = async (req, res) => {
    const result = await get();
@@ -33,6 +34,7 @@ const create = (req, res, next) => {
 
     const day = req.body;     
     _denyDay.create(day).then(created => {
+        _socket.broadcastEmit(eSocket.recActEvents.MODIFY_DIARY,{denyDay:true});
         res.json({
             denyDay: created
         });
@@ -46,7 +48,7 @@ const create = (req, res, next) => {
 const remove = (req,res)=>{
     const {_id} = req.body;
     _denyDay.deleteOne({_id}).then(
-        (deleted) => res.status(status.OK).json({msg:"Día desbloqueado"}),
+        (deleted) => {res.status(status.OK).json({msg:"Día desbloqueado"}); _socket.broadcastEmit(eSocket.recActEvents.MODIFY_DIARY,{denyDay:false});},
         (error) => res.status(status.BAD_REQUEST).json({error})
     ).catch((error) => res.status(status.BAD_REQUEST).json({error}));
 };
