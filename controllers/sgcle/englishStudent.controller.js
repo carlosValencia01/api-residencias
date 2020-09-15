@@ -101,7 +101,7 @@ const getEnglishStudentNoVerified = (req, res) => {
         .exec(handler.handleOne.bind(null, 'englishStudent', res));
 };
 
-module.exports = (EnglishStudent,EnglishCourse) => {
+module.exports = (EnglishStudent, EnglishCourse) => {
     _englishStudent = EnglishStudent;
     _englishCourse = EnglishCourse;
     return ({

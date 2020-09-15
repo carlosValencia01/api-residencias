@@ -13,3 +13,7 @@ module.exports.recActEvents = {
     REQUEST_BY_ROLE: "tit:requestByRole",
     GET_DIARY: "tit:getDiary"
 };
+module.exports.englishEvents = {
+    GET_ALL_GROUP_BY_TEACHER: "eng:getAllGroupByTeacher",
+    GET_ALL_REQUEST_ACTIVE_COURSE: "eng:getAllRequestActiveCourse",
+};
