@@ -1,6 +1,10 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
+// Importar el archivo donde se emiten los eventos
+const _socket = require('../../sockets/app.socket');
 
+// Importar el archivo de los enumeradores
+const eSocket = require('../../enumerators/shared/sockets.enum');
 
 let _requestCourse;
 let _englishStudent;
@@ -218,29 +222,38 @@ const activeRequestCourse = async (req, res) => {
   return res.status(status.OK).json(true);
 };
 
-const getAllRequestActiveCourse = (req, res) => {
-  const { _id } = req.params;
-  _requestCourse.find({group:_id}).populate({
-    path: 'englishStudent', model: 'EnglishStudent',    
-    populate: {
-      path: 'studentId', model: 'Student',
-      select: {
-        careerId:1,controlNumber:1,fullName:1,email:1
-      },
+const getAllRequestActiveCourse = async (req, res) => {
+  const { _id, clientId } = req.params;
+  const requestCourses = await consultAllRequestActiveCourse(_id);
+  _socket.singleEmit(eSocket.englishEvents.GET_ALL_REQUEST_ACTIVE_COURSE,requestCourses, clientId);
+  res.json(requestCourses);
+};
+const consultAllRequestActiveCourse =  (_id) =>{
+  return new Promise((resolve)=>{
+    _requestCourse.find({group:_id}).populate({
+      path: 'englishStudent', model: 'EnglishStudent',    
       populate: {
-        path: 'careerId', model: 'Career',
-          select:{
-            _id:0
-          }          
+        path: 'studentId', model: 'Student',
+        select: {
+          careerId:1,controlNumber:1,fullName:1,email:1
+        },
+        populate: {
+          path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
       }
-    }
-  }).populate({
-    path:'group', model:'Group',
-    populate:{
-      path:'course', model:'EnglishCourse'
-    }
-  })
-  .exec(handler.handleMany.bind(null, 'requestCourses', res));
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'course', model:'EnglishCourse'
+      }
+    })
+    .then( requestCourses =>{
+      resolve({requestCourses})
+    });
+  });
 };
 const updateStatusToPaid = (req, res) => {
   const data  = req.body;
@@ -291,40 +304,7 @@ const AddRequestActiveCourse = async (req, res) => {
   });
 };
 
-// guardar las calificaciones de un grupo de forma masiva
-const saveAverages = async (req, res) => {
-  const students = req.body;
 
-  for(let i = 0; i < students.length; i++){
-      // datos de la solicitud a ser actualizados
-      let query = {
-        average: students[i].average,
-        status: 'approved'
-      };
-      // comprobamos si se aprobo el bloque
-      if(query.average < 70){
-        query.status = 'not_approved';
-      }
-      await new Promise((resolve) => _requestCourse.updateOne({_id:students[i]._id},query).then(updated=>resolve(true)).catch(err=>resolve(false)));
-      // datos del estudiante a ser actualizados
-      let studentQuery = {
-        level: students[i].level,
-        status: 'no_choice'
-      };
-      // se comprueba si es el ultimo bloque del curso
-      if(students[i].level.level == students[i].group.course.totalSemesters){
-        studentQuery.status = query.status == 'approved' ?  'released' :'not_released';
-      }
-      await new Promise((resolve)=>{       
-        _englishStudent.updateOne({_id:students[i].englishStudent},studentQuery)
-        .then(created => resolve(true))
-        .catch(err => {                    
-            resolve(false)
-        });
-    });    
-  }       
-  return res.status(status.OK).json({msg:'Calificaciones registradas'});
-};
 
   module.exports = (RequestCourse, EnglishStudent, Period) => {
     _requestCourse = RequestCourse;
@@ -345,7 +325,7 @@ const saveAverages = async (req, res) => {
       declineRequestActiveCourse,
       AddRequestActiveCourse,
       updateStatusToPaid,
-      saveAverages,
       getAllRequestCourseByEnglishStudentId,
+      consultAllRequestActiveCourse
     });
   };

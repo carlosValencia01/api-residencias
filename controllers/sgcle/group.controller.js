@@ -1,10 +1,15 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
+// Importar el archivo donde se emiten los eventos
+const _socket = require('../../sockets/app.socket');
 
+// Importar el archivo de los enumeradores
+const eSocket = require('../../enumerators/shared/sockets.enum');
 
 let _group;
 let _englishStudent;
 let _requestCourse;
+let _RequestCourseCtrl;
 
 const createGroup = (req, res) => { //Crear Grupo
     const group = req.body;
@@ -63,6 +68,40 @@ const getAllGroup = async (req, res) => { //Obtener todos los grupos
             return res.status(status.OK).json({ groups: newGroup });
         }
         return res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al obtener los grupos' });
+    });
+};
+const getGroupById = async (req, res) => { //Obtener grupo por id
+
+    _group.findOne({_id:req.params.groupId}).populate({
+        path: 'course', model: 'EnglishCourse', select: {
+            name: 1, _id: 1
+        }
+    }).populate({
+        path: 'period', model: 'Period', select: {
+            periodName: 1, year: 1, _id: 1
+        }
+    }).populate({
+        path: 'teacher', model: 'Employee', select: {
+            name: 1, email: 1, _id: 1
+        }
+    }).then(async (_group) => {
+        if (_group) {
+            const newGroup = {
+                "_id": _group._id,
+                "name": _group.name,
+                "status": _group.status,
+                "schedule": _group.schedule,
+                "level": _group.level,
+                "period": _group.period,
+                "course": _group.course,
+                "groupOrigin": _group.groupOrigin ? _group.groupOrigin : '',
+                "teacher": _group.teacher,
+                "reqCount": await getReqsCourse(_group._id),
+                "reqActCount": await getReqsActCourse(_group._id)
+            };
+            return res.status(status.OK).json({ group: newGroup });
+        }
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al obtener el grupo' });
     });
 };
 
@@ -137,9 +176,18 @@ const getPaidStudentsCourse = async (req, res) => { //Obtener todos los grupos
         });
 };
 
-const getAllGroupByTeacher = (req, res) => {
-    const _teacherId = req.params._teacherId;
-    _group.find({ teacher: _teacherId })
+const getAllGroupByTeacher = async (req, res) => {
+    const {_teacherId, clientId} = req.params;
+    const groups = await consultAllGroupByTeacher(_teacherId);
+    if(!groups){
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al obtener los grupos' });
+    }
+    _socket.singleEmit(eSocket.englishEvents.GET_ALL_GROUP_BY_TEACHER, groups,clientId);
+    return res.status(status.OK).json(groups);
+};
+const consultAllGroupByTeacher = (_teacherId) => {
+    return new Promise((resolve) =>{
+        _group.find({ teacher: _teacherId })
         .populate({
             path: 'course', model: 'EnglishCourse', select: {
                 name: 1, _id: 1
@@ -166,18 +214,84 @@ const getAllGroupByTeacher = (req, res) => {
                     "reqActCount": await getReqsActCourse(_group._id),
                     "numberStudents" : await getReqsNumber(_group._id)
                 })));
-                return res.status(status.OK).json({ groups: newGroups });
+                return resolve({groups: newGroups});
             }
-            return res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al obtener los grupos' });
+            return resolve(false);
         });
+    });
+}
+
+// guardar las calificaciones de un grupo de forma masiva
+const saveAverages = async (req, res) => {
+    const students = req.body.studentsToUploadAvg;
+    const groupId = req.body.groupId;
+    const teacherId = req.body.teacherId;
+    for(let i = 0; i < students.length; i++){
+        // datos de la solicitud a ser actualizados
+        let query = {
+          average: students[i].average,
+          status: 'approved'
+        };
+        // comprobamos si se aprobo el bloque
+        if(query.average < 70){
+          query.status = 'not_approved';
+        }
+        await new Promise((resolve) => _requestCourse.updateOne({_id:students[i]._id},query).then(updated=>resolve(true)).catch(err=>resolve(false)));
+        // datos del estudiante a ser actualizados
+        let studentQuery = {
+          level: query.status == 'approved' ?  students[i].level : students[i].englishStudent_level,
+          status: 'no_choice'
+        };
+        // se comprueba si es el ultimo bloque del curso
+        if(students[i].level == students[i].group.course.totalSemesters){
+          studentQuery.status = 'not_released';
+        }
+        await new Promise((resolve)=>{       
+          _englishStudent.updateOne({_id:students[i].englishStudent},studentQuery)
+          .then(created => resolve(true))
+          .catch(err => {                    
+              resolve(false)
+          });
+      });    
+    } 
+    const requestCourses = await _RequestCourseCtrl.consultAllRequestActiveCourse(groupId);
+    await verifyIsGroupIsEvaluated(groupId, requestCourses);
+    const groups = await consultAllGroupByTeacher(teacherId);
+    console.log(groups);
+    _socket.broadcastEmit(eSocket.englishEvents.GET_ALL_REQUEST_ACTIVE_COURSE,requestCourses);
+    _socket.broadcastEmit(eSocket.englishEvents.GET_ALL_GROUP_BY_TEACHER,groups);
+    return res.status(status.OK).json({msg:'Calificaciones registradas'});
+  };
+// guarda la calificacion de un alumno
+const saveSingleAverage = async (req, res) => {
+    const {studentQuery,requestQuery, request, groupId, teacherId} = req.body;
+    await _requestCourse.updateOne({_id: request._id}, requestQuery).then((updated=>{})).catch((error)=>{});
+    await _englishStudent.updateOne({_id: request.englishStudent._id}, studentQuery).then((updated=>{})).catch((error)=>{});
+    const requestCourses = await _RequestCourseCtrl.consultAllRequestActiveCourse(groupId);
+    await verifyIsGroupIsEvaluated(groupId, requestCourses);
+    const groups = await consultAllGroupByTeacher(teacherId);
+    _socket.broadcastEmit(eSocket.englishEvents.GET_ALL_REQUEST_ACTIVE_COURSE,requestCourses);
+    _socket.broadcastEmit(eSocket.englishEvents.GET_ALL_GROUP_BY_TEACHER,groups);
+    res.json({msg:'Calificación registrada'});
 };
 
-
-
+const verifyIsGroupIsEvaluated = (groupId, requests) => {
+    return new Promise(async (resolve) => {
+        const evaluatedStudents = requests.requestCourses.filter( req => req.average);
+        if(evaluatedStudents.length == requests.requestCourses.length){ // all request have average
+            // change group status to evaluated
+            await _group.updateOne({_id:groupId}, {status: 'evaluated'}).then( group => {
+                resolve(true);
+            }); 
+        }
+        resolve(true);
+    });
+};
 module.exports = (Group, EnglishStudent, RequestCourse) => {
     _group = Group;
     _englishStudent = EnglishStudent;
     _requestCourse = RequestCourse;
+    _RequestCourseCtrl = require('../../controllers/sgcle/requestCourse.controller')(RequestCourse, EnglishStudent, null);
     return ({
         createGroup,
         assignGroupEnglishTeacher,
@@ -186,5 +300,8 @@ module.exports = (Group, EnglishStudent, RequestCourse) => {
         getAllGroupOpenedByCourseAndLevel,
         getPaidStudentsCourse,
         getAllGroupByTeacher,
+        getGroupById,
+        saveAverages,
+        saveSingleAverage,
     });
 };
