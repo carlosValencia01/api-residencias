@@ -27,5 +27,9 @@ module.exports = (wagner) => {
     router.get('/all', (req, res) =>
     englishStudentCtrl.getAllEnglishStudent(req, res));
 
+    router.delete('/delete/profile/:_id', (req, res) => {
+        englishStudentCtrl.deleteEnglishProfile(req, res);
+    });
+
     return router;
 }
