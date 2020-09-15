@@ -827,11 +827,10 @@ const updateDocumentLog = async (req, res) => {
     const { filename, status } = req.body;
     let statusChanged = await updateDocumentStatus(_id, filename, status);
     // validate stepwizard
-    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
+    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('COMPROMISO') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
         await new Promise((resolve)=>{
 
-            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1,stepWizard:1, inscriptionStatus:1}).then(docs => {
-                
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1,stepWizard:1, inscriptionStatus:1}).then(docs => {                
 
                 const validatedDocs = docs.documents.filter( (doc)=> doc.status === 'VALIDADO').length;
                 const aceptedDocs = docs.documents.filter( (doc)=> doc.status === 'ACEPTADO').length;
@@ -855,8 +854,9 @@ const updateDocumentLog = async (req, res) => {
                         query['inscriptionStatus'] = 'En Proceso';
                     }
                 }else if(docs.stepWizard == 2){
-                    const isCertificate = docs.documents.filter(doc=>doc.filename.indexOf('CERTIFICADO') > -1 )[0];
+                   let isCertificate = docs.documents.filter(doc=>doc.filename.indexOf('CERTIFICADO') > -1 )[0];
                     const isPay = docs.documents.filter(doc=>doc.filename.indexOf('COMPROBANTE') > -1)[0];
+		     isCertificate = isCertificate ? isCertificate : docs.documents.filter(doc=>doc.filename.indexOf('COMPROBANTE') > -1 )[0];
                     if(isCertificate && isPay){
                       if((isCertificate.status[isCertificate.status.length-1].name == 'VALIDADO' || isCertificate.status[isCertificate.status.length-1].name == 'ACEPTADO') && (isPay.status[isPay.status.length-1].name == 'VALIDADO' || isPay.status[isPay.status.length-1].name == 'ACEPTADO')){
                         query['stepWizard'] = 3;
