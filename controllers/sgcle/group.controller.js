@@ -57,7 +57,8 @@ const getAllGroup = async (req, res) => { //Obtener todos los grupos
                 "groupOrigin": _group.groupOrigin ? _group.groupOrigin : '',
                 "teacher": _group.teacher,
                 "reqCount": await getReqsCourse(_group._id),
-                "reqActCount": await getReqsActCourse(_group._id)
+                "reqActCount": await getReqsActCourse(_group._id),
+                "numberStudents" : await getReqsNumber(_group._id)
             })));
             return res.status(status.OK).json({ groups: newGroup });
         }
@@ -80,6 +81,17 @@ const getAllGroupOpened = (req, res) => { //Obtener todos los grupos abiertos pa
 function getReqsCourse(_groupId) {
     return new Promise((resolve) => {
         _requestCourse.find({ $or: [{ $and: [{ group: _groupId }, { status: 'requested' }] }, { $and: [{ group: _groupId }, { status: 'paid' }] }] }).then(req => {
+            if (req) {
+                resolve(req.length);
+            }
+            resolve(0);
+        });
+    });
+};
+
+function getReqsNumber(_groupId) {
+    return new Promise((resolve) => {
+        _requestCourse.find({ group: _groupId }).then(req => {
             if (req) {
                 resolve(req.length);
             }
@@ -151,7 +163,8 @@ const getAllGroupByTeacher = (req, res) => {
                     "groupOrigin": _group.groupOrigin ? _group.groupOrigin : '',
                     "teacher": _group.teacher,
                     "reqCount": await getReqsCourse(_group._id),
-                    "reqActCount": await getReqsActCourse(_group._id)
+                    "reqActCount": await getReqsActCourse(_group._id),
+                    "numberStudents" : await getReqsNumber(_group._id)
                 })));
                 return res.status(status.OK).json({ groups: newGroups });
             }
