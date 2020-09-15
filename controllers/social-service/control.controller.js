@@ -1,5 +1,7 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
+const sendMail = require('../shared/mail.controller');
+const mailTemplate = require('../../templates/verifyCodeControlStudent');
 
 let _controlStudent;
 let _student;
@@ -54,6 +56,70 @@ const createAssistanceByControlNumber = (req, res) => {
         });
 };
 
+const sendCodeForEmailConfirmation = (req, res) => {
+    const { _id, email } = req.params;
+    const code = _generateVerificationCode(6);
+
+    _controlStudent.findOne({_id: _id}, {}, (err, data) => {
+       if (err) {
+           return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+       } else {
+           if (data) {
+               _controlStudent.updateOne({_id: _id}, { $set: { 'verification.code': code, 'emailStudent': email } })
+                   .then( () => {
+                       const emailData = {
+                           email: email,
+                           subject: 'Servicio social - Verificación de correo electrónico',
+                           sender: 'Instituto Tecnológico de Tepic <serviciosocial@ittepic.edu.mx>',
+                           message: mailTemplate(code)
+                       };
+                       _sendEmail(emailData)
+                           .then(async data => {
+                               if (data.code === 202) {
+                                   await _updateSentVerificationCode(_id, true);
+                                   return res.status(status.OK).json({ error: false, msg: 'Se ha enviado el correo'})
+                               } else {
+                                   await _updateSentVerificationCode(_id, false);
+                                   return res.status(status.OK)
+                                       .json({
+                                           code: status.INTERNAL_SERVER_ERROR,
+                                           msg: 'Error al envíar el correo, volver de intentarlo mas tarde',
+                                           error: true
+                                       });
+                               }
+                           });
+                   }).catch( err => {
+                   return res.status(status.BAD_REQUEST).json({ error: err.toString(), msg: 'No sabemos que ha sucedido, vuelva a intentarlo mas tarde' });
+               });
+           } else {
+               return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+           }
+       }
+    });
+};
+
+const verifyCode = (req, res) => {
+    const { _id, code } = req.body;
+
+    _controlStudent.findOne({ _id: _id })
+        .then(student => {
+            if (student.verification.code === parseInt(code)) {
+                _controlStudent.updateOne({ _id: _id },
+                    { $set: { 'verification.verificationEmail': true } })
+                    .then(_ => res.status(status.OK).json({ msg: 'Correo verificado' }))
+                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al verificar código' }))
+            } else {
+                res.status(status.INTERNAL_SERVER_ERROR)
+                    .json({ msg: 'Código incorrecto' });
+            }
+        })
+        .catch(_ => {
+            res.status(status.INTERNAL_SERVER_ERROR)
+                .json({ msg: 'Error al verificar código' });
+        });
+};
+
+
 const releaseSocialServiceAssistanceCsv = (req, res) => {
     const students = req.body;
     const findStudent = (data) => {
@@ -107,10 +173,39 @@ const updateGeneralControlStudent = (req, res) => {
 
   _controlStudent.updateOne({_id: id}, { $set: newData })
       .then( () => {
-          return res.status(status.OK).json({ msg: 'Estudiante actualizado correctamente' });
+          return res.status(status.OK).json({ msg: 'Información guardada correctamente' });
       }).catch( err => {
         return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
   });
+};
+
+const _sendEmail = ({ email, subject, sender, message }) => {
+    return new Promise(resolve => {
+        const emailData = {
+            to_email: [email],
+            subject: subject,
+            sender: sender,
+            message: message
+        };
+        sendMail({ body: emailData })
+            .then(data => resolve(data));
+    });
+};
+
+const _generateVerificationCode = (length) => {
+    let number = '';
+    while (number.length < length) {
+        number += Math.floor(Math.random() * 10);
+    }
+    return number;
+};
+
+const _updateSentVerificationCode = (_id, status) => {
+    return new Promise(resolve => {
+        _controlStudent.updateOne({ _id: _id }, { $set: { "verification.sendEmailCode" : status } })
+            .then(_ => resolve(true))
+            .catch(_ => resolve(false));
+    });
 };
 
 module.exports = (ControlStudent, Student) => {
@@ -119,7 +214,9 @@ module.exports = (ControlStudent, Student) => {
     return ({
         getAll,
         getControlStudentByStudentId,
+        verifyCode,
         createAssistanceByControlNumber,
+        sendCodeForEmailConfirmation,
         releaseSocialServiceAssistanceCsv,
         updateGeneralControlStudent
     });
