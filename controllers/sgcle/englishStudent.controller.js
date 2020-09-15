@@ -103,14 +103,22 @@ const getEnglishStudentNoVerified = (req, res) => {
 
 const deleteEnglishProfile = (req, res) => {
     const _studentId = req.params._id;
-    _englishStudent.deleteOne({_id:_studentId})
-    .then(deleted => res.status(status.OK).json(deleted))
-    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al eliminar el perfil del estudiante de Ingles' }));
+    _requestCourse.deleteMany({ englishStudent: _studentId })
+        .then(deleteReq => {
+            if(deleteReq){
+                _englishStudent.deleteOne({_id:_studentId})
+                    .then(deleted => res.status(status.OK).json(deleted))
+                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al eliminar el perfil del estudiante de Ingles' }));
+            } else {
+                res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al eliminar solicitudes del estudiante de Ingles' });
+            }
+        });
 }
 
-module.exports = (EnglishStudent,EnglishCourse) => {
+module.exports = (EnglishStudent,EnglishCourse,RequestCourse) => {
     _englishStudent = EnglishStudent;
     _englishCourse = EnglishCourse;
+    _requestCourse = RequestCourse
     return ({
         createEnglishStudent,
         getEnglishStudentByStudentId,

@@ -2,8 +2,8 @@ const router = require('express').Router();
 
 module.exports = (wagner) => {
 
-    const englishStudentCtrl = wagner.invoke((EnglishStudent) =>
-        require('../../controllers/sgcle/englishStudent.controller')(EnglishStudent));
+    const englishStudentCtrl = wagner.invoke((EnglishStudent,EnglishCourse,RequestCourse) =>
+        require('../../controllers/sgcle/englishStudent.controller')(EnglishStudent,EnglishCourse,RequestCourse));
 
     router.get('/search/student/:_studentId', (req, res) =>
     englishStudentCtrl.getEnglishStudentByStudentId(req, res));
