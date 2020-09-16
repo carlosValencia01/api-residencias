@@ -313,25 +313,29 @@ const downloadFile = (req, res) => {
             (err, file) => {
                 if (err) console.log(err);
                 file.data.
-                    on('end', async () => {
-
-                        await fs.readFile(path, (error, data) => {
+                    on('end', () => {
+			
+			setTimeout( async () => {
                             
-
-                            if (error) {
-                                console.log(error, '-=-=-=-=-=-=-=-=-', data);
-                                res.status(status.BAD_REQUEST).json({
-                                    error: error,
-                                    action: 'download file'
+                            await fs.readFile(path, (error, data) => {
+                                
+    
+                                if (error) {
+                                    console.log(error, '-=-=-=-=-=-=-=-=-', data);
+                                    return res.status(status.BAD_REQUEST).json({
+                                        error: error,
+                                        action: 'download file'
+                                    });
+                                }
+                                fs.unlinkSync(path);
+                                res.status(status.OK).json({
+                                    action: 'get file',
+                                    contentType: file.headers['content-type'],
+                                    file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                                 });
-                            }
-                            fs.unlinkSync(path);
-                            res.status(status.OK).json({
-                                action: 'get file',
-                                file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                             });
-                        });                        
-                        // fs.unlinkSync(path);
+                        }, 300);
+
                     }).on('error', (err) => {
                         console.log('===--==', err);
                         res.status(status.BAD_REQUEST).json({
@@ -378,20 +382,28 @@ const downloadPhoto = (req, res) => {
 
                         file.data.
                             on('end', () => {
-                                fs.readFile(path, (error, data) => {
-                                    if (error) {
-                                        console.log(error, '-=-=-=-=-=-=-=-=-');
-                                        res.status(status.BAD_REQUEST).json({
-                                            error: error,
-                                            action: 'download file'
-                                        });
-                                    }
-                                    fs.unlinkSync(path);
-                                    res.status(status.OK).json({
-                                        action: 'get file',
-                                        file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
+
+                                setTimeout( async () => {
+                            
+                            await fs.readFile(path, (error, data) => {
+                                
+    
+                                if (error) {
+                                    console.log(error, '-=-=-=-=-=-=-=-=-', data);
+                                    return res.status(status.BAD_REQUEST).json({
+                                        error: error,
+                                        action: 'download file'
                                     });
+                                }
+                                fs.unlinkSync(path);
+                                res.status(status.OK).json({
+                                    action: 'get file',
+                                    contentType: file.headers['content-type'],
+                                    file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                                 });
+                            });
+                        }, 300);
+
                             }).on('error', (err) => {
                                 console.log('===--==', err);
                                 res.status(status.BAD_REQUEST).json({
