@@ -1042,6 +1042,34 @@ const _loginSii = (controlNumber, nip) => {
     });
 };
 
+const verifyLoginSii = async (req, res) => {
+    let { email, password } = req.body;
+    email = (email || '').toString().trim();
+
+    if (!email || !(password || '').trim()) {
+        return res.status(status.NOT_FOUND).json({
+            error: 'Usuario y/o contraseña son incorrectos'
+        });
+    }
+
+    if (/^[A-Za-z]{0,3}[0-9]{8}$/.test(email)) {
+        const login = await _loginSii(email, password);
+        if (login) {
+            return res.status(200).json(true);
+        } else {
+            return res.status(status.NOT_FOUND).json({
+                error: 'Usuario y/o contraseña son incorrectos'
+            });
+        }
+    } else {
+        return res.status(status.NOT_FOUND).json({
+            error: 'Usuario y/o contraseña son incorrectos'
+        });
+    }
+
+
+};
+
 const _getStudentSii = (controlNumber) => {
     return new Promise((resolve) => {
         const studentInfoWs = {
@@ -1136,5 +1164,6 @@ module.exports = (User, Student, Employee, Role, Career, English, IMSS) => {
         updateFullName,
         loginMiGraduacion,
         titledRegister,
+        verifyLoginSii
     });
 };

@@ -30,6 +30,9 @@ module.exports = (wagner) => {
     router.post('/titled/register', (req, res) =>
         userCtrl.titledRegister(req, res));
 
+    router.post('/verify/studentAccount', (req, res) =>
+        userCtrl.verifyLoginSii(req, res));
+
     router.put('/update/:_id', (req, res) =>
         userCtrl.updateUserData(req, res));
     router.put('/update/fullName/:nc', (req, res) =>
