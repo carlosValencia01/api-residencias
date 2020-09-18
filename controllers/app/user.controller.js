@@ -153,7 +153,7 @@ const login = async (req, res) => {
                 });
             }
         }
-    } else if (/^[A-Za-z]{0,1}[0-9]{8}$/.test(email)) {
+    } else if (/^[A-Za-z]{0,1}[0-9]{8,9}$/.test(email)) {
         const controlNumber = email;
         const nip = (password || '').trim();
         // Validar si es alumno y su nc y NIP son válidos
