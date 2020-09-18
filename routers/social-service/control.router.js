@@ -10,6 +10,9 @@ module.exports = (wagner) => {
     router.get('/:studentId', (req, res) =>
         controlStudentCtrl.getControlStudentByStudentId(req, res));
 
+    router.get('/student/:_id', (req, res) =>
+        controlStudentCtrl.getStudentInformationByControlId(req, res));
+
     router.get('/verify/:_id/:email', (req, res) =>
         controlStudentCtrl.sendCodeForEmailConfirmation(req, res));
 

@@ -1,14 +1,15 @@
 const mongoose = require('mongoose');
 
 let controlStudent = new mongoose.Schema({
-    studentId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
-    controlNumber: { type: String, unique: true, trim: true },
+    studentId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+    controlNumber: { type: String, unique: true, trim: true, required: true},
     releaseAssistanceDate: { type: Date },
     emailStudent: { type: String },
+    idFolderInDrive: { type: String },
     verification: {
-        assistance: { type: Boolean },
+        assistance: { type: Boolean, default: true },
         code: { type: Number },
-        sendEmailCode: { type: Boolean, default: false},
+        sendEmailCode: { type: Boolean, default: false },
         verificationEmail: { type: Boolean, default: false },
         solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] }
     },
