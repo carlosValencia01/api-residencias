@@ -153,6 +153,7 @@ const createFolderIntoFolder = (req, res) => {
 
                     res.status(status.OK).json({
                         folder: created,
+                        idFolderInDrive: folder.data.id,
                         action: 'create folder'
                     });
                 }
