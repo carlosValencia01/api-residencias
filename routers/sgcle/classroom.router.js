@@ -11,6 +11,9 @@ const classroomCtrl = wagner.invoke((Classroom) =>
     router.get('/all', (req, res) =>
     classroomCtrl.getAllClassroom(req, res));
 
+    router.get('/available', (req, res) =>
+        classroomCtrl.getAvailableClassrooms(req, res));
+
     router.delete('/remove/:_id', (req, res) =>
     classroomCtrl.removeClassroom(req, res));
     

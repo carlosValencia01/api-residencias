@@ -2,26 +2,31 @@ const router = require('express').Router();
 
 module.exports = (wagner) => {
 
-const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
-    require('../../controllers/sgcle/group.controller')(Group,EnglishStudent,RequestCourse));
+    const groupCtrl = wagner.invoke((Group, EnglishStudent, RequestCourse, Classroom) =>
+        require('../../controllers/sgcle/group.controller')(Group, EnglishStudent, RequestCourse, Classroom));
 
     router.post('/create', (req, res) =>
-    groupCtrl.createGroup(req, res));
+        groupCtrl.createGroup(req, res));
 
     // @params { id } Group id
     router.post('/:id/assign-teacher', (req, res) =>
         groupCtrl.assignGroupEnglishTeacher(req, res));
 
+    // @params { id } Group id
+    router.put(
+        '/:id/assign-classroom',
+        groupCtrl.assignGroupClassroom);
+
     router.get('/byid/:groupId', groupCtrl.getGroupById);
 
     router.get('/all', (req, res) =>
-    groupCtrl.getAllGroup(req, res));
+        groupCtrl.getAllGroup(req, res));
 
     router.get('/all/opened', (req, res) =>
-    groupCtrl.getAllGroupOpened(req, res));
-    
+        groupCtrl.getAllGroupOpened(req, res));
+
     router.get('/all/opened/by-course-and-level', (req, res) =>
-    groupCtrl.getAllGroupOpenedByCourseAndLevel(req, res));
+        groupCtrl.getAllGroupOpenedByCourseAndLevel(req, res));
 
     router.get('/students/:_groupId', (req, res) => {
         groupCtrl.getPaidStudentsCourse(req, res);
@@ -31,8 +36,7 @@ const groupCtrl = wagner.invoke((Group,EnglishStudent,RequestCourse) =>
         groupCtrl.getAllGroupByTeacher(req, res);
     });
 
-
-    router.put('/students/average',  groupCtrl.saveAverages);
+    router.put('/students/average', groupCtrl.saveAverages);
 
     router.put('/students/single/average', groupCtrl.saveSingleAverage);
 
