@@ -47,7 +47,7 @@ const assignGroupEnglishTeacher = (req, res) => {
 const assignGroupClassroom = (req, res) => {
     const { id } = req.params;
     const { schedule, classroom } = req.body;
-    const { startHour, endDate, day } = schedule;
+    const { startHour, endDate, day, classroom: beforeClassroom } = schedule;
 
     _group
         .updateOne(
@@ -57,6 +57,27 @@ const assignGroupClassroom = (req, res) => {
             if (!updated || (updated && !updated.n)) {
                 return null;
             }
+
+            // Poner disponibles los segmentos del horario de la antigua aula, si ya tenía aula asignada
+            if (beforeClassroom && beforeClassroom._id) {
+                const beforeClassroomSchedule = (await _classroom.findOne({ _id: beforeClassroom._id })).toObject().schedule;
+                const beforeClassroomNewSchedule = beforeClassroomSchedule.map((item) => {
+                    if (item.day === day && item.startHour >= startHour &&
+                        item.endDate <= endDate && item.status === 'occupied') {
+                        item.status = 'available';
+                    }
+                    return item;
+                });
+                return _classroom.updateOne({ _id: beforeClassroom._id }, { $set: { schedule: beforeClassroomNewSchedule } });
+            }
+            return { n: 1 };
+        })
+        .then(async (updated) => {
+            if (!updated || (updated && !updated.n)) {
+                return null;
+            }
+
+            // Poner como ocupados los segmentos del horario de la nueva aula
             const schedule = (await _classroom.findOne({ _id: classroom })).toObject().schedule;
             const newSchedule = schedule.map((item) => {
                 if (item.day === day && item.startHour >= startHour &&
