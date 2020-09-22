@@ -5,7 +5,6 @@ let controlStudent = new mongoose.Schema({
     controlNumber: { type: String, unique: true, trim: true, required: true},
     releaseAssistanceDate: { type: Date },
     emailStudent: { type: String },
-    idFolderInDrive: { type: String },
     verification: {
         assistance: { type: Boolean, default: true },
         code: { type: Number },
@@ -14,8 +13,25 @@ let controlStudent = new mongoose.Schema({
         solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] }
     },
     verificationDepartment: {
-        information: { type: Boolean }
+        solicitude: { type: Boolean }
     },
+    documents:[
+        {
+            filename: { type: String },
+            releaseDate: { type: Date, default: new Date() },
+            type: { type: String },
+            fileIdInDrive:{ type: String },
+            status:[
+                {
+                    name: { type: String }, // ServicioSocial:['EN PROCESO', 'RECHAZADO', 'VALIDADO', 'ACEPTADO']
+                    active: { type: Boolean },
+                    message:{ type: String },  // Se envio, Se actualizo, se rechazo, se valido, se acepto
+                    date:{ type: Date, default: new Date() },
+                    observation:{ type: String } //solo si fue rechazado
+                }
+            ]
+        }
+    ],
     status: { type: String, default: 'solicitude', enum: ['solicitude', 'confirm', 'initial', 'approved'] },
     dependencyName: { type: String },
     dependencyPhone: { type: String },
@@ -29,10 +45,13 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramModality: { type: String },
     initialDate: { type: Date },
     dependencyActivities: { type: String },
-    dependencyProgramType: { type: String },
+    dependencyProgramType: {
+        option: { type: String },
+        value: { type: String }
+    },
     dependencyProgramObjective: { type: String },
     dependencyProgramLocationInside: { type: Boolean },
-    dependencyProgramLocation: { type: String }
+    dependencyProgramLocation: { type: String },
 });
 
 const controlStudentModel = mongoose.model('ControlStudent', controlStudent, 'controlStudents');

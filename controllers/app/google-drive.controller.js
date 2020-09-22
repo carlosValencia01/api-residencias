@@ -499,8 +499,6 @@ const createFolderFromServer = (req, res) => {
 
     const { nc, type } = req.params;
 
-
-
     _student.findOne({ controlNumber: nc }).then(
         async student => {
             // console.log('1');
@@ -553,6 +551,29 @@ const createFolderFromServer = (req, res) => {
                             res.status(status.BAD_REQUEST).json({ err: "No hay periodo activo" });
                         }
                     }
+                }else if(type == 4){
+                    const folderId4 = await getFolderId4(student._id);
+
+                    if (folderId4) {
+                        res.status(status.OK).json({ folderIdInDrive: folderId4.idFolderInDrive });
+                    } else {
+
+                        const period = await getActivePeriod();
+                        if (period) {
+                            const folderName = `${nc} - ${student.fullName}`;
+                            const folderId = await getFolderByPeriod(period, student.career, folderName, type);
+                            // console.log(folderId);
+
+                            const result = await updateFolderId4Student(student._id, folderId.folderId);
+                            if (result) {
+                                res.status(status.OK).json({ folderIdInDrive: folderId.folderDrive });
+                            } else {
+                                res.status(status.BAD_REQUEST).json({ err: "No se pudo crear la carpeta." });
+                            }
+                        } else {
+                            res.status(status.BAD_REQUEST).json({ err: "No hay periodo activo" });
+                        }
+                    }
                 }
             } else {
                 res.status(status.NOT_FOUND).json({ err: "Estudiante no encontrado" });
@@ -584,6 +605,20 @@ const updateFolderIdStudent = (_id, folderId) => {
 const updateFolderId2Student = (_id, folderId) => {
 
     const push = { $set: { folderIdRecAct: folderId } };
+    return new Promise(async resolve => {
+        _student.updateOne({ _id: _id }, push, { new: true }).then(
+            updated => {
+                resolve(true);
+            },
+            err => {
+                resolve(false);
+            }
+        ).catch(err => resolve(err));
+    });
+};
+const updateFolderId4Student = (_id, folderId) => {
+
+    const push = { $set: { folderIdSocService: folderId } };
     return new Promise(async resolve => {
         _student.updateOne({ _id: _id }, push, { new: true }).then(
             updated => {
@@ -735,6 +770,24 @@ const getFolderId2 = (_id) => {
             }
         }).populate({
             path: 'folderIdRecAct', model: 'Folder',
+            select: {
+                idFolderInDrive: 1
+            }
+        });
+    });
+};
+const getFolderId4 = (_id) => {
+
+    return new Promise(async (resolve) => {
+        await _student.findOne({ _id: _id }, (err, student) => {
+
+            if (!err && student) {
+                resolve(student.folderIdSocService);
+            } else {
+                resolve(false);
+            }
+        }).populate({
+            path: 'folderIdSocService', model: 'Folder',
             select: {
                 idFolderInDrive: 1
             }

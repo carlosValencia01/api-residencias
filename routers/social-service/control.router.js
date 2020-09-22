@@ -28,5 +28,11 @@ module.exports = (wagner) => {
     router.put('/:id', (req, res) =>
         controlStudentCtrl.updateGeneralControlStudent(req, res));
 
+    router.put('/document/drive/:_id', (req, res) =>
+        controlStudentCtrl.assignDocumentDrive(req, res));
+
+    router.put('/document/status/:_id', (req, res) =>
+        controlStudentCtrl.updateDocumentLog(req, res));
+
     return router;
 };

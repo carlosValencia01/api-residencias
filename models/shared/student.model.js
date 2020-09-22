@@ -11,6 +11,7 @@ const studentSchema = new mongoose.Schema({
     nip: { type: String },    
     folderId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Folder' },
     folderIdRecAct:{ type: mongoose.Schema.Types.ObjectId, ref: 'Folder' },
+    folderIdSocService:{ type: mongoose.Schema.Types.ObjectId, ref: 'Folder' },
     idPeriodInscription: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' },
     documents:[
         { 

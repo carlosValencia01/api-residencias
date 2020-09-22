@@ -224,6 +224,199 @@ const _updateSentVerificationCode = (_id, status) => {
     });
 };
 
+const assignDocumentDrive = (req, res) => {
+    const { _id } = req.params;
+    const _doc = req.body.doc;
+    const status = req.body.status;
+
+    const push = { $push: { documents: _doc } };
+
+    _controlStudent.updateOne({ _id: _id }, push)
+        .then(
+            async (doc) => {
+                let statusChanged = await updateDocumentStatus(_id, _doc.filename, status);
+                if (statusChanged) {
+                    res.status(200).json({ document: doc });
+                } else {
+                    res.status(404).json({ error: 'Status without changes' });
+                }
+            }
+        ).catch(err => {
+        res.status(404).json({
+            error: err,
+            action: 'get documents'
+        });
+    });
+};
+
+async function updateDocumentStatus(_id, docName, status) {
+
+
+    const docid = await getActiveStatus(_id, docName);
+    if (docid && docid[0]) {
+
+
+        const result = docid[0];
+        const doc_id = result.documents[0]._id;
+
+        if ((result.documents[0].status)) {
+            if (result.documents[0].status.length === 0) {//no hay estatus activo
+                return await _controlStudent.updateOne(
+                    {
+                        _id: _id,
+                        'documents._id': doc_id
+                    },
+                    { $push: { 'documents.$.status': status } }
+                )
+                    .then(
+                        doc => {
+                            return true;
+                        }
+                    ).catch(err => { return false; });
+            } else {
+                return await _controlStudent.updateOne( //cambiar active = false
+                    {
+                        _id: _id,
+                        documents: {
+                            "$elemMatch": { _id: doc_id, "status.active": true }
+                        }
+                    },
+                    {
+                        "$set": {
+                            "documents.$[outer].status.$[inner].active": false,
+                        }
+                    },
+                    {
+                        "arrayFilters": [
+                            { "outer._id": doc_id },
+                            { "inner.active": true }
+                        ]
+                    }
+                )
+                    .then(
+                        async doc => {
+
+                            return await _controlStudent.updateOne(
+                                {
+                                    '_id': _id,
+                                    'documents._id': doc_id
+                                },
+                                { $push: { 'documents.$.status': status } },
+                                { new: true }
+                            )
+                                .then(
+                                    doc => {
+                                        return true;
+                                    }
+                                ).catch(err => { return false; });
+                        }
+                    ).catch(err => { return false; });
+            }
+
+
+        } else { //no existe estatus
+
+            return await _controlStudent.updateOne(
+                {
+                    _id: _id,
+                    'documents._id': doc_id
+                },
+                { $push: { 'documents.$.status': status } },
+                { new: true }
+            )
+                .then(
+                    doc => {
+                        return true;
+                    }
+                ).catch(err => { return false; });
+        }
+    }
+}
+
+async function getActiveStatus(_id, filename) {
+    // console.log(filename, '===fole', _id);
+    let id = mongoose.Types.ObjectId(_id);
+    return await _controlStudent.aggregate([
+        {
+            "$match": {
+                "_id": id
+            }
+        },
+        {
+            "$project": {
+                "documents": {
+                    "$filter": {
+                        "input": {
+                            "$map": {
+                                "input": "$documents",
+                                "as": "docs",
+                                "in": {
+                                    "$cond": [
+                                        { "$eq": ["$$docs.filename", filename] },
+                                        {
+                                            "filename": "$$docs.filename",
+                                            "_id": "$$docs._id",
+                                            "status": {
+                                                "$filter": {
+                                                    "input": "$$docs.status",
+                                                    "as": "status",
+                                                    "cond": { "$eq": ["$$status.active", true] }
+                                                }
+                                            }
+                                        },
+                                        false
+                                    ]
+                                }
+                            }
+                        },
+                        "as": "cls",
+                        "cond": "$$cls"
+                    }
+
+                }
+            }
+        }]).then(docm => {
+        // console.log('2', docm);
+
+        return docm;
+
+    }).catch(err => {
+        return false;
+    });
+}
+
+const updateDocumentLog = async (req, res) => {
+    const { _id } = req.params;
+    const { filename, status } = req.body;
+    let statusChanged = await updateDocumentStatus(_id, filename, status);
+    // validate stepwizard
+    if(filename.indexOf('SOLCIITUD') > -1){
+        await new Promise((resolve)=>{
+
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1, status:1}).then(student => {
+
+                const validatedDocs = student.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'VALIDADO' && (doc.filename.indexOf('SOLICITUD') > -1) : false).length;
+
+                const aceptedDocs = student.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'ACEPTADO' && (doc.filename.indexOf('COMPROBANTE') > -1) : false).length;
+
+                if(((validatedDocs + aceptedDocs) == 2 || (validatedDocs + aceptedDocs) == 3)){
+
+                    let query = { status: 'confirm', stepWizard: 2 };
+
+                    _controlStudent.updateOne({_id:student._id},query).then(ok=>resolve(true)).catch(_=>resolve(false));
+                }
+                resolve(true);
+            });
+        });
+    }
+
+    if (statusChanged) {
+        res.status(200).json({ action: "Status updated" });
+    } else {
+        res.status(404).json({ error: 'Status without changes' });
+    }
+};
+
 module.exports = (ControlStudent, Student) => {
     _controlStudent = ControlStudent;
     _student = Student;
@@ -235,6 +428,8 @@ module.exports = (ControlStudent, Student) => {
         createAssistanceByControlNumber,
         sendCodeForEmailConfirmation,
         releaseSocialServiceAssistanceCsv,
-        updateGeneralControlStudent
+        updateGeneralControlStudent,
+        assignDocumentDrive,
+        updateDocumentLog
     });
 };
