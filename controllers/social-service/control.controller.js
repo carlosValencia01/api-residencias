@@ -2,6 +2,7 @@ const handler = require('../../utils/handler');
 const status = require('http-status');
 const sendMail = require('../shared/mail.controller');
 const mailTemplate = require('../../templates/verifyCodeControlStudent');
+const mongoose = require('mongoose');
 
 let _controlStudent;
 let _student;
@@ -242,15 +243,14 @@ const assignDocumentDrive = (req, res) => {
                 }
             }
         ).catch(err => {
-        res.status(404).json({
-            error: err,
-            action: 'get documents'
-        });
+            res.status(404).json({
+                error: err,
+                action: 'get documents'
+            });
     });
 };
 
 async function updateDocumentStatus(_id, docName, status) {
-
 
     const docid = await getActiveStatus(_id, docName);
     if (docid && docid[0]) {
@@ -334,7 +334,6 @@ async function updateDocumentStatus(_id, docName, status) {
 }
 
 async function getActiveStatus(_id, filename) {
-    // console.log(filename, '===fole', _id);
     let id = mongoose.Types.ObjectId(_id);
     return await _controlStudent.aggregate([
         {
