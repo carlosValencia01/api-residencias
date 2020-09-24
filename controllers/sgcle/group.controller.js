@@ -318,7 +318,8 @@ const saveAverages = async (req, res) => {
         // datos de la solicitud a ser actualizados
         let query = {
             average: students[i].average,
-            status: 'approved'
+            status: 'approved',
+            active: false
         };
         // comprobamos si se aprobo el bloque
         if (query.average < 70) {
@@ -328,7 +329,9 @@ const saveAverages = async (req, res) => {
         // datos del estudiante a ser actualizados
         let studentQuery = {
             level: query.status == 'approved' ? students[i].level : students[i].englishStudent_level,
-            status: 'no_choice'
+            status: 'no_choice',
+            totalHoursCoursed: query.status == 'approved' ? (students[i].totalHoursCoursed+students[i].group.course.semesterHours) : students[i].totalHoursCoursed,
+            courseType: query.status == 'approved' ? students[i].group.course._id : (students[i].courseType ? students[i].courseType : null)
         };
         // se comprueba si es el ultimo bloque del curso
         if (students[i].level == students[i].group.course.totalSemesters) {
