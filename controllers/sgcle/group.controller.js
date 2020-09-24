@@ -280,6 +280,12 @@ const consultAllGroupByTeacher = (_teacherId) => {
                     periodName: 1, year: 1
                 }
             })
+            .populate({
+                path:'schedule.classroom', model:'Classroom',
+                select: {
+                  name: 1
+                }
+            })
             .then(async (_groups) => {
                 if (_groups) {
                     const newGroups = await Promise.all(_groups.map(async (_group) => ({

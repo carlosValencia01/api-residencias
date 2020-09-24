@@ -108,7 +108,10 @@ const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
     }).populate({
       path:'group', model:'Group',
       populate:{
-        path:'schedule.$.classroom', model:'Classroom'
+        path:'schedule.classroom', model:'Classroom',
+        select: {
+          name: 1
+        }
       }
     })
       .exec(handler.handleMany.bind(null, 'requestCourse', res));
