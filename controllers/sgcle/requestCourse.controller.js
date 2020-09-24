@@ -262,8 +262,8 @@ const updateStatusToPaid = (req, res) => {
   const data  = req.body;
 
   data.forEach(async (st)=>{
-      await new Promise((resolve)=>{            
-        _requestCourse.updateOne({ englishStudent: st.englishStudent._id }, {paidNumber: 1, status:'paid'})
+      await new Promise((resolve)=>{      
+        _requestCourse.updateOne({ _id: st._id }, {paidNumber: 1, status:'paid'})
               .then(updated => resolve(true))
               .catch(_ => {console.log(_);resolve(false);});
       });
