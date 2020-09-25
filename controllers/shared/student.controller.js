@@ -2078,12 +2078,20 @@ const _generateNewCLEControlNumber = () => {
 const canRegisterExternalStudent = (curp)=>{
     return new Promise((resolve)=>{
         // no se ha registrado el alumno si no se encuentra su curp
-        _student.findOne({curp}).then((student)=>{
-            if(student){
+        _student.find({curp}).then((student)=>{
+            if(student.length == 1){ // existe un registro del estudiante
+                // esta registrado en el sistema como estudiante externo
+                if(/^[A-Za-z]{3}[0-9]{8}$/.test(student[0].controlNumber)){
+                    return resolve(false);
+                }else{
+                    // esta registrado en el sistema como estudiante normal
+                    return resolve(true);
+                }
+            }else if(student.length > 1){
+                // ya tiene dos usuarios normal y estudiante externo
                 return resolve(false);
-            }else{
-
-                resolve(true);
+            } else { // no hay ningun registro del estudiante
+                return resolve(true);
             }
         }).catch(err=>resolve(true));
     });
