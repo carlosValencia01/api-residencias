@@ -10,10 +10,23 @@ let controlStudent = new mongoose.Schema({
         code: { type: Number },
         sendEmailCode: { type: Boolean, default: false },
         verificationEmail: { type: Boolean, default: false },
-        solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] }
+        solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        solicitudeSign: { type: Date }
     },
     verificationDepartment: {
-        solicitude: { type: Boolean }
+        information: [
+            {
+                fieldName: { type: String },
+                validation: { type: Boolean },
+                message: { type: String }
+            }
+        ],
+        message: {
+            solicitude: {
+                message: { type: String, default: '' },
+                status: { type: String, default: 'wait', enum: ['wait', 'reject', 'approved']}
+            }
+        }
     },
     documents:[
         {

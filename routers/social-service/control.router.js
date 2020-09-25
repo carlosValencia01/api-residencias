@@ -7,6 +7,12 @@ module.exports = (wagner) => {
     router.get('', (req, res) =>
         controlStudentCtrl.getAll(req, res));
 
+    router.get('/document/status/:document/:eStatus', (req, res) =>
+        controlStudentCtrl.getControlStudentByDocumentAndStatus(req, res));
+
+    router.get('/control/student/:_id', (req, res) =>
+        controlStudentCtrl.getControlStudentById(req, res));
+
     router.get('/:studentId', (req, res) =>
         controlStudentCtrl.getControlStudentByStudentId(req, res));
 

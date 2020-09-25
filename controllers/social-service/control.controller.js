@@ -13,9 +13,51 @@ const getAll = (req, res) => {
         .exec(handler.handleMany.bind(null, 'controlStudents', res));
 };
 
+const getControlStudentByDocumentAndStatus = (req, res) => {
+    const { document, eStatus } = req.params;
+    if (!['solicitude'].includes(document)) {
+        return res.status(status.EXPECTATION_FAILED).json({
+            error: 'No hay estudiantes para el documento buscado'
+        });
+    }
+    const query = {
+        ['verification.' + document]: { $in: eStatus.split('-') }
+    };
+    _controlStudent.find(query)
+        .then( data => {
+            if(data) {
+                return res.status(status.OK).json({ controlStudent: data })
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe información de los estudiantes buscados' })
+            }
+        })
+        .catch( err => {
+            return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+        })
+};
+
+const getControlStudentById = (req, res) => {
+    const { _id } = req.params;
+    _controlStudent.findOne({_id: _id})
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1, sex: 1,
+                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1, folderIdSocService: 1 },
+                populate: {path: 'folderIdSocService', model: 'Folder', select: {idFolderInDrive: 1}} })
+        .then( data => {
+            if(data) {
+                return res.status(status.OK).json({ controlStudent: data })
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        }).catch( err => {
+        return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+    });
+};
+
 const getControlStudentByStudentId = (req, res) => {
     const { studentId } = req.params;
     _controlStudent.findOne({studentId: studentId})
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1, sex: 1,
+                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1 }})
         .then( data => {
             if(data) {
                 return res.status(status.OK).json({ controlStudent: data })
@@ -255,7 +297,6 @@ async function updateDocumentStatus(_id, docName, status) {
     const docid = await getActiveStatus(_id, docName);
     if (docid && docid[0]) {
 
-
         const result = docid[0];
         const doc_id = result.documents[0]._id;
 
@@ -330,6 +371,8 @@ async function updateDocumentStatus(_id, docName, status) {
                     }
                 ).catch(err => { return false; });
         }
+    } else {
+        return false;
     }
 }
 
@@ -389,25 +432,25 @@ const updateDocumentLog = async (req, res) => {
     const { filename, status } = req.body;
     let statusChanged = await updateDocumentStatus(_id, filename, status);
     // validate stepwizard
-    if(filename.indexOf('SOLCIITUD') > -1){
-        await new Promise((resolve)=>{
-
-            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1, status:1}).then(student => {
-
-                const validatedDocs = student.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'VALIDADO' && (doc.filename.indexOf('SOLICITUD') > -1) : false).length;
-
-                const aceptedDocs = student.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'ACEPTADO' && (doc.filename.indexOf('COMPROBANTE') > -1) : false).length;
-
-                if(((validatedDocs + aceptedDocs) == 2 || (validatedDocs + aceptedDocs) == 3)){
-
-                    let query = { status: 'confirm', stepWizard: 2 };
-
-                    _controlStudent.updateOne({_id:student._id},query).then(ok=>resolve(true)).catch(_=>resolve(false));
-                }
-                resolve(true);
-            });
-        });
-    }
+    // if(filename.includes('SOLCIITUD')){
+    //     await new Promise((resolve)=>{
+    //
+    //         _student.findOne({controlNumber: filename.split('-')[0]},{documents:1, status:1}).then(student => {
+    //
+    //             const validatedDocs = student.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'VALIDADO' && (doc.filename.indexOf('SOLICITUD') > -1) : false).length;
+    //
+    //             const aceptedDocs = student.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'ACEPTADO' && (doc.filename.indexOf('COMPROBANTE') > -1) : false).length;
+    //
+    //             if(((validatedDocs + aceptedDocs) == 2 || (validatedDocs + aceptedDocs) == 3)){
+    //
+    //                 let query = { status: 'confirm', stepWizard: 2 };
+    //
+    //                 _controlStudent.updateOne({_id:student._id},query).then(ok=>resolve(true)).catch(_=>resolve(false));
+    //             }
+    //             resolve(true);
+    //         });
+    //     });
+    // }
 
     if (statusChanged) {
         res.status(200).json({ action: "Status updated" });
@@ -421,6 +464,8 @@ module.exports = (ControlStudent, Student) => {
     _student = Student;
     return ({
         getAll,
+        getControlStudentByDocumentAndStatus,
+        getControlStudentById,
         getControlStudentByStudentId,
         getStudentInformationByControlId,
         verifyCode,
