@@ -19,20 +19,20 @@ module.exports = (wagner) => {
     router.get('/getStudent/:_id', (req, res) =>
         studentCtrl.getById(req, res));
 
-    router.get('/getStudents', (req, res) =>
+    router.get('/getStudents/:clientId', (req, res) =>
         studentCtrl.getStudentsInscription(req, res));
         //studentCtrl.getAll(req, res));
     
-    router.get('/getStudentsLogged', (req, res) =>
+    router.get('/getStudentsLogged/:clientId', (req, res) =>
         studentCtrl.getStudentsInscriptionLogged(req, res));
     
-    router.get('/getStudentsProcess', (req, res) =>
+    router.get('/getStudentsProcess/:clientId', (req, res) =>
         studentCtrl.getStudentsInscriptionProcess(req, res));
     
-    router.get('/getStudentsAcept', (req, res) =>
+    router.get('/getStudentsAcept/:clientId', (req, res) =>
         studentCtrl.getStudentsInscriptionAcept(req, res));
 
-    router.get('/getStudentsPendant', (req, res) =>
+    router.get('/getStudentsPendant/:clientId', (req, res) =>
         studentCtrl.getStudentsInscriptionPendant(req, res));
 
     router.post('/notificationMail', (req, res) =>
@@ -44,7 +44,7 @@ module.exports = (wagner) => {
     router.get('/getArchivedExpedient', (req, res) =>
         studentCtrl.getArchivedExpedient(req, res));
 
-    router.get('/getNumberInscriptionStudentsByPeriod', (req, res) =>
+    router.get('/getNumberInscriptionStudentsByPeriod/:clientId', (req, res) =>
         studentCtrl.getNumberInscriptionStudentsByPeriod(req, res));
         
     router.post('/sendnotificationmail', (req, res) =>

@@ -5,7 +5,7 @@ module.exports = (wagner) => {
     const requestCtrl = wagner.invoke((Request, DenyDay, Folder, Student,Period,Department, Employee, Position) =>
         require('../../controllers/reception-act/request.controller')(Request, DenyDay, Folder, Student,Period,Department, Employee, Position));    
 
-    router.get('/', (req, res) =>
+    router.get('/get/all/:clientId', (req, res) =>
         requestCtrl.getAllRequest(req, res));
 
     router.get('/employee/gender/:email', (req, res) =>
@@ -17,7 +17,7 @@ module.exports = (wagner) => {
     router.get('/periods', (req, res) =>
         requestCtrl.getPeriods(req, res));
         
-    router.get('/phase/:phase', (req, res) =>
+    router.get('/phase/:phase/:clientId', (req, res) =>
         requestCtrl.getRequestByStatus(req, res));
         
     router.get('/students', (req, res) =>
@@ -50,7 +50,7 @@ module.exports = (wagner) => {
     router.post('/settitled', (req, res) =>
             requestCtrl.completeTitledRequest(req, res));
 
-    router.post('/diary', (req, res) =>
+    router.post('/diary/:clientId', (req, res) =>
         requestCtrl.groupDiary(req, res));
 
     router.post('/create/:_id', (req, res) => {
@@ -79,7 +79,7 @@ module.exports = (wagner) => {
             return requestCtrl.correctRequest(req, res);
         });
 
-    router.put('/:_id/status', (req, res) =>
+    router.put('/:_id/status/:role', (req, res) =>
         requestCtrl.updateRequest(req, res));
 
     router.put('/:_id/integrants', (req, res) =>

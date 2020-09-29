@@ -23,8 +23,6 @@ module.exports = (wagner) => {
     router.get('/get/folders/period/:period/:type', (req, res) =>
         driveCtrl.getFoldersByPeriod(req, res));
         
-    
-        
     router.post('/get/file', (req, res) =>
         driveCtrl.downloadFile(req, res));
 
@@ -33,5 +31,8 @@ module.exports = (wagner) => {
 
     router.post('/upload/file2', (req, res) =>
         driveCtrl.createFile2(req, res));     
+        
+    router.post('/upload/fileGraduation', (req, res) =>
+        driveCtrl.createOrUpdateFileGraduation(req, res)); 
     return router;
 };

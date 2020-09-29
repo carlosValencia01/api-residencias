@@ -153,6 +153,7 @@ const createFolderIntoFolder = (req, res) => {
 
                     res.status(status.OK).json({
                         folder: created,
+                        idFolderInDrive: folder.data.id,
                         action: 'create folder'
                     });
                 }
@@ -1020,6 +1021,77 @@ const createSubFolder2 = async (_folderName,_period,_parentFolderId,_type) => {
     });
 };
 
+const createOrUpdateFileGraduation = (req, res) => {
+    const drive = google.drive({ version: 'v3', auth });
+    const content = req.body;
+    const files = req.files;
+    const bodyMedia = files.file.data;
+    const mimeType = files.file.mimetype;
+    const typeDoc = files.file.mimetype.split('/')[1];
+
+    //create bufferStream of document to save into google drive
+    const buffer = Uint8Array.from(bodyMedia);
+    let bufferStream = new stream.PassThrough();
+    bufferStream.end(buffer);
+
+    let media = {
+        mimeType: mimeType,
+        body: bufferStream
+    };
+
+    const nameInDrive = req.body.filename+'.'+typeDoc;
+    if (content.newF == 'true') { //create new file
+        const folderId = content.folderId;
+
+        // name for display in google drive
+        let fileMetadata = {
+            name: nameInDrive,
+            mimeType: mimeType,
+            parents: [folderId]
+        };
+        drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id'
+        },
+            (err, file) => {
+                if (err) {
+                    res.status(status.BAD_REQUEST).json({
+                        error: err,
+                        action: 'create file'
+                    });
+                } else {
+                    res.status(status.OK).json({
+                        fileId: file.data.id,
+                        name: fileMetadata.name,
+                        mimeType: mimeType,
+                        action: 'create file'
+                    });
+                }
+            });
+    } else if (content.newF == 'false') { // update file
+        drive.files.update({
+            fileId: content.fileId,
+            media: media,
+            resource: { name: nameInDrive }
+        }, (err, file) => {
+            if (err) {
+                res.status(status.BAD_REQUEST).json({
+                    error: err,
+                    action: 'update file'
+                });
+            }else{
+                res.status(status.OK).json({                
+                    action: 'update file',
+                    name:nameInDrive,
+                    fileId: file.data.id
+                });
+            }
+        });
+    }
+
+}
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -1042,6 +1114,7 @@ module.exports = (Folder, Student, Period) => {
         getActivePeriod,
         createFileSchedule,
         createSubFolder2,
+        createOrUpdateFileGraduation,
     });
 };
 
