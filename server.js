@@ -43,6 +43,7 @@ const jwtOptions = {
     `${uri}user/student/login`, // app inscripciones
     `${uri}user/graduation/login`, //app graduacion
     `${uri}drive/upload/file`,
+    `${uri}drive/upload/fileGraduation`,
     `${uri}student/notify`,
     `${uri}student/schedule`,
     `${uri}company/create`,

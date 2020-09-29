@@ -153,6 +153,7 @@ const createFolderIntoFolder = (req, res) => {
 
                     res.status(status.OK).json({
                         folder: created,
+                        idFolderInDrive: folder.data.id,
                         action: 'create folder'
                     });
                 }
@@ -313,25 +314,29 @@ const downloadFile = (req, res) => {
             (err, file) => {
                 if (err) console.log(err);
                 file.data.
-                    on('end', async () => {
-
-                        await fs.readFile(path, (error, data) => {
+                    on('end', () => {
+			
+			setTimeout( async () => {
                             
-
-                            if (error) {
-                                console.log(error, '-=-=-=-=-=-=-=-=-', data);
-                                res.status(status.BAD_REQUEST).json({
-                                    error: error,
-                                    action: 'download file'
+                            await fs.readFile(path, (error, data) => {
+                                
+    
+                                if (error) {
+                                    console.log(error, '-=-=-=-=-=-=-=-=-', data);
+                                    return res.status(status.BAD_REQUEST).json({
+                                        error: error,
+                                        action: 'download file'
+                                    });
+                                }
+                                fs.unlinkSync(path);
+                                res.status(status.OK).json({
+                                    action: 'get file',
+                                    contentType: file.headers['content-type'],
+                                    file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                                 });
-                            }
-                            fs.unlinkSync(path);
-                            res.status(status.OK).json({
-                                action: 'get file',
-                                file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                             });
-                        });                        
-                        // fs.unlinkSync(path);
+                        }, 300);
+
                     }).on('error', (err) => {
                         console.log('===--==', err);
                         res.status(status.BAD_REQUEST).json({
@@ -378,20 +383,28 @@ const downloadPhoto = (req, res) => {
 
                         file.data.
                             on('end', () => {
-                                fs.readFile(path, (error, data) => {
-                                    if (error) {
-                                        console.log(error, '-=-=-=-=-=-=-=-=-');
-                                        res.status(status.BAD_REQUEST).json({
-                                            error: error,
-                                            action: 'download file'
-                                        });
-                                    }
-                                    fs.unlinkSync(path);
-                                    res.status(status.OK).json({
-                                        action: 'get file',
-                                        file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
+
+                                setTimeout( async () => {
+                            
+                            await fs.readFile(path, (error, data) => {
+                                
+    
+                                if (error) {
+                                    console.log(error, '-=-=-=-=-=-=-=-=-', data);
+                                    return res.status(status.BAD_REQUEST).json({
+                                        error: error,
+                                        action: 'download file'
                                     });
+                                }
+                                fs.unlinkSync(path);
+                                res.status(status.OK).json({
+                                    action: 'get file',
+                                    contentType: file.headers['content-type'],
+                                    file: fileName.indexOf('png') !== -1 || fileName.indexOf('jpg') !== -1 || fileName.indexOf('PNG') !== -1 || fileName.indexOf('JPG') !== -1 || fileName.indexOf('jpeg') !== -1 || fileName.indexOf('JPEG') !== -1 ? data.toString('base64') : data
                                 });
+                            });
+                        }, 300);
+
                             }).on('error', (err) => {
                                 console.log('===--==', err);
                                 res.status(status.BAD_REQUEST).json({
@@ -1008,6 +1021,77 @@ const createSubFolder2 = async (_folderName,_period,_parentFolderId,_type) => {
     });
 };
 
+const createOrUpdateFileGraduation = (req, res) => {
+    const drive = google.drive({ version: 'v3', auth });
+    const content = req.body;
+    const files = req.files;
+    const bodyMedia = files.file.data;
+    const mimeType = files.file.mimetype;
+    const typeDoc = files.file.mimetype.split('/')[1];
+
+    //create bufferStream of document to save into google drive
+    const buffer = Uint8Array.from(bodyMedia);
+    let bufferStream = new stream.PassThrough();
+    bufferStream.end(buffer);
+
+    let media = {
+        mimeType: mimeType,
+        body: bufferStream
+    };
+
+    const nameInDrive = req.body.filename+'.'+typeDoc;
+    if (content.newF == 'true') { //create new file
+        const folderId = content.folderId;
+
+        // name for display in google drive
+        let fileMetadata = {
+            name: nameInDrive,
+            mimeType: mimeType,
+            parents: [folderId]
+        };
+        drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id'
+        },
+            (err, file) => {
+                if (err) {
+                    res.status(status.BAD_REQUEST).json({
+                        error: err,
+                        action: 'create file'
+                    });
+                } else {
+                    res.status(status.OK).json({
+                        fileId: file.data.id,
+                        name: fileMetadata.name,
+                        mimeType: mimeType,
+                        action: 'create file'
+                    });
+                }
+            });
+    } else if (content.newF == 'false') { // update file
+        drive.files.update({
+            fileId: content.fileId,
+            media: media,
+            resource: { name: nameInDrive }
+        }, (err, file) => {
+            if (err) {
+                res.status(status.BAD_REQUEST).json({
+                    error: err,
+                    action: 'update file'
+                });
+            }else{
+                res.status(status.OK).json({                
+                    action: 'update file',
+                    name:nameInDrive,
+                    fileId: file.data.id
+                });
+            }
+        });
+    }
+
+}
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -1030,6 +1114,7 @@ module.exports = (Folder, Student, Period) => {
         getActivePeriod,
         createFileSchedule,
         createSubFolder2,
+        createOrUpdateFileGraduation,
     });
 };
 

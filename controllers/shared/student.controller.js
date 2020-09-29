@@ -696,10 +696,12 @@ async function updateDocumentStatus(_id, docName, status) {
 
 
     const docid = await getActiveStatus(_id, docName);
-    if (docid) {
+    if (docid && docid[0]) {
 
+       
         const result = docid[0];
         const doc_id = result.documents[0]._id;
+
         if ((result.documents[0].status)) {
             if (result.documents[0].status.length === 0) {//no hay estatus activo 
                 return await _student.updateOne(
@@ -771,8 +773,7 @@ async function updateDocumentStatus(_id, docName, status) {
                     }
                 ).catch(err => { return false; });
         }
-    }
-
+  }
 }
 
 async function getActiveStatus(_id, filename) {
@@ -850,26 +851,22 @@ const updateDocumentLog = async (req, res) => {
     const { filename, status } = req.body;
     let statusChanged = await updateDocumentStatus(_id, filename, status);
     // validate stepwizard
-    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
+    if(filename.indexOf('FOTO') > -1 || filename.indexOf('COMPROBANTE') > -1 || filename.indexOf('COMPROMISO') > -1 || filename.indexOf('CERTIFICADO') > -1 ){
         await new Promise((resolve)=>{
 
-            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1}).then(docs => {
-                
-                const processDocs = docs.documents.filter( (doc)=> doc.status === 'EN PROCESO').length;
-                const validatedDocs = docs.documents.filter( (doc)=> doc.status === 'VALIDADO').length;
-                const aceptedDocs = docs.documents.filter( (doc)=> doc.status === 'ACEPTADO').length;
-                const totalDocs = processDocs + validatedDocs + aceptedDocs;
-                let query = { inscriptionStatus:"En Proceso" };
-                const isFoto = filename.indexOf('FOTO') > -1;       
-                if(isFoto){
-                
-                if(totalDocs === 3 && (validatedDocs === 3 || aceptedDocs === 3) && this.data.student.stepWizard == 2){
-                    query['stepWizard'] = 3;
-                }
-                }else if( totalDocs === 2 && (validatedDocs === 2 || aceptedDocs === 2) && this.data.student.stepWizard == 2 ){    
-                    query['stepWizard'] = 3;
-                }
-                _student.updateOne({_id:docs._id},query).then(updated=>{resolve(true);}).catch(err=>{console.log(err); resolve(false);});
+            _student.findOne({controlNumber: filename.split('-')[0]},{documents:1,stepWizard:1, inscriptionStatus:1}).then(docs => {                
+
+               const validatedDocs = docs.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'VALIDADO' && (doc.filename.indexOf('COMPROBANTE') > -1 || doc.filename.indexOf('CERTIFICADO') > -1 || doc.filename.indexOf('COMPROMISO') > -1) : false).length;
+
+                const aceptedDocs = docs.documents.filter( (doc)=> doc.status.length > 0 ? doc.status[doc.status.length-1].name === 'ACEPTADO' && (doc.filename.indexOf('COMPROBANTE') > -1 || doc.filename.indexOf('CERTIFICADO') > -1 || doc.filename.indexOf('COMPROMISO') > -1) : false).length;
+ 
+                if(docs.stepWizard == 2 && ((validatedDocs + aceptedDocs) == 2 || (validatedDocs + aceptedDocs) == 3)){
+
+                   let query = { inscriptionStatus: 'En Proceso', stepWizard: 3 }; 
+
+		   _student.updateOne({_id:docs._id},query).then(ok=>resolve(true)).catch(_=>resolve(false));
+		}
+		resolve(true);
             });
         });
     }
@@ -2112,12 +2109,20 @@ const _generateNewCLEControlNumber = () => {
 const canRegisterExternalStudent = (curp)=>{
     return new Promise((resolve)=>{
         // no se ha registrado el alumno si no se encuentra su curp
-        _student.findOne({curp}).then((student)=>{
-            if(student){
+        _student.find({curp}).then((student)=>{
+            if(student.length == 1){ // existe un registro del estudiante
+                // esta registrado en el sistema como estudiante externo
+                if(/^[A-Za-z]{3}[0-9]{8}$/.test(student[0].controlNumber)){
+                    return resolve(false);
+                }else{
+                    // esta registrado en el sistema como estudiante normal
+                    return resolve(true);
+                }
+            }else if(student.length > 1){
+                // ya tiene dos usuarios normal y estudiante externo
                 return resolve(false);
-            }else{
-
-                resolve(true);
+            } else { // no hay ningun registro del estudiante
+                return resolve(true);
             }
         }).catch(err=>resolve(true));
     });
@@ -2144,6 +2149,34 @@ const sendEmailWithControlNumberAndNip = (studentName,controlNumber,nip,email, g
     return _Notification.sendGenericNotification(email,sender,subject,{title,subtitle},body);
 };
 // END REGISTER FOR EXTERNAL STUDENTS
+
+const changeSpetWizardWhenAceptCertificate = async (req, res)=>{
+    const period = (await getActivePeriod()).period;    
+    _student.find({stepWizard: 2, idPeriodInscription:period._id, controlNumber:{$regex:/^2040/}}, {documents:1,fullName:1,controlNumber:1}).then( async (students)=>{
+        const filteredStudents = students.reduce((prev,curr)=>{
+            if(curr.documents.length > 2){
+                const docs = curr.documents.filter(doc=> doc.filename ? doc.filename.indexOf('CERTIFICADO') > -1 || doc.filename.indexOf('COMPROBANTE') > -1 || doc.filename.indexOf('COMPROMISO') > -1: false).map(dc=>({
+                    filename:dc.filename,
+                    status: dc.status.filter(st => st.active === true)[0]
+                }));
+                if(docs.length > 1){
+                    const aceptedOrValidatedDocs = docs.filter(doc=> doc.status && doc.status.name ? doc.status.name == 'ACEPTADO' || doc.status.name == 'VALIDADO' : false).length;
+                    if(aceptedOrValidatedDocs >1){
+                        prev.push({_id:curr._id,fullName:curr.fullName,controlNumber:curr.controlNumber});
+                    }
+                }
+
+            }
+            return prev;
+        },[]);
+        for(let i = 0; i < filteredStudents.length; i++){
+            await new Promise((resolve)=>{
+                _student.updateOne({_id:filteredStudents[i]._id},{stepWizard: 3,inscriptionStatus: 'En Proceso'}).then(ok=>resolve(true)).catch(_=>resolve(false));
+            });
+        }
+        res.status(status.OK).json(filteredStudents);
+    });
+};
 
 module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Department, Position, Employee, Schedule, Folder) => {
     _student = Student;
@@ -2206,6 +2239,7 @@ module.exports = (Student, Request, Role, Period, ActiveStudents, Career, Depart
         getStudentStatusFromSII,
         getNumberInscriptionStudentsByPeriod,
         createSchedule,
-        createExternalStudents
+        createExternalStudents,
+        changeSpetWizardWhenAceptCertificate
     });
 };

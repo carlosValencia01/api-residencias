@@ -88,6 +88,9 @@ module.exports = (wagner) => {
     router.post('/search/numero', (req, res) =>
         studentCtrl.getStudentByControlNumber(req, res));
 
+    router.post('/modify/stepwizard', (req, res) =>
+        studentCtrl.changeSpetWizardWhenAceptCertificate(req, res));
+
     router.post('/create', (req, res) =>
         studentCtrl.createWithoutImage(req, res));
 
