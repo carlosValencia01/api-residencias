@@ -12,6 +12,12 @@ const verifyCodeTemplate = require('../../templates/verifyCode');
 const mailTemplate = require('../../templates/notificationMailReception');
 const mailTemplateSinodales = require('../../templates/notificationMailSinodales');
 
+// Importar el archivo donde se emiten los eventos
+const _socket = require('../../sockets/app.socket');
+
+// Importar el archivo de los enumeradores
+const eSocket = require('../../enumerators/shared/sockets.enum');
+
 let _Drive;
 let _Departments;
 let _request;
@@ -19,6 +25,7 @@ let _DenyDays;
 let _student;
 let _period;
 let _employee;
+
 const create = async (req, res) => {
     let request = req.body;
     const _req = await _getRequest(req.params._id);
@@ -46,7 +53,7 @@ const create = async (req, res) => {
             .json({ error: 'Error al recuperar grado' });
     }
     request.verificationCode = _generateVerificationCode(6);
-    request.periodId = (await _Drive.getActivePeriod())._id;    
+    request.periodId = (await getActivePeriod())._id;    
     let result = await _Drive.uploadFile(req, eOperation.NEW);
     if (typeof (result) !== 'undefined' && result.isCorrect) {
         let tmpFile = [];
@@ -57,6 +64,8 @@ const create = async (req, res) => {
             });
         request.documents = tmpFile;
         _request.create(request).then(created => {
+            _socket.broadcastEmit(eSocket.recActEvents.CREATE_OR_CANCEL_TITULATION,{newTitulation:true});
+            _socket.broadcastEmit(eSocket.recActEvents.MODIFY_DIARY,{cancelTitulation:true});//solo para el calendario
             // Send email with verification code
             const emailData = {
                 email: request.email,
@@ -98,7 +107,7 @@ const createTitled = async (req, res) => {
     let request = req.body;
     request.applicationDate = new Date();
     request.lastModified = new Date();
-    request.periodId = (await _Drive.getActivePeriod())._id;
+    request.periodId = (await getActivePeriod())._id;
     request.grade = await _getGradeName(request.studentId);
     const student = await getStudent(request.studentId);        
     request.email = student.email;
@@ -112,7 +121,9 @@ const createTitled = async (req, res) => {
             return handler.handleError(res, status.NOT_FOUND, { message: 'El estudiante ya cuenta con una solicitud' });
         }
         else {
-            _request.create(request).then(created => {
+            _request.create(request).then(async created => {
+                _socket.broadcastEmit(eSocket.recActEvents.CREATE_OR_CANCEL_TITULATION,{newTitulation:true});
+                _socket.broadcastEmit(eSocket.recActEvents.MODIFY_DIARY,{cancelTitulation:true});//solo para el calendario       
                 res.status(status.OK).json({
                     request: created
                 });
@@ -127,15 +138,23 @@ const createTitled = async (req, res) => {
 
 const removeTitled = (req, res) => {
     const { id } = req.params;
-    _request.deleteOne({ _id: id }, function (error) {
-        if (error)
-            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: 'Titulación no encontrada' });
-        return res.status(200).json({ message: "Successful" });
+    _request.deleteOne({ _id: id }).then(deleted=>{
+            _socket.broadcastEmit(eSocket.recActEvents.CREATE_OR_CANCEL_TITULATION,{cancelTitulation:true});
+            _socket.broadcastEmit(eSocket.recActEvents.MODIFY_DIARY,{cancelTitulation:true});//solo para el calendario
+            return res.status(200).json({ message: "Successful" });
+    }).catch(error=>{
+        return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: 'Titulación no encontrada' });
     });
 };
 
-const getAllRequest = (req, res) => {
-    _request.find({ status: { $ne: 'Aprobado' } })
+const getAllRequest = async (req, res) => {
+    const request = await (consultAllRequest());    
+    _socket.singleEmit(eSocket.recActEvents.REQUEST_BY_ROLE,request,req.params.clientId);
+    res.status(status.OK).json({sendBySocket:true});
+};
+const consultAllRequest = ()=>{    
+    return new Promise((resolve)=>{
+        _request.find({ status: { $ne: 'Aprobado' } })
         .populate
         ({
             path: 'studentId', model: 'Student',
@@ -156,142 +175,160 @@ const getAllRequest = (req, res) => {
                 _id: 1
             }
         }).sort({ applicationDate: 1 })
-        .exec(handler.handleMany.bind(null, 'request', res));
+        .then(request=>resolve({request}));
+    });
+};
+const getRequestByStatus = async (req, res) => {
+    const { phase } = req.params;
+    // Recomendación
+    // Colocar en un metodo aparte la consulta de
+    // lo que se enviara al cliente ya que se tendra
+    // que reutilizar
+    const request = await consultRequestByStatus(phase);
+    // Solo cuando es una consulta (GET) debe emitirse
+    // el evento a quien solicita el recurso
+    // por lo que en la ruta se debe agregar el :clientId
+    // y enviarlo desde el cliente
+    _socket.singleEmit(eSocket.recActEvents.REQUEST_BY_ROLE,request,req.params.clientId);
+    // Terminar la petición HTTP
+    res.status(status.OK).json({sendBySocket:true});
 };
 
-const getRequestByStatus = (req, res) => {
-    const { phase } = req.params;
-    switch (phase) {
-        case eRole.eSECRETARY: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } })
-                .populate({
-                    path: 'studentId', model: 'Student',
-                    populate: { path: 'careerId', model: 'Career' },
-                    select: {
-                        fullName: 1,
-                        controlNumber: 1,
-                        career: 1,
-                        careerId: 1,
-                        sex:1
-                    }
-                })
-                .populate({
-                    path: 'periodId', model: 'Period',                   
-                    select: {
-                        periodName: 1,
-                        active: 1,
-                        year: 1,
-                        _id: 1
-                    }
-                })
-                .sort({ applicationDate: 1 })
-                .exec(handler.handleMany.bind(null, 'request', res));
-            break;
+const consultRequestByStatus = (phase)=>{
+    return new Promise((resolve)=>{
+        switch (phase) {
+            case eRole.eSECRETARY: {
+                _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado'] } })
+                    .populate({
+                        path: 'studentId', model: 'Student',
+                        populate: { path: 'careerId', model: 'Career' },
+                        select: {
+                            fullName: 1,
+                            controlNumber: 1,
+                            career: 1,
+                            careerId: 1,
+                            sex:1
+                        }
+                    })
+                    .populate({
+                        path: 'periodId', model: 'Period',                   
+                        select: {
+                            periodName: 1,
+                            active: 1,
+                            year: 1,
+                            _id: 1
+                        }
+                    })
+                    .sort({ applicationDate: 1 })
+                    .then(request=>resolve({request}));
+                break;
+            }
+            case eRole.eHEADSCHOOLSERVICE: {
+                _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } })
+                    .populate({
+                        path: 'studentId', model: 'Student',
+                        populate: { path: 'careerId', model: 'Career' },
+                        select: {
+                            fullName: 1,
+                            controlNumber: 1,
+                            career: 1,
+                            careerId: 1,
+                            sex:1
+                        }
+                    }).populate({
+                        path: 'periodId', model: 'Period',                   
+                        select: {
+                            periodName: 1,
+                            active: 1,
+                            year: 1,
+                            _id: 1
+                        }
+                    })
+                    .sort({ applicationDate: 1 })
+                    .then(request=>resolve({request}));
+                break;
+            }
+            case eRole.eCOORDINATION: {
+                _request.find({ phase: { $ne: 'Capturado' } })
+                    .populate({
+                        path: 'studentId', model: 'Student',
+                        populate: { path: 'careerId', model: 'Career' },
+                        select: {
+                            fullName: 1,
+                            controlNumber: 1,
+                            career: 1,
+                            careerId: 1,
+                            sex:1
+                        }
+                    }).populate({
+                        path: 'periodId', model: 'Period',                   
+                        select: {
+                            periodName: 1,
+                            active: 1,
+                            year: 1,
+                            _id: 1
+                        }
+                    })
+                    .sort({ applicationDate: 1 })
+                    .then(request=>resolve({request}));
+                break;
+            }
+            case eRole.eCHIEFACADEMIC: {
+                _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
+                    .populate({
+                        path: 'studentId', model: 'Student',
+                        populate: { path: 'careerId', model: 'Career' },
+                        select: {
+                            fullName: 1,
+                            controlNumber: 1,
+                            career: 1,
+                            careerId: 1,
+                            sex:1
+                        }
+                    }).populate({
+                        path: 'periodId', model: 'Period',                   
+                        select: {
+                            periodName: 1,
+                            active: 1,
+                            year: 1,
+                            _id: 1
+                        }
+                    })
+                    .sort({ applicationDate: 1 })
+                    .then(request=>resolve({request}));
+                break;
+            }
+            case eRole.eSTUDENTSERVICES: {
+                _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } })
+                    .populate({
+                        path: 'studentId', model: 'Student',
+                        populate: { path: 'careerId', model: 'Career' },
+                        select: {
+                            fullName: 1,
+                            controlNumber: 1,
+                            career: 1,
+                            careerId: 1,
+                            sex:1
+                        }
+                    }).populate({
+                        path: 'periodId', model: 'Period',                   
+                        select: {
+                            periodName: 1,
+                            active: 1,
+                            year: 1,
+                            _id: 1
+                        }
+                    })
+                    .sort({ applicationDate: 1 })
+                    .then(request=>resolve({request}));
+                break;
+            }
+            default: {
+                resolve(consultAllRequest());
+            }
         }
-        case eRole.eHEADSCHOOLSERVICE: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado', 'Liberado', 'Entregado'] } })
-                .populate({
-                    path: 'studentId', model: 'Student',
-                    populate: { path: 'careerId', model: 'Career' },
-                    select: {
-                        fullName: 1,
-                        controlNumber: 1,
-                        career: 1,
-                        careerId: 1,
-                        sex:1
-                    }
-                }).populate({
-                    path: 'periodId', model: 'Period',                   
-                    select: {
-                        periodName: 1,
-                        active: 1,
-                        year: 1,
-                        _id: 1
-                    }
-                })
-                .sort({ applicationDate: 1 })
-                .exec(handler.handleMany.bind(null, 'request', res));
-            break;
-        }
-        case eRole.eCOORDINATION: {
-            _request.find({ phase: { $ne: 'Capturado' } })
-                .populate({
-                    path: 'studentId', model: 'Student',
-                    populate: { path: 'careerId', model: 'Career' },
-                    select: {
-                        fullName: 1,
-                        controlNumber: 1,
-                        career: 1,
-                        careerId: 1,
-                        sex:1
-                    }
-                }).populate({
-                    path: 'periodId', model: 'Period',                   
-                    select: {
-                        periodName: 1,
-                        active: 1,
-                        year: 1,
-                        _id: 1
-                    }
-                })
-                .sort({ applicationDate: 1 })
-                .exec(handler.handleMany.bind(null, 'request', res));
-            break;
-        }
-        case eRole.eCHIEFACADEMIC: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado'] } })
-                .populate({
-                    path: 'studentId', model: 'Student',
-                    populate: { path: 'careerId', model: 'Career' },
-                    select: {
-                        fullName: 1,
-                        controlNumber: 1,
-                        career: 1,
-                        careerId: 1,
-                        sex:1
-                    }
-                }).populate({
-                    path: 'periodId', model: 'Period',                   
-                    select: {
-                        periodName: 1,
-                        active: 1,
-                        year: 1,
-                        _id: 1
-                    }
-                })
-                .sort({ applicationDate: 1 })
-                .exec(handler.handleMany.bind(null, 'request', res));
-            break;
-        }
-        case eRole.eSTUDENTSERVICES: {
-            _request.find({ phase: { $nin: ['Capturado', 'Enviado', 'Verificado', 'Registrado'] } })
-                .populate({
-                    path: 'studentId', model: 'Student',
-                    populate: { path: 'careerId', model: 'Career' },
-                    select: {
-                        fullName: 1,
-                        controlNumber: 1,
-                        career: 1,
-                        careerId: 1,
-                        sex:1
-                    }
-                }).populate({
-                    path: 'periodId', model: 'Period',                   
-                    select: {
-                        periodName: 1,
-                        active: 1,
-                        year: 1,
-                        _id: 1
-                    }
-                })
-                .sort({ applicationDate: 1 })
-                .exec(handler.handleMany.bind(null, 'request', res));
-            break;
-        }
-        default: {
-            return getAllRequest(req, res);
-        }
-    }
+    });
+    
 };
 
 const getAllRequestApproved = (req, res) => {
@@ -908,7 +945,7 @@ const releasedRequest = (req, res) => {
 };
 
 const updateRequest = (req, res) => {
-    const { _id } = req.params;
+    const { _id,role } = req.params;
     let data = req.body;
     var subjectMail = '';
     var subtitleMail = '';
@@ -1205,7 +1242,8 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.REJECT: {
                         subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
                         subtitleMail = 'Confirmación de fecha de titulación';
-                        bodyMail = 'Tu fecha solicitada ha sido rechazada, favor de ingresar al sistema para elegir una nueva fecha.';
+                        // bodyMail = 'Tu fecha solicitada ha sido rechazada, favor de ingresar al sistema para elegir una nueva fecha.';
+                        bodyMail = 'Tu fecha solicitada ha sido rechazada.';
                         observationsMail = item.observation;
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
@@ -1361,7 +1399,7 @@ const updateRequest = (req, res) => {
             return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { message: msnError });
         }
         else {
-            request.save((errorReq, response) => {
+            request.save( async (errorReq, response) => {
                 if (errorReq) {
                     // console.log(errorReq);
                     return handler.handleError(res, status.INTERNAL_SERVER_ERROR, errorReq);
@@ -1377,6 +1415,11 @@ const updateRequest = (req, res) => {
                 const sender = 'Servicios escolares <escolares_05@ittepic.edu.mx>';
                 const message = mailTemplate(subtitle, body, observations);
                 _sendEmail({ email: email, subject: subject, sender: sender, message: message });
+                if(role){
+                    const request = await consultRequestByStatus(role);
+                    _socket.broadcastEmit(eSocket.recActEvents.REQUEST_BY_ROLE,request); 
+                }
+                _socket.broadcastEmit(eSocket.recActEvents.MODIFY_DIARY,{cancelTitulation:true});//solo para el calendario
                 return res.status(status.OK).json(json);
             });
         }
@@ -1446,62 +1489,66 @@ const getRequestPhotos = (_id) =>{
     });
 };
 
-const groupDiary = (req, res) => {
+const groupDiary = async (req, res) => {
     let data = req.body;
-    // let StartDate = new Date();
-    // StartDate.setDate(1);
-    // StartDate.setMonth(data.month);    
-    let StartDate;
-    let EndDate;
-    if (data.isWeek) {
-        let tmpDate = new Date(data.min);
-        StartDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 0, 0, 0, 0);
-        tmpDate = new Date(data.max);
-        EndDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 23, 59, 59, 0);
-    } else {
-        StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
-        EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
+    const diary = await consultDiary(data);
+    if(diary.error){
+        return res.status(status.BAD_REQUEST).json(diary.error);
     }
-    let query =
-        [
-            {
-                $match: {
-                    "proposedDate": { $gte: StartDate, $lte: EndDate },
-                    $or: [{ "phase": "Asignado", "status": "Process" }, { "phase": "Realizado" }]
-                }
-            },
-            {
-                $lookup: {
-                    from: "students",
-                    localField: "studentId",
-                    foreignField: "_id",
-                    as: "Student"
-                }
-            },
-            {
-                $group: {
-                    _id: '$Student.career',
-                    values:
-                    {
-                        $push: {
-                            id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
-                            jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$titulationOption',status: "$status"
+    _socket.singleEmit(eSocket.recActEvents.GET_DIARY,diary,req.params.clientId);
+    res.status(status.OK).json({sendBySocket:true});
+};
+const consultDiary = (data)=>{
+    return new Promise((resolve)=>{
+        let StartDate;
+        let EndDate;
+        if (data.isWeek) {
+            let tmpDate = new Date(data.min);
+            StartDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 0, 0, 0, 0);
+            tmpDate = new Date(data.max);
+            EndDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate(), 23, 59, 59, 0);
+        } else {
+            StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
+            EndDate = new Date(StartDate.getFullYear(), data.month + 1, 0, 23, 59, 59, 0);
+        }
+        let query =
+            [
+                {
+                    $match: {
+                        "proposedDate": { $gte: StartDate, $lte: EndDate },
+                        $or: [{ "phase": "Asignado", "status": "Process" }, { "phase": "Realizado" }]
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "students",
+                        localField: "studentId",
+                        foreignField: "_id",
+                        as: "Student"
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$Student.career',
+                        values:
+                        {
+                            $push: {
+                                id: '$_id', student: '$Student.fullName', proposedDate: '$proposedDate', proposedHour: '$proposedHour', phase: "$phase",
+                                jury: '$jury', place: '$place', project: '$projectName', duration: '$duration', product: '$product', option: '$titulationOption',status: "$status"
+                            }
                         }
                     }
                 }
-            }
-        ];
-    _request.aggregate(query, async (error, diary) => {
-        if (error)
-            return handler.handleError(res, status.INTERNAL_SERVER_ERROR, { error });
-        
+            ];
+        _request.aggregate(query, async (error, diary) => {
+            if (error)
+                return resolve({ error });
+            
             const denyDays = await _DenyDays.get();
-            res.status(status.OK).json({ Diary: diary, denyDays });
+            resolve({ Diary: diary, denyDays });            
+        });
     });
-
-    //.exec(handler.handleMany.bind(null, 'Diary', res));
 };
-
 const groupRequest = (req, res) => {
     let data = req.body;
     let StartDate = new Date(data.year, data.month, 1, 0, 0, 0, 0);
@@ -1724,7 +1771,7 @@ const updateRequestPeriod = (_id,periodId)=>{
     });
 };
 const period = async (req,res)=>{    
-    const periodId = await _Drive.getActivePeriod();
+    const periodId = await getActivePeriod();
     // console.log(periodId);
     
     _request.find({periodId:{$exists:false}}).then(
@@ -1977,7 +2024,20 @@ const createStatusExamAct = (req, res) => {
         res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Error al actualizar la solicitud'});
       })
   };
+  const getActivePeriod = () => {
 
+    return new Promise(async (resolve) => {
+        await _period.findOne({ active: true }, (err, period) => {
+
+
+            if (!err && period) {
+                resolve(period);
+            } else {
+                resolve(false);
+            }
+        });
+    });
+};
 
 module.exports = (Request, DenyDay, Folder, Student, Period,Department, Employee, Position) => {
     _request = Request;
