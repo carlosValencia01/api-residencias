@@ -1242,7 +1242,8 @@ const updateRequest = (req, res) => {
                     case eStatusRequest.REJECT: {
                         subjectMail = 'Acto recepcional - Confirmación de fecha de titulación';
                         subtitleMail = 'Confirmación de fecha de titulación';
-                        bodyMail = 'Tu fecha solicitada ha sido rechazada, favor de ingresar al sistema para elegir una nueva fecha.';
+                        // bodyMail = 'Tu fecha solicitada ha sido rechazada, favor de ingresar al sistema para elegir una nueva fecha.';
+                        bodyMail = 'Tu fecha solicitada ha sido rechazada.';
                         observationsMail = item.observation;
                         request.status = eStatusRequest.REJECT;
                         item.status = eStatusRequest.REJECT;
