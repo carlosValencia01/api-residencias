@@ -328,13 +328,13 @@ const saveAverages = async (req, res) => {
         await new Promise((resolve) => _requestCourse.updateOne({ _id: students[i]._id }, query).then(updated => resolve(true)).catch(err => resolve(false)));
         // datos del estudiante a ser actualizados
         let studentQuery = {
-            level: query.status == 'approved' ? students[i].level : students[i].englishStudent_level,
+            level: query.status == 'approved' ? students[i].group.level : students[i].englishStudent_level,
             status: 'no_choice',
-            totalHoursCoursed: query.status == 'approved' ? (students[i].totalHoursCoursed+students[i].group.course.semesterHours) : students[i].totalHoursCoursed,
-            courseType: query.status == 'approved' ? students[i].group.course._id : (students[i].courseType ? students[i].courseType : null)
+            totalHoursCoursed: query.status == 'approved' ? (students[i].group.level*students[i].group.course.semesterHours) : students[i].englishStudent_level*students[i].group.course.semesterHours,
+            courseType: query.status == 'approved' ? students[i].group.course._id : (students[i].englishStudent_level > 0 ? students[i].group.course._id : null)
         };
         // se comprueba si es el ultimo bloque del curso
-        if (students[i].level == students[i].group.course.totalSemesters) {
+        if (query.status == 'approved' && students[i].englishStudent_level == students[i].group.level) {
             studentQuery.status = 'not_released';
         }
         await new Promise((resolve) => {
@@ -348,7 +348,6 @@ const saveAverages = async (req, res) => {
     const requestCourses = await _RequestCourseCtrl.consultAllRequestActiveCourse(groupId);
     await verifyIsGroupIsEvaluated(groupId, requestCourses);
     const groups = await consultAllGroupByTeacher(teacherId);
-    console.log(groups);
     _socket.broadcastEmit(eSocket.englishEvents.GET_ALL_REQUEST_ACTIVE_COURSE, requestCourses);
     _socket.broadcastEmit(eSocket.englishEvents.GET_ALL_GROUP_BY_TEACHER, groups);
     return res.status(status.OK).json({ msg: 'Calificaciones registradas' });
