@@ -85,6 +85,29 @@ const getStudentInformationByControlId = (req, res) => {
     });
 };
 
+const getRequests = (req, res) => {
+    const { status } = req.params;
+    if (status === 'send') {
+        _controlStudent.find({"verification.solicitude": "send"})
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1} })
+        .exec(handler.handleMany.bind(null, 'controlStudents', res));
+        return;
+    }
+    if (status == 'approved'){
+        _controlStudent.find({"verification.solicitude": "approved"})
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1} })
+        .exec(handler.handleMany.bind(null, 'controlStudents', res));
+        return;
+    }
+    if (status == 'all'){
+        _controlStudent.find({"verification.solicitude": {$in:["send","approved","reevaluate"]}})
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1} })
+        .exec(handler.handleMany.bind(null, 'controlStudents', res));
+    }
+    return;
+}
+
+
 const createAssistanceByControlNumber = (req, res) => {
     const data = req.body;
     _student.findOne({controlNumber: data.controlNumber})
@@ -459,6 +482,8 @@ const updateDocumentLog = async (req, res) => {
     }
 };
 
+
+
 module.exports = (ControlStudent, Student) => {
     _controlStudent = ControlStudent;
     _student = Student;
@@ -468,6 +493,7 @@ module.exports = (ControlStudent, Student) => {
         getControlStudentById,
         getControlStudentByStudentId,
         getStudentInformationByControlId,
+        getRequests,
         verifyCode,
         createAssistanceByControlNumber,
         sendCodeForEmailConfirmation,
