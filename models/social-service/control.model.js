@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 let controlStudent = new mongoose.Schema({
     studentId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
-    controlNumber: { type: String, unique: true, trim: true, required: true},
+    controlNumber: { type: String, unique: true, trim: true, required: true },
     releaseAssistanceDate: { type: Date },
     emailStudent: { type: String },
     verification: {
@@ -11,22 +11,32 @@ let controlStudent = new mongoose.Schema({
         sendEmailCode: { type: Boolean, default: false },
         verificationEmail: { type: Boolean, default: false },
         solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        solicitudeSign: { type: Date }
+        presentation: { type: String, default: 'noAssigned', enum: ['noAssigned', 'assigned', 'sign', 'send', 'reevaluate', 'approved'] },
+        acceptance: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        workPlanProject: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        constancy: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        commitment: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        report: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        cardControl: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        dependencyManagerAppraisal: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        lastReportAppraisal: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        selfAppraisal: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        signs: {
+            solicitude: {
+                signStudentDate: { type: Date },
+                signDepartmentDate: { type: Date },
+                signDepartmentName: { type: String }
+            }
+        }
     },
     verificationDepartment: {
-        information: [
+        solicitude: [
             {
                 fieldName: { type: String },
                 validation: { type: Boolean },
                 message: { type: String }
             }
-        ],
-        message: {
-            solicitude: {
-                message: { type: String, default: '' },
-                status: { type: String, default: 'wait', enum: ['wait', 'reject', 'approved']}
-            }
-        }
+        ]
     },
     documents:[
         {
@@ -45,7 +55,7 @@ let controlStudent = new mongoose.Schema({
             ]
         }
     ],
-    status: { type: String, default: 'solicitude', enum: ['solicitude', 'confirm', 'initial', 'approved'] },
+    status: { type: String, default: 'solicitude', enum: ['solicitude', 'approval', 'initial', 'approved'] },
     dependencyName: { type: String },
     dependencyPhone: { type: String },
     dependencyAddress: { type: String },
@@ -65,6 +75,7 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramObjective: { type: String },
     dependencyProgramLocationInside: { type: Boolean },
     dependencyProgramLocation: { type: String },
+    tradePresentationDocumentNumber: { type: String },
 });
 
 const controlStudentModel = mongoose.model('ControlStudent', controlStudent, 'controlStudents');

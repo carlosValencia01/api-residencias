@@ -15,15 +15,21 @@ const getAll = (req, res) => {
 
 const getControlStudentByDocumentAndStatus = (req, res) => {
     const { document, eStatus } = req.params;
-    if (!['solicitude'].includes(document)) {
+    if (!['solicitude', 'presentation'].includes(document)) {
         return res.status(status.EXPECTATION_FAILED).json({
             error: 'No hay estudiantes para el documento buscado'
         });
     }
-    const query = {
-        ['verification.' + document]: { $in: eStatus.split('-') }
-    };
+    let query = {};
+    if (document === 'presentation') {
+        query = {
+            'verification.solicitude': 'approved'
+        }
+    }
+    query['verification.' + document] = { $in: eStatus.split('-') };
     _controlStudent.find(query)
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1} })
+        .select('-documents')
         .then( data => {
             if(data) {
                 return res.status(status.OK).json({ controlStudent: data })
