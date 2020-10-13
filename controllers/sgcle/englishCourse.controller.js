@@ -22,6 +22,14 @@ const getAllEnglishCourseActive = (req, res) => {
         .exec(handler.handleMany.bind(null, 'englishCourses', res));
 };
 
+const updateEnglishCourse = (req, res) => {
+    const { _id } = req.params;
+    const course = req.body;
+    _englishCourse.updateOne({ _id: _id }, { $set: course })
+        .then(updated => res.status(status.OK).json(updated))
+        .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al actualizar el curso' }));
+};
+
 // BOSS MESSAGE MODEL
 const getEnBossMessage = (req,res)=>{
     _enBossMessage.find({}).then((messages)=>{
@@ -57,6 +65,7 @@ module.exports = (EnglishCourse, EnBossMessage) => {
         createEnglishCourse,
         getAllEnglishCourse,
         getAllEnglishCourseActive,
+        updateEnglishCourse,
         getEnBossMessage,
         createEnBossMessage,
         updateEnBossMessage
