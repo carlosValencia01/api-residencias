@@ -36,6 +36,10 @@ module.exports = (wagner) => {
         groupCtrl.getAllGroupByTeacher(req, res);
     });
 
+    router.put('/decline/:_groupId', (req, res) => {
+        groupCtrl.closeGroup(req, res);
+    });
+
     router.put('/students/average', groupCtrl.saveAverages);
 
     router.put('/students/single/average', groupCtrl.saveSingleAverage);

@@ -281,9 +281,9 @@ const consultAllGroupByTeacher = (_teacherId) => {
                 }
             })
             .populate({
-                path:'schedule.classroom', model:'Classroom',
+                path: 'schedule.classroom', model: 'Classroom',
                 select: {
-                  name: 1
+                    name: 1
                 }
             })
             .then(async (_groups) => {
@@ -330,7 +330,7 @@ const saveAverages = async (req, res) => {
         let studentQuery = {
             level: query.status == 'approved' ? students[i].group.level : students[i].englishStudent_level,
             status: 'no_choice',
-            totalHoursCoursed: query.status == 'approved' ? (students[i].group.level*students[i].group.course.semesterHours) : students[i].englishStudent_level*students[i].group.course.semesterHours,
+            totalHoursCoursed: query.status == 'approved' ? (students[i].group.level * students[i].group.course.semesterHours) : students[i].englishStudent_level * students[i].group.course.semesterHours,
             courseType: query.status == 'approved' ? students[i].group.course._id : (students[i].englishStudent_level > 0 ? students[i].group.course._id : null)
         };
         // se comprueba si es el ultimo bloque del curso
@@ -379,6 +379,41 @@ const verifyIsGroupIsEvaluated = (groupId, requests) => {
     });
 };
 
+//Cerrar Grupo y Declinar sus solicitudes
+const closeGroup = async (req, res) => {
+    const _groupId = req.params._groupId;
+    const confirmdialog = req.body.confirmdialog;
+    var errors = 0;
+
+    if (confirmdialog) {
+        console.log(confirmdialog);
+
+       await _requestCourse.find({ $and: [{ group: _groupId }, { active: true }] }).then(requests => {
+            if (requests) {
+                requests.map(async (request) => ({
+                    await :_requestCourse.updateOne({ _id: request._id }, { status: 'rejected', rejectMessage: confirmdialog, active: false }).then((updated => {
+                        _englishStudent.updateOne({ _id: request.englishStudent }, { status: 'no_choice' }).then((updated => { })).catch((error) => { errors++ });
+                     })).catch((error) => { errors++ })
+                }));
+                console.log(requests);
+            }
+        });
+
+    }
+    await _group.updateOne({ _id: _groupId }, { status: 'closed' }).then((updated => { })).catch((error) => { errors++ });;
+    console.log(errors);
+
+    /*const evaluatedStudents = requests.requestCourses.filter(req => req.average);
+    if (evaluatedStudents.length == requests.requestCourses.length) { // all request have average
+        // change group status to evaluated
+        await _group.updateOne({ _id: groupId }, { status: 'evaluated' }).then(group => {
+            resolve(true);
+        });
+    }*/
+    res.json({ err: errors });
+};
+
+
 module.exports = (Group, EnglishStudent, RequestCourse, Classroom) => {
     _group = Group;
     _englishStudent = EnglishStudent;
@@ -398,5 +433,6 @@ module.exports = (Group, EnglishStudent, RequestCourse, Classroom) => {
         getGroupById,
         saveAverages,
         saveSingleAverage,
+        closeGroup,
     });
 };
