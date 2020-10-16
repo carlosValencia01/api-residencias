@@ -1,8 +1,11 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const controlStudentCtrl = wagner.invoke((ControlStudent, Student) =>
-        require('../../controllers/social-service/control.controller')(ControlStudent, Student));
+    const controlStudentCtrl = wagner.invoke((ControlStudent, Student, Folder) =>
+        require('../../controllers/social-service/control.controller')(ControlStudent, Student, Folder));
+
+    const driveCtrl = wagner.invoke((Folder, Student, Period) =>
+        require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
 
     router.get('', (req, res) =>
         controlStudentCtrl.getAll(req, res));
@@ -12,8 +15,12 @@ module.exports = (wagner) => {
 
     router.get('/control/student/:_id', (req, res) =>
         controlStudentCtrl.getControlStudentById(req, res));
+
     router.get('/request/:status', (req,res) => 
         controlStudentCtrl.getRequests(req,res));
+
+    router.get('/:_id/file/:resource', (req, res) =>
+        driveCtrl.getResource(req, res));
 
     router.get('/:studentId', (req, res) =>
         controlStudentCtrl.getControlStudentByStudentId(req, res));

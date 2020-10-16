@@ -12,10 +12,10 @@ let controlStudent = new mongoose.Schema({
         verificationEmail: { type: Boolean, default: false },
         solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         presentation: { type: String, default: 'noAssigned', enum: ['noAssigned', 'assigned', 'sign', 'send', 'reevaluate', 'approved'] },
-        acceptance: { type: String, enum: ['send', 'reevaluate', 'approved'] },
-        workPlanProject: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        acceptance: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        workPlanProject: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         constancy: { type: String, enum: ['send', 'reevaluate', 'approved'] },
-        commitment: { type: String, enum: ['send', 'reevaluate', 'approved'] },
+        commitment: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         report: { type: String, enum: ['send', 'reevaluate', 'approved'] },
         cardControl: { type: String, enum: ['send', 'reevaluate', 'approved'] },
         dependencyManagerAppraisal: { type: String, enum: ['send', 'reevaluate', 'approved'] },
@@ -24,6 +24,10 @@ let controlStudent = new mongoose.Schema({
         signs: {
             solicitude: {
                 signStudentDate: { type: Date },
+                signDepartmentDate: { type: Date },
+                signDepartmentName: { type: String }
+            },
+            presentation: {
                 signDepartmentDate: { type: Date },
                 signDepartmentName: { type: String }
             }

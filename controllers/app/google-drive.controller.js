@@ -1145,6 +1145,26 @@ const createOrUpdateFileGraduation = (req, res) => {
 
 }
 
+const getResource = async (req, res) => {
+    const { _id } = req.params;
+    const { resource } = req.params;
+    const extension = '.pdf';
+    const mimeType = 'application/pdf';
+    const tmpName = resource.toUpperCase() + "_" + _id + extension;
+    let result = await downloadToLocal(_id, tmpName);
+
+    if (typeof (result) !== 'undefined' && result) {
+        console.log(`${__dirname}/../../documents/tmpFile/${tmpName}`);
+        const fullPath = path.normalize(`${__dirname}/../../documents/tmpFile/${tmpName}`);
+        res.set('Content-Type', mimeType);
+        fs.createReadStream(fullPath).pipe(res);
+        fs.unlinkSync(fullPath);
+    }
+    else {
+        return res.status(status.BAD_REQUEST).json({ message: 'Documento no encontrado' });
+    }
+};
+
 module.exports = (Folder, Student, Period) => {
     _folder = Folder;
     _student = Student;
@@ -1168,6 +1188,7 @@ module.exports = (Folder, Student, Period) => {
         createFileSchedule,
         createSubFolder2,
         createOrUpdateFileGraduation,
+        getResource
     });
 };
 

@@ -3,9 +3,12 @@ const status = require('http-status');
 const sendMail = require('../shared/mail.controller');
 const mailTemplate = require('../../templates/verifyCodeControlStudent');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 
 let _controlStudent;
 let _student;
+let _folder;
 
 const getAll = (req, res) => {
     _controlStudent.find({})
@@ -15,7 +18,7 @@ const getAll = (req, res) => {
 
 const getControlStudentByDocumentAndStatus = (req, res) => {
     const { document, eStatus } = req.params;
-    if (!['solicitude', 'presentation'].includes(document)) {
+    if (!['solicitude', 'presentation', 'acceptance'].includes(document)) {
         return res.status(status.EXPECTATION_FAILED).json({
             error: 'No hay estudiantes para el documento buscado'
         });
@@ -489,10 +492,10 @@ const updateDocumentLog = async (req, res) => {
 };
 
 
-
-module.exports = (ControlStudent, Student) => {
+module.exports = (ControlStudent, Student, Folder) => {
     _controlStudent = ControlStudent;
     _student = Student;
+
     return ({
         getAll,
         getControlStudentByDocumentAndStatus,
