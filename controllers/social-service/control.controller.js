@@ -509,6 +509,6 @@ module.exports = (ControlStudent, Student, Folder) => {
         releaseSocialServiceAssistanceCsv,
         updateGeneralControlStudent,
         assignDocumentDrive,
-        updateDocumentLog
+        updateDocumentLog,
     });
 };

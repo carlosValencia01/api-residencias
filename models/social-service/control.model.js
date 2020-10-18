@@ -80,8 +80,14 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramLocationInside: { type: Boolean },
     dependencyProgramLocation: { type: String },
     tradePresentationDocumentNumber: { type: String },
+    schedule: [{type: String}],
+    months: [{type: String}],
+    presentationDownloaded: { type: Boolean, default: false},
+    presentationDateDownload: { type: Date },
 });
 
 const controlStudentModel = mongoose.model('ControlStudent', controlStudent, 'controlStudents');
 
 module.exports = controlStudentModel;
+
+
