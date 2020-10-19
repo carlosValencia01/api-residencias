@@ -3,12 +3,9 @@ const status = require('http-status');
 const sendMail = require('../shared/mail.controller');
 const mailTemplate = require('../../templates/verifyCodeControlStudent');
 const mongoose = require('mongoose');
-const path = require('path');
-const fs = require('fs');
 
 let _controlStudent;
 let _student;
-let _folder;
 
 const getAll = (req, res) => {
     _controlStudent.find({})
@@ -492,7 +489,7 @@ const updateDocumentLog = async (req, res) => {
 };
 
 
-module.exports = (ControlStudent, Student, Folder) => {
+module.exports = (ControlStudent, Student) => {
     _controlStudent = ControlStudent;
     _student = Student;
 

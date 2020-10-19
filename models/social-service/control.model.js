@@ -10,6 +10,9 @@ let controlStudent = new mongoose.Schema({
         code: { type: Number },
         sendEmailCode: { type: Boolean, default: false },
         verificationEmail: { type: Boolean, default: false },
+        workPlanProjectDownloaded: { type: Boolean, default: false},
+        presentationDownloaded: { type: Boolean, default: false},
+        presentationDateDownload: { type: Date },
         solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         presentation: { type: String, default: 'noAssigned', enum: ['noAssigned', 'assigned', 'sign', 'send', 'reevaluate', 'approved'] },
         acceptance: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
@@ -81,9 +84,7 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramLocation: { type: String },
     tradePresentationDocumentNumber: { type: String },
     schedule: [{type: String}],
-    months: [{type: String}],
-    presentationDownloaded: { type: Boolean, default: false},
-    presentationDateDownload: { type: Date },
+    months: [{type: String}]
 });
 
 const controlStudentModel = mongoose.model('ControlStudent', controlStudent, 'controlStudents');

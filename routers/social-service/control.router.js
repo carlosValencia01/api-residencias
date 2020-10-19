@@ -1,8 +1,8 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const controlStudentCtrl = wagner.invoke((ControlStudent, Student, Folder) =>
-        require('../../controllers/social-service/control.controller')(ControlStudent, Student, Folder));
+    const controlStudentCtrl = wagner.invoke((ControlStudent, Student) =>
+        require('../../controllers/social-service/control.controller')(ControlStudent, Student));
 
     const driveCtrl = wagner.invoke((Folder, Student, Period) =>
         require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
@@ -36,6 +36,9 @@ module.exports = (wagner) => {
 
     router.post('/register/assistance', (req, res) =>
        controlStudentCtrl.createAssistanceByControlNumber(req, res));
+
+    router.post('/upload/file2', (req, res) =>
+        driveCtrl.createFile2(req, res));
 
     router.put('/release/csv', (req, res) =>
         controlStudentCtrl.releaseSocialServiceAssistanceCsv(req, res));
