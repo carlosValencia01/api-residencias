@@ -334,7 +334,7 @@ const saveAverages = async (req, res) => {
             courseType: query.status == 'approved' ? students[i].group.course._id : (students[i].englishStudent_level > 0 ? students[i].group.course._id : null)
         };
         // se comprueba si es el ultimo bloque del curso
-        if (query.status == 'approved' && students[i].englishStudent_level == students[i].group.level) {
+        if (query.status == 'approved' && students[i].group.level == students[i].group.course.totalSemesters) {
             studentQuery.status = 'not_released';
         }
         await new Promise((resolve) => {
