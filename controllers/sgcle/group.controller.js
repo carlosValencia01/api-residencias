@@ -328,9 +328,9 @@ const saveAverages = async (req, res) => {
         await new Promise((resolve) => _requestCourse.updateOne({ _id: students[i]._id }, query).then(updated => resolve(true)).catch(err => resolve(false)));
         // datos del estudiante a ser actualizados
         let studentQuery = {
-            level: query.status == 'approved' ? students[i].group.level : students[i].englishStudent_level,
+            level: query.status == 'approved' ? students[i].group.level : (students[i].englishStudent_level==students[i].group.level?students[i].englishStudent_level-1:students[i].englishStudent_level),
             status: 'no_choice',
-            totalHoursCoursed: query.status == 'approved' ? (students[i].group.level * students[i].group.course.semesterHours) : students[i].englishStudent_level * students[i].group.course.semesterHours,
+            totalHoursCoursed: query.status == 'approved' ? (students[i].group.level * students[i].group.course.semesterHours) : (students[i].englishStudent_level==students[i].group.level?students[i].englishStudent_level-1:students[i].englishStudent_level) * students[i].group.course.semesterHours,
             courseType: query.status == 'approved' ? students[i].group.course._id : (students[i].englishStudent_level > 0 ? students[i].group.course._id : null)
         };
         // se comprueba si es el ultimo bloque del curso
