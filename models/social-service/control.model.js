@@ -43,7 +43,22 @@ let controlStudent = new mongoose.Schema({
                 validation: { type: Boolean },
                 message: { type: String }
             }
-        ]
+        ],
+        presentation: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        },
+        acceptance: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        },
+        workPlanProject: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        }
     },
     documents:[
         {
