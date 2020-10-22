@@ -11,6 +11,7 @@ let controlStudent = new mongoose.Schema({
         sendEmailCode: { type: Boolean, default: false },
         verificationEmail: { type: Boolean, default: false },
         workPlanProjectDownloaded: { type: Boolean, default: false},
+        workPlanProjectDateDownload: { type: Date },
         presentationDownloaded: { type: Boolean, default: false},
         presentationDateDownload: { type: Date },
         solicitude: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
