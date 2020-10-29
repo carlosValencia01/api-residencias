@@ -12,6 +12,8 @@ const periodSchema = new mongoose.Schema({
     arecPerEndDate:{type: Date},
     englishPerInitDate:{type: Date},
     englishPerEndDate:{type: Date},
+    englishSecPerInitDate:{type: Date}, // Inicio del Segundo periodo de ingles
+    englishSecPerEndDate:{type: Date}, // Fin del Segundo perido de ingles
     arecInitShed:{type: Number}, // inicio horario agenda acto recepcional
     arecEndShed:{type: Number}, // fin horario agenda acto recepcional
     certificateDeliveryDate: {type: Date}, //fecha de entrega del certificado,
