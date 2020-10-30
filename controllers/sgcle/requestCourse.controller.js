@@ -197,8 +197,8 @@ const updateRequestCourseById = (req, res) => { //Modificar Solicitud por ID de 
 
 const updateRequestCourseStatusToPendingByGroupId = (req, res) => { 
   const { _id } = req.params;
-  _requestCourse.update({group:_id},{$set:{'status':'pending'}},{multi:true})
-    .then(updated => res.status(status.OK).json(updated))
+  _requestCourse.updateMany({group:_id, status: 'studying', active: true}, {$set:{'status':'pending'}})
+    .then(updated => res.status(status.OK).json({updated, message: 'Se han actualizado correctamente los estatus del grupo'}))
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
 };
 
