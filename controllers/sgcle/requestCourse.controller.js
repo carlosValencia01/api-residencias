@@ -195,6 +195,16 @@ const updateRequestCourseById = (req, res) => { //Modificar Solicitud por ID de 
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
 };
 
+const updateRequestCourseStatusToPendingByGroupId = (req, res) => { 
+  const { _id } = req.params;
+  _requestCourse.update({group:_id},{$set:{'status':'pending'}},{multi:true})
+    .then(updated => res.status(status.OK).json(updated))
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
+};
+
+
+
+
 const updateRequestCourseByStudentId = (req, res) => { //Modificar Solicitud por ID del estudiante de Ingles
   const { _id } = req.params;
   const data = req.body;
@@ -320,6 +330,7 @@ const AddRequestActiveCourse = async (req, res) => {
       getAllRequestCourseByCourseAndRequested,
       updateRequestCourseById,
       updateRequestCourseByStudentId,
+      updateRequestCourseStatusToPendingByGroupId, 
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
       getActiveRequestCourseByEnglishStudentId,

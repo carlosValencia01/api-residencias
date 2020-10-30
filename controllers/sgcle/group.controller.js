@@ -186,6 +186,11 @@ const getGroupById = async (req, res) => { // Obtener grupo por id
     });
 };
 
+const getTwoPaymentsGroupsId = (req, res) => {
+    _group.find({},{_id:1})
+    .exec(handler.handleMany.bind(null, 'groups', res));
+}
+
 const getAllGroupOpenedByCourseAndLevel = (req, res) => { //Obtener todos los grupos abiertos de acuerdo al curso y nivel
     const courseId = req.query.courseId;
     const level = req.query.level;
@@ -431,6 +436,7 @@ module.exports = (Group, EnglishStudent, RequestCourse, Classroom) => {
         getPaidStudentsCourse,
         getAllGroupByTeacher,
         getGroupById,
+        getTwoPaymentsGroupsId,
         saveAverages,
         saveSingleAverage,
         closeGroup,

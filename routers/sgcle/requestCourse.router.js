@@ -38,6 +38,9 @@ module.exports = (wagner) => {
     router.put('/paidstatus', (req, res) =>
         requestCourseCtrl.updateStatusToPaid(req, res));
 
+    router.put('/requestCourseToPending/:_id', (req, res) =>
+        requestCourseCtrl.updateRequestCourseStatusToPendingByGroupId(req, res));
+
     router.post('/active/request', (req, res) =>
         requestCourseCtrl.activeRequestCourse(req, res));
 

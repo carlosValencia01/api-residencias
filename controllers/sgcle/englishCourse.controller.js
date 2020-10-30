@@ -17,6 +17,11 @@ const getAllEnglishCourse = (req, res) => {
         .exec(handler.handleMany.bind(null, 'englishCourses', res));
 };
 
+const getEnglishCourseTwoPayments = (req, res) => {
+    _englishCourse.find({"payment.payments":2},{_id:1})
+        .exec(handler.handleMany.bind(null, 'englishCourses', res));
+};
+
 const getAllEnglishCourseActive = (req, res) => {
     _englishCourse.find({status: 'active'})
         .exec(handler.handleMany.bind(null, 'englishCourses', res));
@@ -64,6 +69,7 @@ module.exports = (EnglishCourse, EnBossMessage) => {
     return ({
         createEnglishCourse,
         getAllEnglishCourse,
+        getEnglishCourseTwoPayments,
         getAllEnglishCourseActive,
         updateEnglishCourse,
         getEnBossMessage,
