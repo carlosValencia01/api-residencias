@@ -56,6 +56,7 @@ module.exports = (wagner) => {
     const RequestCourse = require('./../sgcle/requestCourse.model');
     const Classroom = require('./../sgcle/classroom.model');
     const EnBossMessage = require('./../sgcle/bossMessage.model');
+    const EnglishPeriod = require('./../sgcle/englishPeriod.model');
 
     const models = {
         // App
@@ -96,7 +97,8 @@ module.exports = (wagner) => {
         Group,
         RequestCourse,
         Classroom,
-        EnBossMessage
+        EnBossMessage,
+        EnglishPeriod
     };
 
     _.each(models, (v, k) => {
