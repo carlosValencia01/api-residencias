@@ -197,8 +197,8 @@ const updateRequestCourseById = (req, res) => { //Modificar Solicitud por ID de 
 
 const updateRequestCourseStatusToPendingByGroupId = (req, res) => { 
   const { _id } = req.params;
-  _requestCourse.updateMany({group:_id, status: 'studying', active: true}, {$set:{'status':'pending'}})
-    .then(updated => res.status(status.OK).json({updated, message: 'Se han actualizado correctamente los estatus del grupo'}))
+  _requestCourse.update({group:_id, status :'studying', active: true},{$set:{'status':'pending'}},{multi:true})
+    .then(updated => res.status(status.OK).json(updated))
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
 };
 
@@ -268,18 +268,29 @@ const consultAllRequestActiveCourse =  (_id) =>{
     });
   });
 };
+
+
 const updateStatusToPaid = (req, res) => {
   const data  = req.body;
-
   data.forEach(async (st)=>{
       await new Promise((resolve)=>{      
-        _requestCourse.updateOne({ _id: st._id }, {paidNumber: 1, status:'paid'})
+        _requestCourse.updateOne({ _id: st._id, $and:[{status:{$ne:'pending'}},{status:{$ne:'studying'}}]}, {paidNumber: 1, status:'paid'})
               .then(updated => resolve(true))
               .catch(_ => {console.log(_);resolve(false);});
       });
   });
+
+  data.forEach(async (st)=>{
+    await new Promise((resolve)=>{      
+      _requestCourse.updateOne({ _id: st._id, status:'pending' }, {paidNumber: 2, status:'studying'})
+            .then(updated => resolve(true))
+            .catch(_ => {console.log(_);resolve(false);});
+    });
+});
+
   res.status(status.OK).json({message:'Status updated'})
 };
+
 
 const declineRequestActiveCourse = async (req, res) => {
   const groupOrignId = req.body.group.groupOrigin;
