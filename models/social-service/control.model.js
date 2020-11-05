@@ -19,9 +19,23 @@ let controlStudent = new mongoose.Schema({
         acceptance: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         workPlanProject: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         commitment: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        firstReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        secondReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        thirdReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        reports: [
+            {
+                position: { type: String, default: 1},
+                name: { type: String, default: 'firstReport' },
+                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+            },
+            {
+                position: { type: String, default: 2},
+                name: { type: String, default: 'secondReport' },
+                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+            },
+            {
+                position: { type: String, default: 3},
+                name: { type: String, default: 'thirdReport' },
+                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+            }
+        ],
         cardControl: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         constancy: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         dependencyManagerEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
