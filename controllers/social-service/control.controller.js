@@ -79,7 +79,22 @@ const getStudentInformationByControlId = (req, res) => {
     const { _id } = req.params;
     _controlStudent.findOne({_id: _id})
         .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1, sex: 1,
-                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1 }})
+                 semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1 }})
+        .then( data => {
+            if(data) {
+                return res.status(status.OK).json({ student: data.studentId })
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        }).catch( err => {
+        return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+    });
+};
+
+const getFullStudentInformationByControlId = (req, res) => {
+    const { _id } = req.params;
+    _controlStudent.findOne({_id: _id})
+        .populate({path: 'studentId', model: 'Student', select: {}})
         .then( data => {
             if(data) {
                 return res.status(status.OK).json({ student: data.studentId })
@@ -582,6 +597,7 @@ module.exports = (ControlStudent, Student) => {
         getControlStudentById,
         getControlStudentByStudentId,
         getStudentInformationByControlId,
+        getFullStudentInformationByControlId,
         getRequests,
         verifyCode,
         addOneReportToStudent,
