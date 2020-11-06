@@ -232,7 +232,7 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
             _controlStudent.findOne({controlNumber: data.controlNumber})
                 .then(controlNumber => {
                     if (controlNumber) {
-                        return null;
+                        return _controlStudent.updateOne({_id: controlNumber._id}, {$set: { 'verification.assistance': true }});
                     }
                     return _controlStudent.create({studentId: data._id, controlNumber: data.controlNumber, releaseAssistanceDate: new Date()});
                 });
