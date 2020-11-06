@@ -22,17 +22,17 @@ let controlStudent = new mongoose.Schema({
         reports: [
             {
                 position: { type: String, default: 1},
-                name: { type: String, default: 'firstReport' },
+                name: { type: String, default: 'ITT-POC-08-06-01' },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
             },
             {
                 position: { type: String, default: 2},
-                name: { type: String, default: 'secondReport' },
+                name: { type: String, default: 'ITT-POC-08-06-02' },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
             },
             {
                 position: { type: String, default: 3},
-                name: { type: String, default: 'thirdReport' },
+                name: { type: String, default: 'ITT-POC-08-06-03' },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
             }
         ],
@@ -100,7 +100,7 @@ let controlStudent = new mongoose.Schema({
             ]
         }
     ],
-    status: { type: String, default: 'solicitude', enum: ['solicitude', 'approval', 'initial', 'approved'] },
+    status: { type: String, default: 'solicitude', enum: ['solicitude', 'process', 'approved'] },
     dependencyName: { type: String },
     dependencyPhone: { type: String },
     dependencyAddress: { type: String },

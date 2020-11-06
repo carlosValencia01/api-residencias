@@ -40,6 +40,12 @@ module.exports = (wagner) => {
     router.post('/upload/file2', (req, res) =>
         driveCtrl.createFile2(req, res));
 
+    router.post('/report/:_id', (req, res) =>
+        controlStudentCtrl.addOneReportToStudent(req, res));
+
+    router.delete('/report/:_id', (req, res) =>
+        controlStudentCtrl.removeOneReportToStudent(req, res));
+
     router.put('/release/csv', (req, res) =>
         controlStudentCtrl.releaseSocialServiceAssistanceCsv(req, res));
 

@@ -208,6 +208,49 @@ const verifyCode = (req, res) => {
 };
 
 
+const addOneReportToStudent = (req, res) => {
+    const { _id } = req.params;
+    _controlStudent.findOne({_id: _id})
+        .then( student => {
+            const newPosition = student.verification.reports.length + 1;
+            if (newPosition > 12) {
+                return res.status(status.BAD_REQUEST).json({ msg: 'Número máximo de reportes, por favor de verificar', error});
+            }
+            const newReport = {
+                position: newPosition,
+                name: 'ITT-POC-08-06-0'+newPosition,
+                status: 'register'
+            };
+            _controlStudent.updateOne({_id: _id}, { $push: { 'verification.reports': newReport }})
+                .then( updated => {
+                    return res.status(status.OK).json({ msg: 'Se ha agregado un nuevo reporte', updated})
+                }).catch(error => {
+                    return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al agregar el reporte', error});
+            });
+        }).catch( err => {
+            return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+    });
+};
+
+const removeOneReportToStudent = (req, res) => {
+    const { _id } = req.params;
+    _controlStudent.findOne({_id: _id})
+        .then( student => {
+            const newPosition = student.verification.reports.length;
+            if (newPosition === 3) {
+                return res.status(status.BAD_REQUEST).json({ msg: 'Número mínimo de reportes, por favor de verificar'});
+            }
+            _controlStudent.updateOne({_id: _id}, { $pop: { 'verification.reports': 1 }})
+                .then( updated => {
+                    return res.status(status.OK).json({ msg: 'Se ha removido un reporte', updated})
+                }).catch(error => {
+                return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al remover el reporte', error});
+            });
+        }).catch( err => {
+        return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+    });
+};
+
 const releaseSocialServiceAssistanceCsv = (req, res) => {
     const students = req.body;
     const findStudent = (data) => {
@@ -501,6 +544,8 @@ module.exports = (ControlStudent, Student) => {
         getStudentInformationByControlId,
         getRequests,
         verifyCode,
+        addOneReportToStudent,
+        removeOneReportToStudent,
         createAssistanceByControlNumber,
         sendCodeForEmailConfirmation,
         releaseSocialServiceAssistanceCsv,
