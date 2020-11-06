@@ -43,9 +43,6 @@ module.exports = (wagner) => {
     router.post('/report/:_id', (req, res) =>
         controlStudentCtrl.addOneReportToStudent(req, res));
 
-    router.delete('/report/:_id', (req, res) =>
-        controlStudentCtrl.removeOneReportToStudent(req, res));
-
     router.put('/release/csv', (req, res) =>
         controlStudentCtrl.releaseSocialServiceAssistanceCsv(req, res));
 
@@ -57,6 +54,15 @@ module.exports = (wagner) => {
 
     router.put('/document/status/:_id', (req, res) =>
         controlStudentCtrl.updateDocumentLog(req, res));
+
+    router.put('/report/status/:_id', (req, res) =>
+        controlStudentCtrl.updateReportFromDepartmentEvaluation(req, res));
+
+    router.put('/report/department/:_id', (req, res) =>
+        controlStudentCtrl.updateOneVerificationDepartmentReport(req, res));
+
+    router.delete('/report/:_id', (req, res) =>
+        controlStudentCtrl.removeOneReportToStudent(req, res));
 
     return router;
 };

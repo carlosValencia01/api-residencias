@@ -21,18 +21,8 @@ let controlStudent = new mongoose.Schema({
         commitment: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         reports: [
             {
-                position: { type: String, default: 1},
-                name: { type: String, default: 'ITT-POC-08-06-01' },
-                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-            },
-            {
-                position: { type: String, default: 2},
-                name: { type: String, default: 'ITT-POC-08-06-02' },
-                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-            },
-            {
-                position: { type: String, default: 3},
-                name: { type: String, default: 'ITT-POC-08-06-03' },
+                position: { type: Number },
+                name: { type: String },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
             }
         ],
@@ -81,7 +71,15 @@ let controlStudent = new mongoose.Schema({
             validation: { type: Boolean },
             message: { type: String },
             date: { type: Date }
-        }
+        },
+        reports: [
+            {
+                filename: { type: String },
+                validation: { type: Boolean },
+                message: { type: String },
+                date: { type: Date, default: new Date()}
+            }
+        ]
     },
     documents:[
         {

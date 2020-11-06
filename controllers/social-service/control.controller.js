@@ -259,9 +259,11 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
                 if (student) {
                     data._id = student._id;
                     data.exists = true;
+                    data.created = false;
                     return data;
                 } else {
                     data.exists = false;
+                    data.created = false;
                     return data;
                 }
             })
@@ -273,11 +275,11 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
     const releaseAssistance = (data) => {
         if (data.exists) {
             _controlStudent.findOne({controlNumber: data.controlNumber})
-                .then(controlNumber => {
-                    if (controlNumber) {
-                        return _controlStudent.updateOne({_id: controlNumber._id}, {$set: { 'verification.assistance': true }});
+                .then(student => {
+                    if (student) {
+                        return _controlStudent.updateOne({_id: student._id}, {$set: { 'verification.assistance': true }});
                     }
-                    return _controlStudent.create({studentId: data._id, controlNumber: data.controlNumber, releaseAssistanceDate: new Date()});
+                    return _controlStudent.create({studentId: data._id, controlNumber: data.controlNumber, releaseAssistanceDate: new Date(), 'verification.reports': [{position: 1, name: 'ITT-POC-08-01'}, {position: 2, name: 'ITT-POC-08-02'}, {position: 3, name: 'ITT-POC-08-03'}] });
                 });
         }
     };
@@ -308,6 +310,44 @@ const updateGeneralControlStudent = (req, res) => {
       }).catch( err => {
         return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
   });
+};
+
+const updateReportFromDepartmentEvaluation = (req, res) => {
+    const { _id } = req.params;
+    const { reportId, eStatus } = req.body;
+
+    _controlStudent.updateOne({_id: _id, 'verification.reports': { $elemMatch: { _id: reportId } }}, { $set: { 'verification.reports.$.status': eStatus } })
+        .then( updated => {
+            return res.status(status.OK).json({ msg: 'Reporte actualizado correctamente', updated});
+        }).catch( err => {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+    });
+};
+
+const updateOneVerificationDepartmentReport = (req, res) => {
+    const { _id } = req.params;
+    const report = req.body;
+    _controlStudent.findOne({_id: _id})
+        .then(student => {
+            const validation = student.verificationDepartment.reports.find(r => r.filename === report.filename);
+            if (validation) {
+                _controlStudent.updateOne({_id: _id, 'verificationDepartment.reports': { $elemMatch: { _id: validation._id } }}, { $set: { 'verificationDepartment.reports.$.validation': report.validation, 'verificationDepartment.reports.$.message': report.message } })
+                    .then( updated => {
+                        return res.status(status.OK).json({ msg: 'Se ha actualizado la evaluación del reporte', updated});
+                    }).catch( err => {
+                    return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+                });
+            } else {
+                _controlStudent.updateOne({_id: _id}, { $push: { 'verificationDepartment.reports': report }})
+                    .then( updated => {
+                        return res.status(status.OK).json({ msg: 'Se ha guardado la evaluación del reporte', updated})
+                    }).catch(error => {
+                    return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al guardar la evaluación el reporte', error});
+                });
+            }
+        }).catch(err => {
+        return res.status(status.NOT_FOUND).json({ msg: 'No existe información de los estudiantes buscados', err})
+    });
 };
 
 const _sendEmail = ({ email, subject, sender, message }) => {
@@ -552,5 +592,7 @@ module.exports = (ControlStudent, Student) => {
         updateGeneralControlStudent,
         assignDocumentDrive,
         updateDocumentLog,
+        updateReportFromDepartmentEvaluation,
+        updateOneVerificationDepartmentReport
     });
 };
