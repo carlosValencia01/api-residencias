@@ -26,12 +26,24 @@ let controlStudent = new mongoose.Schema({
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
             }
         ],
-        cardControl: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        managerEvaluations: [
+            {
+                position: { type: Number },
+                name: { type: String },
+                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+            }
+        ],
+        selfEvaluations: [
+            {
+                position: { type: Number },
+                name: { type: String },
+                status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+            }
+        ],
+        //cardControl: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         constancy: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        dependencyManagerEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         lastReportEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         lastReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        selfEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         signs: {
             solicitude: {
                 signStudentDate: { type: Date },
@@ -73,6 +85,22 @@ let controlStudent = new mongoose.Schema({
             date: { type: Date }
         },
         reports: [
+            {
+                filename: { type: String },
+                validation: { type: Boolean },
+                message: { type: String },
+                date: { type: Date, default: new Date()}
+            }
+        ],
+        managerEvaluations: [
+            {
+                filename: { type: String },
+                validation: { type: Boolean },
+                message: { type: String },
+                date: { type: Date, default: new Date()}
+            }
+        ],
+        selfEvaluations: [
             {
                 filename: { type: String },
                 validation: { type: Boolean },

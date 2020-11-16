@@ -58,11 +58,18 @@ module.exports = (wagner) => {
     router.put('/document/status/:_id', (req, res) =>
         controlStudentCtrl.updateDocumentLog(req, res));
 
-    router.put('/report/status/:_id', (req, res) =>
-        controlStudentCtrl.updateReportFromDepartmentEvaluation(req, res));
+    // router.put('/report/status/:_id', (req, res) =>
+    //     controlStudentCtrl.updateReportFromDepartmentEvaluation(req, res));
+    //
+    // router.put('/report/department/:_id', (req, res) =>
+    //     controlStudentCtrl.updateOneVerificationDepartmentReport(req, res));
 
-    router.put('/report/department/:_id', (req, res) =>
-        controlStudentCtrl.updateOneVerificationDepartmentReport(req, res));
+    // Metodos generales de actualizacion de documentos dinamicos del proyecto, reportes bimestrales
+    router.put('/report/status/:_id', (req, res) =>
+        controlStudentCtrl.updateDocumentEvaluationFromDepartmentEvaluation(req, res));
+
+    // router.put('/report/department/:_id', (req, res) =>
+    //     controlStudentCtrl.updateOneVerificationDepartmentDocument(req, res));
 
     router.delete('/report/:_id', (req, res) =>
         controlStudentCtrl.removeOneReportToStudent(req, res));
