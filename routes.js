@@ -38,6 +38,7 @@ module.exports = (wagner) => {
     { route: 'sg-cle/group', router: routers.group },
     { route: 'sg-cle/requestcourse', router: routers.requestCourse },
     { route: 'sg-cle/classroom', router: routers.classroom },
+    { route: 'sg-cle/englishperiod', router: routers.englishPeriod },
     // Social-Service
     { route: 'controlStudent', router: routers.controlStudent }
   ];
