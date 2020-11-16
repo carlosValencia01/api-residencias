@@ -14,6 +14,12 @@ const englishCourseCtrl = wagner.invoke((EnglishCourse, EnBossMessage) =>
     router.get('/all/active', (req, res) =>
     englishCourseCtrl.getAllEnglishCourseActive(req, res));
 
+    router.get('/twoPayments', (req, res) =>
+    englishCourseCtrl.getEnglishCourseTwoPayments(req, res));
+
+    router.put('/update/:_id', (req, res) =>
+    englishCourseCtrl.updateEnglishCourse(req, res));
+
     router.get('/boss/message', (req, res) =>
     englishCourseCtrl.getEnBossMessage(req, res));
 

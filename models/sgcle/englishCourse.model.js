@@ -10,7 +10,10 @@ const englishCourseSchema = new mongoose.Schema({
     startPeriod: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' }, // Periodo de creación del curso
     endPeriod: { type: mongoose.Schema.Types.ObjectId, ref: 'Period' }, // Último periodo en el que estará disponible
     status: { type: String, default: 'active', enum: ['active', 'inactive'] }, // Estatus del curso, activo o inactivo
-
+    payment:{
+        payments: { type: Number },
+        pay: { type: Number },
+      }
 });
 
 const englishCourseModel = mongoose.model('EnglishCourse', englishCourseSchema, 'englishCourses');

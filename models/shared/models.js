@@ -56,6 +56,7 @@ module.exports = (wagner) => {
     const RequestCourse = require('./../sgcle/requestCourse.model');
     const Classroom = require('./../sgcle/classroom.model');
     const EnBossMessage = require('./../sgcle/bossMessage.model');
+    const EnglishPeriod = require('./../sgcle/englishPeriod.model');
 
     //Social-Service
     const ControlStudent = require('../social-service/control.model');
@@ -100,6 +101,7 @@ module.exports = (wagner) => {
         RequestCourse,
         Classroom,
         EnBossMessage,
+        EnglishPeriod,
 
         //Social-Service
         ControlStudent

@@ -1,6 +1,23 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
 
+const getAllEnglishStudent = (req, res) => {
+    _englishStudent.find({})
+    .populate({
+        path: 'studentId', model: 'Student', select: {
+            fullName: 1, controlNumber: 1, career: 1, sex: 1, email: 1, phone: 1, _id: 0
+        },
+        populate: {
+            path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
+    })
+    .populate({ path: 'courseType', model: 'EnglishCourse' })
+        .exec(handler.handleMany.bind(null, 'englishStudents', res));
+    };
+
 const createEnglishStudent = (req, res) => {
     const englishStudent = req.body;
     _englishStudent.create(englishStudent)
@@ -84,9 +101,24 @@ const getEnglishStudentNoVerified = (req, res) => {
         .exec(handler.handleOne.bind(null, 'englishStudent', res));
 };
 
-module.exports = (EnglishStudent,EnglishCourse) => {
+const deleteEnglishProfile = (req, res) => {
+    const _studentId = req.params._id;
+    _requestCourse.deleteMany({ englishStudent: _studentId })
+        .then(deleteReq => {
+            if(deleteReq){
+                _englishStudent.deleteOne({_id:_studentId})
+                    .then(deleted => res.status(status.OK).json(deleted))
+                    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al eliminar el perfil del estudiante de Ingles' }));
+            } else {
+                res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al eliminar solicitudes del estudiante de Ingles' });
+            }
+        });
+}
+
+module.exports = (EnglishStudent,EnglishCourse,RequestCourse) => {
     _englishStudent = EnglishStudent;
     _englishCourse = EnglishCourse;
+    _requestCourse = RequestCourse
     return ({
         createEnglishStudent,
         getEnglishStudentByStudentId,
@@ -94,5 +126,7 @@ module.exports = (EnglishStudent,EnglishCourse) => {
         getEnglishStudentAndStudentById,
         updateStatus,
         getEnglishStudentNoVerified,
+        getAllEnglishStudent,
+        deleteEnglishProfile
     });
 };

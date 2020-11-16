@@ -1,6 +1,10 @@
 const handler = require('../../utils/handler');
 const status = require('http-status');
+// Importar el archivo donde se emiten los eventos
+const _socket = require('../../sockets/app.socket');
 
+// Importar el archivo de los enumeradores
+const eSocket = require('../../enumerators/shared/sockets.enum');
 
 let _requestCourse;
 let _englishStudent;
@@ -96,7 +100,20 @@ const getActiveRequestCourseByEnglishStudentId = async (req, res) => {
             }          
         }
     }
-})
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'teacher', model:'Employee'
+      }
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'schedule.classroom', model:'Classroom',
+        select: {
+          name: 1
+        }
+      }
+    })
       .exec(handler.handleMany.bind(null, 'requestCourse', res));
 };
 
@@ -135,6 +152,32 @@ const getActivePeriod = ()=>{
   });
 };
 
+const getAllRequestCourseByEnglishStudentId = async (req, res) => {
+  const { _id } = req.params;
+  let query = {
+    englishStudent:_id
+  };
+  _requestCourse.find(query).populate({
+    path:'group', model:'Group',
+    populate:{
+      path:'course', model:'EnglishCourse'
+    }
+  }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'teacher', model:'Employee'
+      }
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'schedule.$.classroom', model:'Classroom'
+      }
+    }).populate({
+      path: 'period', model: 'Period',
+    })
+    .exec(handler.handleMany.bind(null, 'requestCourse', res));
+};
+
 //END FIND METHODS
 
 const createRequestCourse = (req, res) => { //Crear Solicitud
@@ -151,6 +194,16 @@ const updateRequestCourseById = (req, res) => { //Modificar Solicitud por ID de 
     .then(updated => res.status(status.OK).json(updated))
     .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
 };
+
+const updateRequestCourseStatusToPendingByGroupId = (req, res) => { 
+  const { _id } = req.params;
+  _requestCourse.update({group:_id, status :'studying', active: true},{$set:{'status':'pending'}},{multi:true})
+    .then(updated => res.status(status.OK).json(updated))
+    .catch(_ => res.status(status.INTERNAL_SERVER_ERROR).json({ message: 'Error al modificar Solicitud' }));
+};
+
+
+
 
 const updateRequestCourseByStudentId = (req, res) => { //Modificar Solicitud por ID del estudiante de Ingles
   const { _id } = req.params;
@@ -182,42 +235,62 @@ const activeRequestCourse = async (req, res) => {
   return res.status(status.OK).json(true);
 };
 
-const getAllRequestActiveCourse = (req, res) => {
-  const { _id } = req.params;
-  _requestCourse.find({group:_id}).populate({
-    path: 'englishStudent', model: 'EnglishStudent',    
-    populate: {
-      path: 'studentId', model: 'Student',
-      select: {
-        careerId:1,controlNumber:1,fullName:1,email:1
-      },
-      populate: {
-        path: 'careerId', model: 'Career',
-          select:{
-            _id:0
-          }          
-      }
-    }
-  }).populate({
-    path:'group', model:'Group',
-    populate:{
-      path:'course', model:'EnglishCourse'
-    }
-  })
-  .exec(handler.handleMany.bind(null, 'requestCourses', res));
+const getAllRequestActiveCourse = async (req, res) => {
+  const { _id, clientId } = req.params;
+  const requestCourses = await consultAllRequestActiveCourse(_id);
+  _socket.singleEmit(eSocket.englishEvents.GET_ALL_REQUEST_ACTIVE_COURSE,requestCourses, clientId);
+  res.json(requestCourses);
 };
+const consultAllRequestActiveCourse =  (_id) =>{
+  return new Promise((resolve)=>{
+    _requestCourse.find({group:_id}).populate({
+      path: 'englishStudent', model: 'EnglishStudent',    
+      populate: {
+        path: 'studentId', model: 'Student',
+        select: {
+          careerId:1,controlNumber:1,fullName:1,email:1
+        },
+        populate: {
+          path: 'careerId', model: 'Career',
+            select:{
+              _id:0
+            }          
+        }
+      }
+    }).populate({
+      path:'group', model:'Group',
+      populate:{
+        path:'course', model:'EnglishCourse'
+      }
+    })
+    .then( requestCourses =>{
+      resolve({requestCourses})
+    });
+  });
+};
+
+
 const updateStatusToPaid = (req, res) => {
   const data  = req.body;
-  console.log(data);
   data.forEach(async (st)=>{
-      await new Promise((resolve)=>{            
-        _requestCourse.updateOne({ englishStudent: st.englishStudent._id }, {paidNumber:(st.englishStudent.paidNumber+1), status:'paid'})
+      await new Promise((resolve)=>{      
+        _requestCourse.updateOne({ _id: st._id, $and:[{status:{$ne:'pending'}},{status:{$ne:'studying'}}]}, {paidNumber: 1, status:'paid'})
               .then(updated => resolve(true))
-              .catch(_ => resolve(false));
+              .catch(_ => {console.log(_);resolve(false);});
       });
   });
+
+  data.forEach(async (st)=>{
+    await new Promise((resolve)=>{      
+      _requestCourse.updateOne({ _id: st._id, status:'pending' }, {paidNumber: 2, status:'studying'})
+            .then(updated => resolve(true))
+            .catch(_ => {console.log(_);resolve(false);});
+    });
+});
+
   res.status(status.OK).json({message:'Status updated'})
 };
+
 
 const declineRequestActiveCourse = async (req, res) => {
   const groupOrignId = req.body.group.groupOrigin;
@@ -255,6 +328,8 @@ const AddRequestActiveCourse = async (req, res) => {
   });
 };
 
+
+
   module.exports = (RequestCourse, EnglishStudent, Period) => {
     _requestCourse = RequestCourse;
     _englishStudent = EnglishStudent;
@@ -266,6 +341,7 @@ const AddRequestActiveCourse = async (req, res) => {
       getAllRequestCourseByCourseAndRequested,
       updateRequestCourseById,
       updateRequestCourseByStudentId,
+      updateRequestCourseStatusToPendingByGroupId, 
       getAllRequestCourseByCourseAndStudying,
       activeRequestCourse,
       getActiveRequestCourseByEnglishStudentId,
@@ -273,6 +349,8 @@ const AddRequestActiveCourse = async (req, res) => {
       getAllRequestActiveCourse,
       declineRequestActiveCourse,
       AddRequestActiveCourse,
-      updateStatusToPaid
+      updateStatusToPaid,
+      getAllRequestCourseByEnglishStudentId,
+      consultAllRequestActiveCourse
     });
   };
