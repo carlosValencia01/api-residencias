@@ -59,6 +59,21 @@ const getControlStudentById = (req, res) => {
     });
 };
 
+const getControlStudentByGeneralStatus = (req, res) => {
+    const { eStatus } = req.params;
+    _controlStudent.find({ status: eStatus })
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1} })
+        .then( data => {
+            if(data) {
+                return res.status(status.OK).json({ controlStudents: data })
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        }).catch( err => {
+        return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+    });
+};
+
 const getControlStudentByStudentId = (req, res) => {
     const { studentId } = req.params;
     _controlStudent.findOne({studentId: studentId})
@@ -228,6 +243,8 @@ const addOneReportToStudent = (req, res) => {
     _controlStudent.findOne({_id: _id})
         .then( student => {
             const newPosition = student.verification.reports.length + 1;
+            const newPositionManager = student.verification.managerEvaluations.length + 1;
+            const newPositionSelf = student.verification.selfEvaluations.length + 1;
             if (newPosition > 12) {
                 return res.status(status.BAD_REQUEST).json({ msg: 'Número máximo de reportes, por favor de verificar', error});
             }
@@ -236,9 +253,23 @@ const addOneReportToStudent = (req, res) => {
                 name: 'ITT-POC-08-06-0'+newPosition,
                 status: 'register'
             };
-            _controlStudent.updateOne({_id: _id}, { $push: { 'verification.reports': newReport }})
+            const newManagerEval = {
+                position: newPositionManager,
+                name: 'ITT-POC-08-06-0'+newPositionManager,
+                status: 'register'
+            };
+            const newSelfEval = {
+                position: newPositionSelf,
+                name: 'ITT-POC-08-06-0'+newPositionSelf,
+                status: 'register'
+            };
+            _controlStudent.updateOne({_id: _id}, { $push: {
+                'verification.reports': newReport,
+                'verification.managerEvaluations': newManagerEval,
+                'verification.selfEvaluations': newSelfEval,
+            }})
                 .then( updated => {
-                    return res.status(status.OK).json({ msg: 'Se ha agregado un nuevo reporte', updated})
+                    return res.status(status.OK).json({ msg: 'Se ha agregado un nuevo reporte junto sus respectivas cartas de evaluación', updated})
                 }).catch(error => {
                     return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al agregar el reporte', error});
             });
@@ -255,9 +286,9 @@ const removeOneReportToStudent = (req, res) => {
             if (newPosition === 3) {
                 return res.status(status.BAD_REQUEST).json({ msg: 'Número mínimo de reportes, por favor de verificar'});
             }
-            _controlStudent.updateOne({_id: _id}, { $pop: { 'verification.reports': 1 }})
+            _controlStudent.updateOne({_id: _id}, { $pop: { 'verification.reports': 1, 'verification.managerEvaluations': 1, 'verification.selfEvaluations': 1}})
                 .then( updated => {
-                    return res.status(status.OK).json({ msg: 'Se ha removido un reporte', updated})
+                    return res.status(status.OK).json({ msg: 'Se ha removido un reporte correctamente', updated})
                 }).catch(error => {
                 return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al remover el reporte', error});
             });
@@ -294,7 +325,26 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
                     if (student) {
                         return _controlStudent.updateOne({_id: student._id}, {$set: { 'verification.assistance': true }});
                     }
-                    return _controlStudent.create({studentId: data._id, controlNumber: data.controlNumber, releaseAssistanceDate: new Date(), 'verification.reports': [{position: 1, name: 'ITT-POC-08-01'}, {position: 2, name: 'ITT-POC-08-02'}, {position: 3, name: 'ITT-POC-08-03'}] });
+                    return _controlStudent.create({
+                        studentId: data._id,
+                        controlNumber: data.controlNumber,
+                        releaseAssistanceDate: new Date(),
+                        'verification.reports': [
+                            {position: 1, name: 'ITT-POC-08-06-01'},
+                            {position: 2, name: 'ITT-POC-08-06-02'},
+                            {position: 3, name: 'ITT-POC-08-06-03'}
+                        ],
+                        'verification.managerEvaluations': [
+                            {position: 1, name: 'ITT-POC-08-09-01'},
+                            {position: 2, name: 'ITT-POC-08-09-02'},
+                            {position: 3, name: 'ITT-POC-08-09-03'}
+                        ],
+                        'verification.selfEvaluations': [
+                            {position: 1, name: 'ITT-POC-08-11-01'},
+                            {position: 2, name: 'ITT-POC-08-11-02'},
+                            {position: 3, name: 'ITT-POC-08-11-03'}
+                        ],
+                    });
                 });
         }
     };
@@ -327,18 +377,18 @@ const updateGeneralControlStudent = (req, res) => {
   });
 };
 
-// const updateReportFromDepartmentEvaluation = (req, res) => {
-//     const { _id } = req.params;
-//     const { reportId, eStatus } = req.body;
-//
-//     _controlStudent.updateOne({_id: _id, 'verification.reports': { $elemMatch: { _id: reportId } }}, { $set: { 'verification.reports.$.status': eStatus } })
-//         .then( updated => {
-//             return res.status(status.OK).json({ msg: 'Reporte actualizado correctamente', updated});
-//         }).catch( err => {
-//         return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
-//     });
-// };
-//
+const updateReportFromDepartmentEvaluation = (req, res) => {
+    const { _id } = req.params;
+    const { nameDocument, documentId, eStatus } = req.body;
+
+    _controlStudent.updateOne({_id: _id, ['verification.'+nameDocument]: { $elemMatch: { _id: documentId } }}, { $set: { ['verification.' + nameDocument + '.$.status']: eStatus } })
+        .then( updated => {
+            return res.status(status.OK).json({ msg: 'Reporte actualizado correctamente', updated});
+        }).catch( err => {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+    });
+};
+
 // const updateOneVerificationDepartmentReport = (req, res) => {
 //     const { _id } = req.params;
 //     const report = req.body;
@@ -656,6 +706,7 @@ module.exports = (ControlStudent, Student) => {
         getAll,
         getControlStudentByDocumentAndStatus,
         getControlStudentById,
+        getControlStudentByGeneralStatus,
         getControlStudentByStudentId,
         getStudentInformationByControlId,
         getFullStudentInformationByControlId,
@@ -669,7 +720,7 @@ module.exports = (ControlStudent, Student) => {
         updateGeneralControlStudent,
         assignDocumentDrive,
         updateDocumentLog,
-        // updateReportFromDepartmentEvaluation,
+        updateReportFromDepartmentEvaluation,
         // updateOneVerificationDepartmentReport,
         updateDocumentEvaluationFromDepartmentEvaluation,
         // updateOneVerificationDepartmentDocument
