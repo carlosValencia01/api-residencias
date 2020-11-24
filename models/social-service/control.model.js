@@ -107,7 +107,17 @@ let controlStudent = new mongoose.Schema({
                 message: { type: String },
                 date: { type: Date, default: new Date()}
             }
-        ]
+        ],
+        lastReport: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        },
+        lastReportEvaluation: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        }
     },
     documents:[
         {
@@ -126,7 +136,7 @@ let controlStudent = new mongoose.Schema({
             ]
         }
     ],
-    status: { type: String, default: 'solicitude', enum: ['solicitude', 'process', 'approved'] },
+    status: { type: String, default: 'solicitude', enum: ['solicitude', 'process', 'preAssigned', 'preSign', 'approved'] },
     dependencyName: { type: String },
     dependencyPhone: { type: String },
     dependencyAddress: { type: String },
@@ -147,6 +157,7 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramLocationInside: { type: Boolean },
     dependencyProgramLocation: { type: String },
     tradePresentationDocumentNumber: { type: String },
+    tradeConstancyDocumentNumber: { type: String },
     schedule: [{type: String}],
     months: [{type: String}]
 });
