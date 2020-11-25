@@ -389,32 +389,6 @@ const updateReportFromDepartmentEvaluation = (req, res) => {
     });
 };
 
-// const updateOneVerificationDepartmentReport = (req, res) => {
-//     const { _id } = req.params;
-//     const report = req.body;
-//     _controlStudent.findOne({_id: _id})
-//         .then(student => {
-//             const validation = student.verificationDepartment.reports.find(r => r.filename === report.filename);
-//             if (validation) {
-//                 _controlStudent.updateOne({_id: _id, 'verificationDepartment.reports': { $elemMatch: { _id: validation._id } }}, { $set: { 'verificationDepartment.reports.$.validation': report.validation, 'verificationDepartment.reports.$.message': report.message } })
-//                     .then( updated => {
-//                         return res.status(status.OK).json({ msg: 'Se ha actualizado la evaluación del reporte', updated});
-//                     }).catch( err => {
-//                     return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
-//                 });
-//             } else {
-//                 _controlStudent.updateOne({_id: _id}, { $push: { 'verificationDepartment.reports': report }})
-//                     .then( updated => {
-//                         return res.status(status.OK).json({ msg: 'Se ha guardado la evaluación del reporte', updated})
-//                     }).catch(error => {
-//                     return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al guardar la evaluación el reporte', error});
-//                 });
-//             }
-//         }).catch(err => {
-//         return res.status(status.NOT_FOUND).json({ msg: 'No existe información de los estudiantes buscados', err})
-//     });
-// };
-
 const updateDocumentEvaluationFromDepartmentEvaluation = (req, res) => {
     const { _id } = req.params;
     const { documentId, eStatus, documentDepartment, nameDocument } = req.body;
@@ -448,33 +422,39 @@ const updateDocumentEvaluationFromDepartmentEvaluation = (req, res) => {
     });
 };
 
-// const updateOneVerificationDepartmentDocument = (req, res) => {
-//     const { _id } = req.params;
-//     // nameDocument puede ser reports, managerEvaluations o selfEvaluations
-//     // Document puede ser report, managerEvaluation o selfEvaluation
-//     const { document, nameDocument } = req.body;
-//     _controlStudent.findOne({_id: _id})
-//         .then(student => {
-//             const validation = student.verificationDepartment[nameDocument].find(r => r.filename === document.filename);
-//             if (validation) {
-//                 _controlStudent.updateOne({_id: _id, ['verificationDepartment.' + nameDocument]: { $elemMatch: { _id: validation._id } }}, { $set: { ['verificationDepartment.' + nameDocument + '.$.validation']: document.validation, ['verificationDepartment.' + nameDocument + '.$.message']: document.message } })
-//                     .then( updated => {
-//                         return res.status(status.OK).json({ msg: 'Se ha actualizado la evaluación', updated});
-//                     }).catch( err => {
-//                     return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
-//                 });
-//             } else {
-//                 _controlStudent.updateOne({_id: _id}, { $push: { ['verificationDepartment.' + nameDocument]: document }})
-//                     .then( updated => {
-//                         return res.status(status.OK).json({ msg: 'Se ha guardado la evaluación', updated})
-//                     }).catch(error => {
-//                     return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'Error al guardar la evaluación el reporte', error});
-//                 });
-//             }
-//         }).catch(err => {
-//         return res.status(status.NOT_FOUND).json({ msg: 'No existe información de los estudiantes buscados', err})
-//     });
-// };
+const createHistoryDocumentStatus = (req, res) => {
+    const { id } = req.params;
+    const history = req.body;
+    _controlStudent.findOne({_id: id})
+        .then(student => {
+            const founded = student.historyDocumentStatus.find(h => h.name === history.name);
+            if (founded) {
+                return res.status(status.BAD_REQUEST).json({ msg: 'El registro ya ha sido creado' })
+            } else {
+                _controlStudent.updateOne({_id: id}, { $push: { historyDocumentStatus: history }})
+                    .then( () => {
+                        return res.status(status.OK).json({ msg: 'Se ha creado el historico del documento' })
+                    })
+                    .catch(err => {
+                        return res.status(status.NOT_FOUND).json({ msg: 'No se ha creado el historico del documento', error: err })
+                    });
+            }
+        }).catch(() => {
+            return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+        });
+};
+
+const pushHistoryDocumentStatus = (req, res) => {
+    const { id, documentId } = req.params;
+    const eStatus = req.body;
+    console.log(id, documentId);
+    _controlStudent.updateOne({_id: id, historyDocumentStatus: { $elemMatch: { _id: documentId } } }, { $push: { 'historyDocumentStatus.$.status': eStatus } })
+        .then( () => {
+            return res.status(status.OK).json({ msg: 'Se ha guardado registro en historico del documento' })
+        }).catch(() => {
+        return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+    });
+};
 
 const _sendEmail = ({ email, subject, sender, message }) => {
     return new Promise(resolve => {
@@ -721,8 +701,8 @@ module.exports = (ControlStudent, Student) => {
         assignDocumentDrive,
         updateDocumentLog,
         updateReportFromDepartmentEvaluation,
-        // updateOneVerificationDepartmentReport,
         updateDocumentEvaluationFromDepartmentEvaluation,
-        // updateOneVerificationDepartmentDocument
+        createHistoryDocumentStatus,
+        pushHistoryDocumentStatus
     });
 };

@@ -5,6 +5,19 @@ let controlStudent = new mongoose.Schema({
     controlNumber: { type: String, unique: true, trim: true, required: true },
     releaseAssistanceDate: { type: Date },
     emailStudent: { type: String },
+    historyDocumentStatus: [
+        {
+            name: { type: String },
+            status: [
+                {
+                    name: { type: String },
+                    message:{ type: String },
+                    responsible: { type: String },
+                    date:{ type: Date, default: new Date() }
+                }
+            ]
+        }
+    ],
     verification: {
         assistance: { type: Boolean, default: true },
         code: { type: Number },

@@ -49,6 +49,12 @@ module.exports = (wagner) => {
     router.post('/report/:_id', (req, res) =>
         controlStudentCtrl.addOneReportToStudent(req, res));
 
+    router.post('/history/:id', (req, res) =>
+       controlStudentCtrl.createHistoryDocumentStatus(req, res) );
+
+    router.put('/history/:id/:documentId', (req, res) =>
+        controlStudentCtrl.pushHistoryDocumentStatus(req, res) );
+
     router.put('/release/csv', (req, res) =>
         controlStudentCtrl.releaseSocialServiceAssistanceCsv(req, res));
 
