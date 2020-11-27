@@ -44,6 +44,7 @@ let controlStudent = new mongoose.Schema({
         constancy: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         lastReportEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         lastReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        dependencyRelease: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         signs: {
             solicitude: {
                 signStudentDate: { type: Date },
@@ -80,6 +81,21 @@ let controlStudent = new mongoose.Schema({
             date: { type: Date }
         },
         commitment: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        },
+        finalReport: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        },
+        finalReportEvaluation: {
+            validation: { type: Boolean },
+            message: { type: String },
+            date: { type: Date }
+        },
+        dependencyRelease: {
             validation: { type: Boolean },
             message: { type: String },
             date: { type: Date }
