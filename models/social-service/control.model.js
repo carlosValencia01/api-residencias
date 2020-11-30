@@ -187,6 +187,7 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramLocation: { type: String },
     tradePresentationDocumentNumber: { type: String },
     tradeConstancyDocumentNumber: { type: String },
+    performanceLevelConstancyDocument: { type: String },
     schedule: [{type: String}],
     months: [{type: String}]
 });
