@@ -54,7 +54,7 @@ let controlStudent = new mongoose.Schema({
             }
         ],
         //cardControl: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-        constancy: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        constancy: { type: String, default: 'register', enum: ['register', 'firstSign', 'approved'] },
         lastReportEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         lastReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         dependencyRelease: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
@@ -67,6 +67,12 @@ let controlStudent = new mongoose.Schema({
             presentation: {
                 signDepartmentDate: { type: Date },
                 signDepartmentName: { type: String }
+            },
+            constancy: {
+                signDepartmentDate: { type: Date },
+                signDepartmentName: { type: String },
+                signSubPrincipalDate: { type: Date },
+                signSubPrincipalName: { type: String }
             }
         }
     },
@@ -94,16 +100,6 @@ let controlStudent = new mongoose.Schema({
             date: { type: Date }
         },
         commitment: {
-            validation: { type: Boolean },
-            message: { type: String },
-            date: { type: Date }
-        },
-        finalReport: {
-            validation: { type: Boolean },
-            message: { type: String },
-            date: { type: Date }
-        },
-        finalReportEvaluation: {
             validation: { type: Boolean },
             message: { type: String },
             date: { type: Date }

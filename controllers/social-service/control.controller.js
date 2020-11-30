@@ -74,6 +74,21 @@ const getControlStudentByGeneralStatus = (req, res) => {
     });
 };
 
+const getControlStudentByNotEqualGeneralStatus = (req, res) => {
+    const { eStatus } = req.params;
+    _controlStudent.find({ status: { $ne: eStatus } })
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1} })
+        .then( data => {
+            if(data) {
+                return res.status(status.OK).json({ controlStudents: data })
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        }).catch( err => {
+        return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+    });
+};
+
 const getControlStudentByStudentId = (req, res) => {
     const { studentId } = req.params;
     _controlStudent.findOne({studentId: studentId})
@@ -687,6 +702,7 @@ module.exports = (ControlStudent, Student) => {
         getControlStudentByDocumentAndStatus,
         getControlStudentById,
         getControlStudentByGeneralStatus,
+        getControlStudentByNotEqualGeneralStatus,
         getControlStudentByStudentId,
         getStudentInformationByControlId,
         getFullStudentInformationByControlId,

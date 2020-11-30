@@ -31,6 +31,9 @@ module.exports = (wagner) => {
     router.get('/student/status/:eStatus', (req, res) =>
         controlStudentCtrl.getControlStudentByGeneralStatus(req, res));
 
+    router.get('/student/status/not/:eStatus', (req, res) =>
+        controlStudentCtrl.getControlStudentByNotEqualGeneralStatus(req, res));
+
     router.get('/full/student/:_id', (req, res) =>
         controlStudentCtrl.getFullStudentInformationByControlId(req, res));
 
