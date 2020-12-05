@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 let controlStudent = new mongoose.Schema({
     studentId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+    periodId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Period', required: true },
     controlNumber: { type: String, unique: true, trim: true, required: true },
     releaseAssistanceDate: { type: Date },
     emailStudent: { type: String },
