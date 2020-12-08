@@ -380,6 +380,30 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
         });
 }
 
+const signAllConstancyDocumentsForDepartment = (req, res) => {
+    const students = req.body.students;
+    const responsible = req.body.responsible;
+    const signDocument = (data) => {
+        _controlStudent.findOne({_id: data.id})
+            .then(student => {
+                if (student) {
+                    return _controlStudent.updateOne({_id: student._id}, {$set: { 'verification.signs.constancy.signDepartmentName': responsible,
+                            'verification.signs.constancy.signDepartmentDate': new Date(),
+                            'verification.constancy': 'firstSign' }});
+                }
+            });
+    };
+
+    const results = Promise.all(students.map(signDocument));
+    results
+        .then((data) => {
+            return res.status(status.OK).json({ 'data': data, msg: 'Se han firmado todas las cartas por el Departamento' });
+        })
+        .catch((error) => {
+            return res.status(status.INTERNAL_SERVER_ERROR).json({ error: error });
+        });
+}
+
 const updateGeneralControlStudent = (req, res) => {
   const { id } = req.params;
   const newData = req.body;
@@ -710,6 +734,7 @@ module.exports = (ControlStudent, Student) => {
         verifyCode,
         addOneReportToStudent,
         removeOneReportToStudent,
+        signAllConstancyDocumentsForDepartment,
         createAssistanceByControlNumber,
         sendCodeForEmailConfirmation,
         releaseSocialServiceAssistanceCsv,

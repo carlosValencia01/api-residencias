@@ -46,6 +46,9 @@ module.exports = (wagner) => {
     router.post('/register/assistance', (req, res) =>
        controlStudentCtrl.createAssistanceByControlNumber(req, res));
 
+    router.post('/sign/constancy', (req, res) =>
+       controlStudentCtrl.signAllConstancyDocumentsForDepartment(req, res));
+
     router.post('/upload/file2', (req, res) =>
         driveCtrl.createFile2(req, res));
 
