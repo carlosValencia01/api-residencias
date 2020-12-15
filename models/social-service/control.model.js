@@ -47,11 +47,35 @@ let controlStudent = new mongoose.Schema({
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
             }
         ],
+        managerEvaluationsScores: [
+            {
+                position: { type: Number },
+                Q1: { type: String },
+                Q2: { type: String },
+                Q3: { type: String },
+                Q4: { type: String },
+                Q5: { type: String },
+                Q6: { type: String },
+                Q7: { type: String },
+            }
+        ],
         selfEvaluations: [
             {
                 position: { type: Number },
                 name: { type: String },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+            }
+        ],
+        selfEvaluationsScores: [
+            {
+                position: { type: Number },
+                QS1: { type: String },
+                QS2: { type: String },
+                QS3: { type: String },
+                QS4: { type: String },
+                QS5: { type: String },
+                QS6: { type: String },
+                QS7: { type: String },
             }
         ],
         //cardControl: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
