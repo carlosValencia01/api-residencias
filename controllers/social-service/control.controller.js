@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 
 let _controlStudent;
 let _student;
+let _period;
 
 const getAll = (req, res) => {
     _controlStudent.find({})
@@ -314,6 +315,21 @@ const removeOneReportToStudent = (req, res) => {
 
 const releaseSocialServiceAssistanceCsv = (req, res) => {
     const students = req.body;
+    let periodId = "";
+    _period.findOne({active:true})
+        .then( period=>{
+            if(period) {
+                periodId = period._id;
+            }else{
+                res.status(status.NOT_FOUND).json({
+                    model:'period',action:'get active', msg: 'No hay periodos activos en el sistema'
+                });
+            }
+        }).catch( () =>{
+            res.status(status.BAD_REQUEST).json({
+                model:'period',action:'get active', error: error.toString()
+            });
+        });
     const findStudent = (data) => {
         return _student.findOne({controlNumber: data.controlNumber})
             .then(student => {
@@ -343,6 +359,7 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
                     return _controlStudent.create({
                         studentId: data._id,
                         controlNumber: data.controlNumber,
+                        periodId: periodId,
                         releaseAssistanceDate: new Date(),
                         'verification.reports': [
                             {position: 1, name: 'ITT-POC-08-06-01'},
@@ -763,9 +780,10 @@ const updateDocumentLog = async (req, res) => {
 };
 
 
-module.exports = (ControlStudent, Student) => {
+module.exports = (ControlStudent, Student, Period) => {
     _controlStudent = ControlStudent;
     _student = Student;
+    _period = Period;
 
     return ({
         getAll,

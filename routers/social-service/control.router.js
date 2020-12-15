@@ -1,8 +1,8 @@
 const router = require('express').Router();
 
 module.exports = (wagner) => {
-    const controlStudentCtrl = wagner.invoke((ControlStudent, Student) =>
-        require('../../controllers/social-service/control.controller')(ControlStudent, Student));
+    const controlStudentCtrl = wagner.invoke((ControlStudent, Student, Period) =>
+        require('../../controllers/social-service/control.controller')(ControlStudent, Student, Period));
 
     const driveCtrl = wagner.invoke((Folder, Student, Period) =>
         require('../../controllers/app/google-drive.controller')(Folder, Student, Period));
