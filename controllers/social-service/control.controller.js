@@ -428,6 +428,52 @@ const updateReportFromDepartmentEvaluation = (req, res) => {
     });
 };
 
+const updateManagerEvaluationScore = (req, res) => {
+    const { _id } = req.params;
+    const { Q1, Q2, Q3, Q4, Q5, Q6, Q7, position } = req.body;
+    _controlStudent.updateOne({
+                                _id: _id, ['verification.managerEvaluationsScores']:{$elemMatch:{position:position}},
+                                },                                
+                                {  $set: { 
+                                    ['verification.managerEvaluationsScores.$.Q1']: Q1,
+                                    ['verification.managerEvaluationsScores.$.Q2']: Q2,
+                                    ['verification.managerEvaluationsScores.$.Q3']: Q3,
+                                    ['verification.managerEvaluationsScores.$.Q4']: Q4,
+                                    ['verification.managerEvaluationsScores.$.Q5']: Q5,
+                                    ['verification.managerEvaluationsScores.$.Q6']: Q6,
+                                    ['verification.managerEvaluationsScores.$.Q7']: Q7,
+                                }                                                      
+                            })
+        .then( updated => {
+            return res.status(status.OK).json({ msg: 'Evaluacion guardada correctamente', updated});
+        }).catch( err => {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+    });
+};
+
+const updateSelfEvaluationScore = (req, res) => {
+    const { _id } = req.params;
+    const { QS1, QS2, QS3, QS4, QS5, QS6, QS7, position } = req.body;
+    _controlStudent.updateOne({
+                                _id: _id, ['verification.selfEvaluationsScores']:{$elemMatch:{position:position}},
+                                },                                
+                                {  $set: { 
+                                    ['verification.selfEvaluationsScores.$.QS1']: QS1,
+                                    ['verification.selfEvaluationsScores.$.QS2']: QS2,
+                                    ['verification.selfEvaluationsScores.$.QS3']: QS3,
+                                    ['verification.selfEvaluationsScores.$.QS4']: QS4,
+                                    ['verification.selfEvaluationsScores.$.QS5']: QS5,
+                                    ['verification.selfEvaluationsScores.$.QS6']: QS6,
+                                    ['verification.selfEvaluationsScores.$.QS7']: QS7,
+                                }                                                      
+                            })
+        .then( updated => {
+            return res.status(status.OK).json({ msg: 'Evaluacion guardada correctamente', updated});
+        }).catch( err => {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+    });
+};
+
 const updateDocumentEvaluationFromDepartmentEvaluation = (req, res) => {
     const { _id } = req.params;
     const { documentId, eStatus, documentDepartment, nameDocument } = req.body;
@@ -743,6 +789,8 @@ module.exports = (ControlStudent, Student) => {
         updateDocumentLog,
         updateReportFromDepartmentEvaluation,
         updateDocumentEvaluationFromDepartmentEvaluation,
+        updateManagerEvaluationScore,
+        updateSelfEvaluationScore,
         createHistoryDocumentStatus,
         pushHistoryDocumentStatus
     });

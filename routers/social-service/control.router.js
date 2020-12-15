@@ -79,6 +79,13 @@ module.exports = (wagner) => {
     // router.put('/report/department/:_id', (req, res) =>
     //     controlStudentCtrl.updateOneVerificationDepartmentReport(req, res));
 
+
+    router.put('/managerEvaluation/score/:_id', (req, res) =>
+        controlStudentCtrl.updateManagerEvaluationScore(req, res));
+
+    router.put('/selfEvaluation/score/:_id', (req, res) =>
+        controlStudentCtrl.updateSelfEvaluationScore(req, res));
+
     // Metodos generales de actualizacion de documentos dinamicos del proyecto, reportes bimestrales
     router.put('/report/multiple/status/:_id', (req, res) =>
         controlStudentCtrl.updateDocumentEvaluationFromDepartmentEvaluation(req, res));
