@@ -449,16 +449,16 @@ const updateManagerEvaluationScore = (req, res) => {
     const { _id } = req.params;
     const { Q1, Q2, Q3, Q4, Q5, Q6, Q7, position } = req.body;
     _controlStudent.updateOne({
-                                _id: _id, ['verification.managerEvaluationsScores']:{$elemMatch:{position:position}},
+                                _id: _id, ['verification.managerEvaluations']:{$elemMatch:{position:position}},
                                 },                                
                                 {  $set: { 
-                                    ['verification.managerEvaluationsScores.$.Q1']: Q1,
-                                    ['verification.managerEvaluationsScores.$.Q2']: Q2,
-                                    ['verification.managerEvaluationsScores.$.Q3']: Q3,
-                                    ['verification.managerEvaluationsScores.$.Q4']: Q4,
-                                    ['verification.managerEvaluationsScores.$.Q5']: Q5,
-                                    ['verification.managerEvaluationsScores.$.Q6']: Q6,
-                                    ['verification.managerEvaluationsScores.$.Q7']: Q7,
+                                    ['verification.managerEvaluations.$.scores.q1']: Q1,
+                                    ['verification.managerEvaluations.$.scores.q3']: Q3,
+                                    ['verification.managerEvaluations.$.scores.q2']: Q2,
+                                    ['verification.managerEvaluations.$.scores.q4']: Q4,
+                                    ['verification.managerEvaluations.$.scores.q5']: Q5,
+                                    ['verification.managerEvaluations.$.scores.q6']: Q6,
+                                    ['verification.managerEvaluations.$.scores.q7']: Q7,
                                 }                                                      
                             })
         .then( updated => {
@@ -472,16 +472,16 @@ const updateSelfEvaluationScore = (req, res) => {
     const { _id } = req.params;
     const { QS1, QS2, QS3, QS4, QS5, QS6, QS7, position } = req.body;
     _controlStudent.updateOne({
-                                _id: _id, ['verification.selfEvaluationsScores']:{$elemMatch:{position:position}},
+                                _id: _id, ['verification.selfEvaluations']:{$elemMatch:{position:position}},
                                 },                                
                                 {  $set: { 
-                                    ['verification.selfEvaluationsScores.$.QS1']: QS1,
-                                    ['verification.selfEvaluationsScores.$.QS2']: QS2,
-                                    ['verification.selfEvaluationsScores.$.QS3']: QS3,
-                                    ['verification.selfEvaluationsScores.$.QS4']: QS4,
-                                    ['verification.selfEvaluationsScores.$.QS5']: QS5,
-                                    ['verification.selfEvaluationsScores.$.QS6']: QS6,
-                                    ['verification.selfEvaluationsScores.$.QS7']: QS7,
+                                    ['verification.selfEvaluations.$.scores.qS1']: QS1,
+                                    ['verification.selfEvaluations.$.scores.qS2']: QS2,
+                                    ['verification.selfEvaluations.$.scores.qS3']: QS3,
+                                    ['verification.selfEvaluations.$.scores.qS4']: QS4,
+                                    ['verification.selfEvaluations.$.scores.qS5']: QS5,
+                                    ['verification.selfEvaluations.$.scores.qS6']: QS6,
+                                    ['verification.selfEvaluations.$.scores.qS7']: QS7,
                                 }                                                      
                             })
         .then( updated => {

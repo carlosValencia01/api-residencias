@@ -45,18 +45,15 @@ let controlStudent = new mongoose.Schema({
                 position: { type: Number },
                 name: { type: String },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-            }
-        ],
-        managerEvaluationsScores: [
-            {
-                position: { type: Number },
-                Q1: { type: String },
-                Q2: { type: String },
-                Q3: { type: String },
-                Q4: { type: String },
-                Q5: { type: String },
-                Q6: { type: String },
-                Q7: { type: String },
+                scores: {
+                    q1: { type: Number, default: 0 },
+                    q2: { type: Number, default: 0 },
+                    q3: { type: Number, default: 0 },
+                    q4: { type: Number, default: 0 },
+                    q5: { type: Number, default: 0 },
+                    q6: { type: Number, default: 0 },
+                    q7: { type: Number, default: 0 },
+                }
             }
         ],
         selfEvaluations: [
@@ -64,18 +61,15 @@ let controlStudent = new mongoose.Schema({
                 position: { type: Number },
                 name: { type: String },
                 status: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
-            }
-        ],
-        selfEvaluationsScores: [
-            {
-                position: { type: Number },
-                QS1: { type: String },
-                QS2: { type: String },
-                QS3: { type: String },
-                QS4: { type: String },
-                QS5: { type: String },
-                QS6: { type: String },
-                QS7: { type: String },
+                scores: {
+                    qS1: { type: Number, default: 0 },
+                    qS2: { type: Number, default: 0 },
+                    qS3: { type: Number, default: 0 },
+                    qS4: { type: Number, default: 0 },
+                    qS5: { type: Number, default: 0 },
+                    qS6: { type: Number, default: 0 },
+                    qS7: { type: Number, default: 0 },
+                }
             }
         ],
         //cardControl: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
