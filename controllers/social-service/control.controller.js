@@ -447,18 +447,18 @@ const updateReportFromDepartmentEvaluation = (req, res) => {
 
 const updateManagerEvaluationScore = (req, res) => {
     const { _id } = req.params;
-    const { Q1, Q2, Q3, Q4, Q5, Q6, Q7, position } = req.body;
+    const { q1, q2, q3, q4, q5, q6, q7, position } = req.body;
     _controlStudent.updateOne({
                                 _id: _id, ['verification.managerEvaluations']:{$elemMatch:{position:position}},
                                 },                                
                                 {  $set: { 
-                                    ['verification.managerEvaluations.$.scores.q1']: Q1,
-                                    ['verification.managerEvaluations.$.scores.q3']: Q3,
-                                    ['verification.managerEvaluations.$.scores.q2']: Q2,
-                                    ['verification.managerEvaluations.$.scores.q4']: Q4,
-                                    ['verification.managerEvaluations.$.scores.q5']: Q5,
-                                    ['verification.managerEvaluations.$.scores.q6']: Q6,
-                                    ['verification.managerEvaluations.$.scores.q7']: Q7,
+                                    ['verification.managerEvaluations.$.scores.q1']: q1,
+                                    ['verification.managerEvaluations.$.scores.q2']: q2,
+                                    ['verification.managerEvaluations.$.scores.q3']: q3,
+                                    ['verification.managerEvaluations.$.scores.q4']: q4,
+                                    ['verification.managerEvaluations.$.scores.q5']: q5,
+                                    ['verification.managerEvaluations.$.scores.q6']: q6,
+                                    ['verification.managerEvaluations.$.scores.q7']: q7,
                                 }                                                      
                             })
         .then( updated => {
