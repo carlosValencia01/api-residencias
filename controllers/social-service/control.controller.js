@@ -491,6 +491,30 @@ const updateSelfEvaluationScore = (req, res) => {
     });
 };
 
+const updateLastSelfEvaluationScore = (req, res) => {
+    const { _id } = req.params;
+    const { QL1, QL2, QL3, QL4, QL5, QL6, QL7, QL8 } = req.body;
+    _controlStudent.updateOne({
+                                _id: _id,
+                                },                                
+                                {  $set: { 
+                                    ['verification.lastReportScores.qL1']: QL1,
+                                    ['verification.lastReportScores.qL2']: QL2,
+                                    ['verification.lastReportScores.qL3']: QL3,
+                                    ['verification.lastReportScores.qL4']: QL4,
+                                    ['verification.lastReportScores.qL5']: QL5,
+                                    ['verification.lastReportScores.qL6']: QL6,
+                                    ['verification.lastReportScores.qL7']: QL7,
+                                    ['verification.lastReportScores.qL8']: QL8,
+                                }                                                      
+                            })
+        .then( updated => {
+            return res.status(status.OK).json({ msg: 'Evaluacion guardada correctamente', updated});
+        }).catch( err => {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+    });
+};
+
 const updateDocumentEvaluationFromDepartmentEvaluation = (req, res) => {
     const { _id } = req.params;
     const { documentId, eStatus, documentDepartment, nameDocument } = req.body;
@@ -809,6 +833,7 @@ module.exports = (ControlStudent, Student, Period) => {
         updateDocumentEvaluationFromDepartmentEvaluation,
         updateManagerEvaluationScore,
         updateSelfEvaluationScore,
+        updateLastSelfEvaluationScore,
         createHistoryDocumentStatus,
         pushHistoryDocumentStatus
     });

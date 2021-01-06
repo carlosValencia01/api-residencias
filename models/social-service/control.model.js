@@ -76,6 +76,18 @@ let controlStudent = new mongoose.Schema({
         constancy: { type: String, default: 'register', enum: ['register', 'firstSign', 'approved'] },
         lastReportEvaluation: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         lastReport: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
+        lastReportScores: [
+            {
+                qL1: { type: Number, default: 0 },
+                qL2: { type: Number, default: 0 },
+                qL3: { type: Number, default: 0 },
+                qL4: { type: Number, default: 0 },
+                qL5: { type: Number, default: 0 },
+                qL6: { type: Number, default: 0 },
+                qL7: { type: Number, default: 0 },
+                qL8: { type: Number, default: 0 },
+            }
+        ],
         dependencyRelease: { type: String, default: 'register', enum: ['register', 'send', 'reevaluate', 'approved'] },
         signs: {
             solicitude: {
@@ -192,6 +204,7 @@ let controlStudent = new mongoose.Schema({
     dependencyProgramName: { type: String },
     dependencyProgramModality: { type: String },
     initialDate: { type: Date },
+    dependencyInitialDate: { type: Date },
     dependencyActivities: { type: String },
     dependencyProgramType: {
         option: { type: String },

@@ -86,6 +86,10 @@ module.exports = (wagner) => {
     router.put('/selfEvaluation/score/:_id', (req, res) =>
         controlStudentCtrl.updateSelfEvaluationScore(req, res));
 
+    router.put('/lastSelfEvaluation/score/:_id', (req, res) =>
+        controlStudentCtrl.updateLastSelfEvaluationScore(req, res));
+        
+
     // Metodos generales de actualizacion de documentos dinamicos del proyecto, reportes bimestrales
     router.put('/report/multiple/status/:_id', (req, res) =>
         controlStudentCtrl.updateDocumentEvaluationFromDepartmentEvaluation(req, res));
