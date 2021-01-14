@@ -180,6 +180,17 @@ const login = async (req, res) => {
                 } else if (student.status !== studentData.status) {
                     _student.updateOne(query, { $set: { status: studentData.status.toUpperCase() } }).then(ok => { });
                 }
+                // Verifica si existe cambio en el porcentaje reticular o creditos aprobados
+                if (!student.hasOwnProperty('creditsCareer')) {
+                    _student.updateOne(query, { $set: { creditsCareer: parseInt(studentData.creditsCareer) } }).then(ok => { });
+                } else if (student.creditsCareer < parseInt(studentData.creditsCareer) ) {
+                    _student.updateOne(query, { $set: { creditsCareer: parseInt(studentData.creditsCareer) } }).then(ok => { });
+                }
+                if (!student.hasOwnProperty('percentCareer')) {
+                    _student.updateOne(query, { $set: { percentCareer: parseFloat(studentData.percentCareer) } }).then(ok => { });
+                } else if (student.percentCareer < parseFloat(studentData.percentCareer)) {
+                    _student.updateOne(query, { $set: { percentCareer: parseFloat(studentData.percentCareer) } }).then(ok => { });
+                }
                 // Se contruye el token
                 const token = jwt.sign({ email: student.controlNumber }, config.secret);
                 let formatUser = {
@@ -196,6 +207,8 @@ const login = async (req, res) => {
                         permissions: student.idRole.permissions
                     },
                     semester: studentData.semester,
+                    creditsCareer: studentData.creditsCareer,
+                    percentCareer: studentData.percentCareer,
                     status: student.status
                 };
                 return res.json({
@@ -228,6 +241,8 @@ const login = async (req, res) => {
                                 permissions: student.idRole.permissions
                             },
                             semester: student.semester,
+                            creditsCareer: student.creditsCareer,
+                            percentCareer: student.percentCareer,
                         };
                         return res.json({
                             user: formatUser,
@@ -1117,6 +1132,8 @@ const _getStudentSii = (controlNumber) => {
                     originSchool: studentData.originschool,
                     nameOriginSchool: studentData.nameoriginschool,
                     semester: studentData.semester,
+                    creditsCareer: studentData.credits,
+                    percentCareer: studentData.percent
                 };
                 const incomingType = studentData.income;
                 if (studentNew.semester === 1 || ['1', '2', '3', '4'].includes(incomingType)) {
