@@ -68,7 +68,9 @@ const studentSchema = new mongoose.Schema({
     printCredential: {type: Boolean},
     expStatus : {type: String},
     signDocuments: {type: Boolean, default:false},
-    signDocumentsDate: {type: Date}
+    signDocumentsDate: {type: Date},
+    creditsCareer: {type: Number},
+    percentCareer: {type: Number}
 });
 
 const studentModel = mongoose.model('Student', studentSchema, 'students');
