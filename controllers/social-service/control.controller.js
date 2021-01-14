@@ -160,35 +160,63 @@ const getRequests = (req, res) => {
 }
 
 
-const createAssistanceByControlNumber = (req, res) => {
+const createRegisterByControlNumber = (req, res) => {
     const data = req.body;
     _student.findOne({controlNumber: data.controlNumber})
         .then(student => {
             if (student) {
                 data._id = student._id;
                 _controlStudent.findOne({controlNumber: data.controlNumber})
-                    .then( control => {
+                    .then( async control => {
                         if (control) {
-                            return res.status(status.NOT_FOUND).json({ msg: 'La asistencia del estudiante ya se encuentra registrada' })
+                            return res.status(status.NOT_FOUND).json({ msg: 'El estudiante ya se encuentra registrado' })
                         } else {
-                            _controlStudent.create({studentId: data._id, controlNumber: data.controlNumber, releaseAssistanceDate: new Date()})
+                            let periodId = '';
+                            await _period.findOne( { active: true } )
+                                .then( period=>{ if (period) { periodId = period._id; }
+                                }).catch( () => {
+                                    return res.status(status.INTERNAL_SERVER_ERROR).json({ msg: 'No se ha podido crear su registro, intentelo mas tarde' });
+                            });
+                            const controlStudentForm = {
+                                studentId: data._id,
+                                controlNumber: data.controlNumber,
+                                periodId: periodId,
+                                'verification.reports': [
+                                    {position: 1, name: 'ITT-POC-08-06-01'},
+                                    {position: 2, name: 'ITT-POC-08-06-02'},
+                                    {position: 3, name: 'ITT-POC-08-06-03'}
+                                ],
+                                'verification.managerEvaluations': [
+                                    {position: 1, name: 'ITT-POC-08-09-01'},
+                                    {position: 2, name: 'ITT-POC-08-09-02'},
+                                    {position: 3, name: 'ITT-POC-08-09-03'}
+                                ],
+                                'verification.selfEvaluations': [
+                                    {position: 1, name: 'ITT-POC-08-11-01'},
+                                    {position: 2, name: 'ITT-POC-08-11-02'},
+                                    {position: 3, name: 'ITT-POC-08-11-03'}
+                                ]
+                            };
+                            _controlStudent.create(controlStudentForm)
                                 .then( () => {
-                                    return res.status(status.OK).json({ msg: 'Se ha registrado la asistencia del alumno correctamente' });
+                                    return res.status(status.OK).json({ msg: 'Se ha creado tu registro correctamente' });
                                 }).catch( err => {
-                                    return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString() });
+                                    return res.status(status.INTERNAL_SERVER_ERROR).json({ error: err.toString(), msg: 'No se ha podido crear su registro, intentelo mas tarde' });
                             });
                         }
                     }).catch( err => {
-                    return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+                    return res.status(status.BAD_REQUEST).json({ error: err.toString(), msg: 'Error, intentelo mas tarde' });
                 });
             } else {
                 return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
             }
         })
         .catch(_ => {
-            return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+            return res.status(status.BAD_REQUEST).json({ error: err.toString(), msg: 'Error, intentelo mas tarde' });
         });
 };
+
+
 
 const sendCodeForEmailConfirmation = (req, res) => {
     const { _id, email } = req.params;
@@ -361,6 +389,7 @@ const releaseSocialServiceAssistanceCsv = (req, res) => {
                         controlNumber: data.controlNumber,
                         periodId: periodId,
                         releaseAssistanceDate: new Date(),
+                        'verification.assistance': true,
                         'verification.reports': [
                             {position: 1, name: 'ITT-POC-08-06-01'},
                             {position: 2, name: 'ITT-POC-08-06-02'},
@@ -823,7 +852,7 @@ module.exports = (ControlStudent, Student, Period) => {
         addOneReportToStudent,
         removeOneReportToStudent,
         signAllConstancyDocumentsForDepartment,
-        createAssistanceByControlNumber,
+        createRegisterByControlNumber,
         sendCodeForEmailConfirmation,
         releaseSocialServiceAssistanceCsv,
         updateGeneralControlStudent,

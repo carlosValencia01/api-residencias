@@ -20,7 +20,7 @@ let controlStudent = new mongoose.Schema({
         }
     ],
     verification: {
-        assistance: { type: Boolean, default: true },
+        assistance: { type: Boolean, default: false },
         code: { type: Number },
         sendEmailCode: { type: Boolean, default: false },
         verificationEmail: { type: Boolean, default: false },
