@@ -217,7 +217,15 @@ let controlStudent = new mongoose.Schema({
     tradeConstancyDocumentNumber: { type: String },
     performanceLevelConstancyDocument: { type: String },
     schedule: [{type: String}],
-    months: [{type: String}]
+    months: [{type: String}],
+    studentPhone: { type: String },
+    studentGender: { type: String },
+    studentStreet: { type: String },
+    studentSuburb: { type: String },
+    studentZip: { type: String },
+    studentCity: { type: String },
+    studentState: { type: String }
+
 });
 
 const controlStudentModel = mongoose.model('ControlStudent', controlStudent, 'controlStudents');
