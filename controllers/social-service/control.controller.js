@@ -157,7 +157,24 @@ const getRequests = (req, res) => {
         .exec(handler.handleMany.bind(null, 'controlStudents', res));
     }
     return;
-}
+};
+
+const getValidationToAccessSocialService = (req, res) => {
+    const { _id } = req.params;
+    _student.findOne({_id: _id})
+        .then( student => {
+            if(student) {
+                const result = student.percentCareer >= 65 && student.status === 'ACT';
+                console.log(result, student);
+                return res.status(status.OK).json({ access: result });
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        })
+        .catch( err => {
+            return res.status(status.BAD_REQUEST).json({error: err.toString()});
+        });
+};
 
 
 const createRegisterByControlNumber = (req, res) => {
@@ -848,6 +865,7 @@ module.exports = (ControlStudent, Student, Period) => {
         getStudentInformationByControlId,
         getFullStudentInformationByControlId,
         getRequests,
+        getValidationToAccessSocialService,
         verifyCode,
         addOneReportToStudent,
         removeOneReportToStudent,
