@@ -207,8 +207,6 @@ const login = async (req, res) => {
                         permissions: student.idRole.permissions
                     },
                     semester: studentData.semester,
-                    creditsCareer: studentData.creditsCareer,
-                    percentCareer: studentData.percentCareer,
                     status: student.status
                 };
                 return res.json({
@@ -240,9 +238,7 @@ const login = async (req, res) => {
                                 name: student.idRole.name,
                                 permissions: student.idRole.permissions
                             },
-                            semester: student.semester,
-                            creditsCareer: student.creditsCareer,
-                            percentCareer: student.percentCareer,
+                            semester: student.semester
                         };
                         return res.json({
                             user: formatUser,
