@@ -16,6 +16,9 @@ module.exports = (wagner) => {
     router.get('/control/student/:_id', (req, res) =>
         controlStudentCtrl.getControlStudentById(req, res));
 
+    router.get('/control/student/folder/:_id', (req, res) =>
+        controlStudentCtrl.getControlStudentFolderById(req, res));
+
     router.get('/request/:status', (req,res) => 
         controlStudentCtrl.getRequests(req,res));
 

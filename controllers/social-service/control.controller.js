@@ -46,12 +46,28 @@ const getControlStudentByDocumentAndStatus = (req, res) => {
 const getControlStudentById = (req, res) => {
     const { _id } = req.params;
     _controlStudent.findOne({_id: _id})
-        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1, sex: 1,
-                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1, folderIdSocService: 1 },
+        .populate({path: 'studentId', model: 'Student', select: {folderIdSocService: 1, career: 1, fullName: 1, sex: 1,
+                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1 },
                 populate: {path: 'folderIdSocService', model: 'Folder', select: {idFolderInDrive: 1}} })
         .then( data => {
             if(data) {
                 return res.status(status.OK).json({ controlStudent: data })
+            } else {
+                return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
+            }
+        }).catch( err => {
+        return res.status(status.BAD_REQUEST).json({ error: err.toString() });
+    });
+};
+
+const getControlStudentFolderById = (req, res) => {
+    const { _id } = req.params;
+    _controlStudent.findOne({_id: _id})
+        .populate({path: 'studentId', model: 'Student', select: {folderIdSocService: 1 },
+            populate: {path: 'folderIdSocService', model: 'Folder', select: {idFolderInDrive: 1}} })
+        .then( data => {
+            if(data) {
+                return res.status(status.OK).json({ folderId: data.studentId.folderIdSocService.idFolderInDrive })
             } else {
                 return res.status(status.NOT_FOUND).json({ msg: 'No existe el estudiante buscado' })
             }
@@ -859,6 +875,7 @@ module.exports = (ControlStudent, Student, Period) => {
         getAll,
         getControlStudentByDocumentAndStatus,
         getControlStudentById,
+        getControlStudentFolderById,
         getControlStudentByGeneralStatus,
         getControlStudentByNotEqualGeneralStatus,
         getControlStudentByStudentId,
