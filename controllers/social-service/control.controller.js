@@ -46,10 +46,9 @@ const getControlStudentByDocumentAndStatus = (req, res) => {
 const getControlStudentById = (req, res) => {
     const { _id } = req.params;
     _controlStudent.findOne({_id: _id})
-        .populate({path: 'studentId', model: 'Student', select: {folderIdSocService: 1, career: 1, fullName: 1, sex: 1,
-                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1 },
-                populate: {path: 'folderIdSocService', model: 'Folder', select: {idFolderInDrive: 1}} })
-        .then( data => {
+        .populate({path: 'studentId', model: 'Student', select: {career: 1, fullName: 1, sex: 1,
+                semester: 1, controlNumber: 1, phone: 1, street: 1, suburb: 1, creditsCareer: 1, dateBirth: 1 } })
+        .then(data => {
             if(data) {
                 return res.status(status.OK).json({ controlStudent: data })
             } else {
