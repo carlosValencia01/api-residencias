@@ -224,8 +224,8 @@ let controlStudent = new mongoose.Schema({
     studentSuburb: { type: String },
     studentZip: { type: String },
     studentCity: { type: String },
-    studentState: { type: String }
-
+    studentState: { type: String },
+    stepWizard: {type:Number, default: 0}
 });
 
 const controlStudentModel = mongoose.model('ControlStudent', controlStudent, 'controlStudents');
